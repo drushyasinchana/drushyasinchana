@@ -1,216 +1,475 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <title>Drushyasinchana</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-      body {
-        margin: 0;
-        font-family: "Poppins", Arial, sans-serif;
-        background: #f8fbff;
-        color: #333;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Drushyasinchana</title>
+  <link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-      /* Header */
-      header {
-        background: #3399ff; /* light blue */
-        padding: 10px 40px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-      }
+<header>
+  <div class="logo">
+    <img src="assets/images/logo.png" alt="Drushyasinchana Logo" width="36" height="36" />
+    Drushyasinchana
+  </div>
+  <nav>
+    <a href="#home" class="active">Home</a>
+    <a href="#services">Services</a>
+    <a href="#videos">Videos</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+  </nav>
+  <button class="contact-button" onclick="window.location.href='contact.html';">Contact</button>
+</header>
 
-      #logo img {
-        height: 50px;   /* adjust logo size */
-        width: auto;
-      }
+<main>
 
-      #logo span {
-        font-size: 1.8em;
-        font-weight: bold;
-        color: #fff;
-        margin-left: 10px;
-        vertical-align: middle;
-      }
+ <!-- Home/Hero Section Styles -->
 
-      nav ul {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: flex;
-        gap: 20px;
-      }
+  <section id="home" class="hero">
+    
+    <img src="assets/images/logo.png" alt="Drushyasinchana Logo" class="main-logo"/>
 
-      nav ul li a {
-        color: #fff;
-        font-weight: 600;
-        text-decoration: none;
-        transition: 0.3s;
-      }
-
-      nav ul li a:hover {
-        color: #003366; /* dark blue hover */
-      }
-
-      /* Section */
-      section {
-        padding: 80px 20px; /* increased padding for spacing */
-        max-width: 1200px;
-        margin: auto;
-      }
-
-      section h2 {
-        color: #003366;
-        font-size: 2em;
-        margin-bottom: 20px;
-      }
-
-      section p {
-        line-height: 1.6em;
-        font-size: 1.1em;
-      }
-
-      /* Services Cards */
-      .services-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 30px;
-        margin-top: 30px;
-      }
-
-      .service-card {
-        background-color: #fff;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-        text-align: center;
-        transition: transform 0.3s, box-shadow 0.3s;
-        padding-bottom: 20px;
-      }
-
-      .service-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-      }
-
-      .service-card img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-      }
-
-      .service-card h3 {
-        color: #ff6600; /* orange titles */
-        margin: 15px 0 10px 0;
-        font-size: 1.3em;
-      }
-
-      .service-card p {
-        font-size: 0.95em;
-        color: #333;
-        padding: 0 15px;
-        line-height: 1.5em;
-      }
-
-      /* Footer */
-      footer {
-        background: #003366; /* dark blue */
-        color: #fff;
-        text-align: center;
-        padding: 20px;
-      }
-
-      footer a {
-        color: #fff;
-        text-decoration: none;
-        margin: 0 10px;
-        font-weight: bold;
-      }
-
-      footer a:hover {
-        text-decoration: underline;
-      }
-
-      @media (max-width: 768px) {
-        section {
-          padding: 60px 10px;
-        }
-        section h2 {
-          font-size: 28px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Header -->
-    <header>
-      <a href="#" id="logo">
-        <img src="assets/img/logo.png" alt="Drushyasinchana Logo">
-        <span>DRUSHYASINCHANA</span>
-      </a>
-      <nav>
-        <ul>
-          <li><a href="#about">About</a></li>
-          <li><a href="#services">Services</a></li>
-          <li><a href="contact.html">Contact</a></li> <!-- links to separate contact page -->
-        </ul>
-      </nav>
-    </header>
-
-    <!-- About -->
-    <section id="about">
-      <h2>About</h2>
-      <p>
-        DRUSHYASINCHANA is a multidisciplinary firm led by Proprietor 
-        <strong>Murthy S. N. V.</strong>, offering Legal, IT, Tech, Creative, 
-        and Multiservices. Our work combines expertise and innovation to 
-        deliver practical and reliable solutions for individuals, businesses, 
-        and organizations.
-      </p>
-    </section>
-
-    <!-- Services -->
-    <section id="services">
-      <h2>Services</h2>
-      <p>We provide professional solutions tailored to your needs:</p>
-
-      <div class="services-container">
-        <!-- Service 1 -->
-        <div class="service-card">
-          <img src="https://images.unsplash.com/photo-1581091012184-246ed05bb8a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400" alt="Legal Consultancy">
-          <h3>Legal Consultancy</h3>
-          <p>Expert legal advice, agreement & contract review for individuals and businesses.</p>
-        </div>
-
-        <!-- Service 2 -->
-        <div class="service-card">
-          <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400" alt="IT & Tech Solutions">
-          <h3>IT & Tech Solutions</h3>
-          <p>Comprehensive IT & technology services including software, apps, and digital solutions.</p>
-        </div>
-
-        <!-- Service 3 -->
-        <div class="service-card">
-          <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400" alt="Creative Works">
-          <h3>Creative Works</h3>
-          <p>Editing, short films, and multimedia creative services for diverse projects.</p>
-        </div>
-
-        
-      </div>
-    </section>
-
-    <!-- Footer -->
+    <h1>Drushyasinchana</h1>
+    <p class="lead">
+        Your trusted partner for <strong>Legal</strong>, <strong>IT</strong>, <span class="tech">Tech</span> &amp; <span class="creative">Creative</span> Solutions
+    </p>
+    <p>
+        Bridging technology and law with 27+ years of experience in Karnataka Judiciary. From server management to legal drafting, we deliver comprehensive multiservice solutions.
+    </p>
+    
+    <div class="buttons">
+        <a href="#services" class="btn-primary">
+            Explore Services
+        </a>
+        <a href="#contact" class="btn-secondary">
+            Get In Touch
+        </a>
+    </div>
+    
     <footer>
-      <p>Connect with us:</p>
-      <a href="https://www.instagram.com/drushyasinchana/" target="_blank">Instagram</a> |
-      <a href="https://www.youtube.com/@Drushyasinchana22" target="_blank">YouTube</a>
-      <p>&copy; 2025 DRUSHYASINCHANA</p>
+        <p>
+            <a href="tel:+9448209323">9448209323</a>
+            <a href="mailto:drushyasinchana@gmail.com">drushyasinchana@gmail.com</a>
+            <span>Karnataka, India</span>
+        </p>
     </footer>
-  </body>
+    
+</section>
+
+ <!-- End of Home/Hero Section Styles -->
+
+    <!-- Services Sction -->
+<section id="services" class="services">
+    <h2>Our <span style="color:#2c62ff;">Services</span></h2>
+    <p class="subtitle">Comprehensive solutions spanning legal, technology, creative, and business domains with decades of expertise.</p>
+
+    <div class="cards">
+
+        <div class="service-card">
+            <div class="card-header">
+                <i class="fas fa-server"></i>
+                <h3>IT Support &amp; Administration</h3>
+            </div>
+            <p>Comprehensive IT solutions including server management, network troubleshooting, and system administration.</p>
+            <ul>
+                <li>Server Management &amp; Maintenance</li>
+                <li>Network &amp; System Troubleshooting</li>
+                <li>Data Backup &amp; Recovery</li>
+                <li>IT Inventory Management</li>
+                <li>User Support &amp; Technical Assistance</li>
+            </ul>
+        </div>
+
+        <div class="service-card">
+            <div class="card-header">
+                <i class="fas fa-balance-scale"></i>
+                <h3>Legal Services</h3>
+            </div>
+            <p>Professional legal assistance with 27+ years of judiciary experience and advocate registration.</p>
+            <ul>
+                <li>Legal Drafting &amp; Documentation</li>
+                <li>Contract Review &amp; Analysis</li>
+                <li>Legal Notice Services</li>
+                <li>IT Returns Filing Assistance</li>
+                <li>Judicial Process Guidance</li>
+            </ul>
+        </div>
+
+        <div class="service-card">
+            <div class="card-header">
+                <i class="fas fa-palette"></i>
+                <h3>Creative Services</h3>
+            </div>
+            <p>Professional creative solutions for your visual and multimedia needs.</p>
+            <ul>
+                <li>Adobe Photoshop Editing</li>
+                <li>Video Editing (Premiere Pro)</li>
+                <li>Graphic Design Solutions</li>
+                <li>Brand Identity Development</li>
+                <li>Multimedia Content Creation</li>
+            </ul>
+        </div>
+
+        <div class="service-card">
+            <div class="card-header">
+                <i class="fas fa-globe"></i>
+                <h3>Website Development</h3>
+            </div>
+            <p>Modern, responsive websites and hosting solutions tailored to your business needs.</p>
+            <ul>
+                <li>Custom Website Development</li>
+                <li>Responsive Design Implementation</li>
+                <li>Website Hosting Solutions</li>
+                <li>Domain Management</li>
+                <li>SEO Optimization</li>
+            </ul>
+        </div>
+
+        <div class="service-card">
+            <div class="card-header">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Security Solutions</h3>
+            </div>
+            <p>Comprehensive security systems and surveillance solutions for your business.</p>
+            <ul>
+                <li>Biometric Attendance Systems</li>
+                <li>Surveillance System Setup</li>
+                <li>Firewall Configuration</li>
+                <li>Network Security Audits</li>
+                <li>Data Protection Solutions</li>
+            </ul>
+        </div>
+
+        <div class="service-card">
+            <div class="card-header">
+                <i class="fas fa-code"></i>
+                <h3>AI &amp; Technology Integration</h3>
+            </div>
+            <p>Leverage cutting-edge AI tools and modern technology for business optimization.</p>
+            <ul>
+                <li>AI Tools Integration (ChatGPT, Gemini)</li>
+                <li>Process Automation</li>
+                <li>Technology Consulting</li>
+                <li>Digital Transformation</li>
+                <li>Custom Software Solutions</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="custom-solution-prompt">
+        <p>Need a custom solution? Let's discuss your specific requirements.</p>
+        <a href="#" class="discuss-button">
+            <i class="fas fa-comments"></i> Discuss Your Project
+        </a>
+    </div>
+
+</section>    <!-- End of Services Sction -->
+
+ 
+  <!-- Latest Video Sction -->
+
+ <section id="videos" class="videos">
+    <h2>Latest <span style="color:#d1445f;">Videos</span></h2>
+    <p class="subtitle">Stay updated with our educational content, tutorials, and insights across YouTube and Instagram.</p>
+    <div class="video-buttons">
+      <a href="https://www.youtube.com" target="_blank" rel="noopener" class="youtube-btn">YouTube Channel</a>
+      <a href="https://www.instagram.com" target="_blank" rel="noopener" class="instagram-btn">Instagram</a>
+    </div>
+    <div class="video-grid">
+      <div class="video-card">
+        <div class="badge">YouTube</div>
+        <img src="assets/images/1.jpg" alt="IT Support Best Practices" />
+        <div class="video-info">
+          <h4>IT Support Best Practices</h4>
+          <p>Essential tips for maintaining enterprise systems and networks</p>
+          <a href="https://www.youtube.com/watch?v=example" target="_blank" rel="noopener" class="watch-link">Watch Now</a>
+        </div>
+      </div>
+      <div class="video-card">
+        <div class="badge">YouTube</div>
+        <img src="assets/images/2.jpg" alt="Legal Documentation Guide" />
+        <div class="video-info">
+          <h4>Legal Documentation Guide</h4>
+          <p>Step-by-step process for proper legal document preparation</p>
+          <a href="https://www.youtube.com/watch?v=example2" target="_blank" rel="noopener" class="watch-link">Watch Now</a>
+        </div>
+      </div>
+      <div class="video-card">
+        <div class="badge instagram">Instagram</div>
+        <img src="assets/images/3.jpg" alt="Creative Workflow Tips" />
+        <div class="video-info">
+          <h4>Creative Workflow Tips</h4>
+          <p>Behind the scenes: Our creative process and tools</p>
+          <a href="https://www.instagram.com/example" target="_blank" rel="noopener" class="watch-link">Watch Now</a>
+        </div>
+      </div>
+      <div class="video-card">
+        <div class="badge">YouTube</div>
+        <img src="assets/images/4.jpg" alt="Website Development Journey" />
+        <div class="video-info">
+          <h4>Website Development Journey</h4>
+          <p>From concept to deployment: Building modern websites</p>
+          <a href="https://www.youtube.com/watch?v=example3" target="_blank" rel="noopener" class="watch-link">Watch Now</a>
+        </div>
+      </div>
+      <div class="video-card">
+        <div class="badge instagram">Instagram</div>
+        <img src="assets/images/5.jpg" alt="AI Tools Integration" />
+        <div class="video-info">
+          <h4>AI Tools Integration</h4>
+          <p>Leveraging ChatGPT and Gemini for business solutions</p>
+          <a href="https://www.instagram.com/example2" target="_blank" rel="noopener" class="watch-link">Watch Now</a>
+        </div>
+      </div>
+      <div class="video-card">
+        <div class="badge">YouTube</div>
+        <img src="assets/images/6.jpg" alt="Security Systems Setup" />
+        <div class="video-info">
+          <h4>Security Systems Setup</h4>
+          <p>Complete guide to biometric and surveillance systems</p>
+          <a href="https://www.youtube.com/watch?v=example4" target="_blank" rel="noopener" class="watch-link">Watch Now</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of Video Sction -->
+
+ <!-- About Sction -->
+<section id="about" class="about">
+    <h2>About <span style="color:#2c62ff;">Drushyasinchana</span></h2>
+    <p>Bridging the gap between technology and law with decades of expertise and a passion for innovation.</p>
+
+    <div class="about-content-grid">
+
+        <div class="about-text-content">
+            <h3>Meet Murthy SNV</h3>
+            <p>With over 27 years of distinguished service in the Karnataka Judiciary, Murthy SNV brings a unique blend of legal expertise and technical proficiency to every project. As the founder of Drushyasinchana, he has successfully bridged the traditionally separate worlds of law and technology.</p>
+            <p>From serving as Stenographer &amp; Technical Support Staff to becoming a Registered Advocate, Murthy's journey represents a commitment to continuous learning and adaptation to emerging technologies.</p>
+
+            <h4>Education &amp; Certifications</h4>
+            <ul>
+                <li>Master of Computer Applications (MCA)</li>
+                <li>Post Graduate Diploma in Human Resource Management (PGDHRM)</li>
+                <li>Bachelor of Laws (LL.B.)</li>
+                <li>Bachelor of Commerce (B.Com)</li>
+                <li>Diploma in Stenography</li>
+            </ul>
+
+            <h4>Professional Certifications</h4>
+            <ul>
+                <li>Sun Certified Java Programmer (SCJP)</li>
+                <li>Registered Advocate</li>
+            </ul>
+        </div>
+
+        <div class="about-right-column">
+            
+            <div class="credential-cards-grid">
+                <div class="credential-card">
+                    <i class="fas fa-calendar-alt"></i> <p>27+ Years</p>
+                    <p>Experience in Karnataka Judiciary</p>
+                </div>
+                <div class="credential-card">
+                    <i class="fas fa-balance-scale"></i> <p>Registered Advocate</p>
+                    <p>KAR/3037/2024</p>
+                </div>
+                <div class="credential-card">
+                    <i class="fas fa-laptop-code"></i> <p>Multi-Domain Expert</p>
+                    <p>IT, Legal, Creative &amp; Tech Solutions</p>
+                </div>
+                <div class="credential-card">
+                    <i class="fas fa-check-circle"></i> <p>Certified Professional</p>
+                    <p>SCJP &amp; Multiple Qualifications</p>
+                </div>
+            </div>
+
+            <div class="mission-box">
+                <h4>Our Mission</h4>
+                <p>To provide comprehensive, technology-driven solutions that empower businesses and individuals with the perfect blend of legal expertise, technical innovation, and creative excellence.</p>
+            </div>
+        </div>
+    </div>
+    
+    <p class="ready-prompt">Ready to work with a professional who understands both technology and law?</p>
+    <button class="collab-btn">Let's Collaborate</button>
+
+</section>
+ <!-- End of About Sction -->
+
+ <!-- Get in Touch Sction -->
+
+<section id="contact" class="contact-section">
+    <h2>Get In <span style="color:#2c62ff;">Touch</span></h2>
+    <p class="subtitle">Ready to start your project? Contact us today and let's discuss how we can help bring your vision to life.</p>
+    
+    <div class="contact-grid">
+        
+        <div class="contact-info-col">
+            <div class="contact-card">
+                <h4>Contact Information</h4>
+                <p>Reach out through any of these channels. We're here to help!</p>
+                
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <p class="label">Email Us</p>
+                        <a href="mailto:drushyasinchana@gmail.com">drushyasinchina@gmail.com</a>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <i class="fas fa-phone-alt"></i>
+                    <div>
+                        <p class="label">Call Us</p>
+                        <p class="detail">9448209323</p>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div>
+                        <p class="label">Location</p>
+                        <p class="detail">Karnataka, India</p>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <p class="label">Business Hours</p>
+                        <p class="detail">Mon - Sat: 9AM - 6PM</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="response-guarantee-card">
+                <i class="fas fa-check-circle"></i>
+                <p class="title">Quick Response Guaranteed</p>
+                <p>We typically respond to all inquiries within 24 hours. For urgent matters, please call directly.</p>
+            </div>
+        </div>
+        
+        <div class="contact-form-col">
+            <div class="form-card">
+                <h4>Send us a Message</h4>
+                <p>Fill out the form below and we'll get back to you as soon as possible.</p>
+
+                <form action="#" method="POST">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="full-name">Full Name *</label>
+                            <input type="text" id="full-name" name="full_name" placeholder="Your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email-address">Email Address *</label>
+                            <input type="email" id="email-address" name="email_address" placeholder="your.email@example.com" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone-number">Phone Number</label>
+                            <input type="tel" id="phone-number" name="phone_number" placeholder="Your phone number">
+                        </div>
+                        <div class="form-group">
+                            <label for="service-interest">Service Interested In</label>
+                            <select id="service-interest" name="service_interest">
+                                <option>Select a service</option>
+                                <option>IT Support & Administration</option>
+                                <option>Legal Services</option>
+                                <option>Creative Services</option>
+                                <option>Website Development</option>
+                                <option>Security Solutions</option>
+                                <option>AI & Technology Integration</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="subject">Subject *</label>
+                        <input type="text" id="subject" name="subject" placeholder="Brief subject of your inquiry" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="message">Message *</label>
+                        <textarea id="message" name="message" rows="5" placeholder="Please describe your project or inquiry in detail..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="send-message-btn">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+    </div>
+</section>
+ <!-- End of Get in Touch Sction -->
+
+
+ <!-- Footer Sction -->
+
+<footer class="site-footer">
+    <div>
+        <div class="col">
+            <div class="logo-text">
+                <img src="assets/images/logo.png" alt="Drushyasinchana Logo" />
+                <h3>Drushyasinchana</h3>
+            </div>
+            <p>Your trusted partner for Legal, IT, Tech &amp; Creative Solutions. Bridging technology and law with 27+ years of expertise in Karnataka Judiciary.</p>
+            
+            <p><a href="mailto:drushyasinchana@gmail.com">drushyasinchana@gmail.com</a></p>
+            <p>9448209323</p>
+            <p>Karnataka, India</p>
+        </div>
+
+        <div class="col">
+            <h3>Quick Links</h3>
+            <a href="#home">Home</a>
+            <a href="#services">Services</a>
+            <a href="#videos">Videos</a>
+            <a href="#about">About</a>
+            <a href="contact.html">Contact</a>
+        </div>
+
+        <div class="col">
+            <h3>Our Services</h3>
+            <a href="#it-support">IT Support &amp; Administration</a>
+            <a href="#legal-services">Legal Services</a>
+            <a href="#creative-services">Creative Services</a>
+            <a href="#web-development">Website Development</a>
+            <a href="#security-solutions">Security Solutions</a>
+            <a href="#ai-integration">AI &amp; Technology Integration</a>
+        </div>
+
+        <div class="col">
+            <h3>Connect With Us</h3>
+            <p>Follow us on social media for updates, tutorials, and insights.</p>
+            <div class="social-icons">
+                <a href="https://www.youtube.com/" target="_blank" rel="noopener" title="YouTube">
+                    <i class="fab fa-youtube"></i>
+                </a>
+                <a href="https://www.instagram.com/" target="_blank" rel="noopener" title="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+            <p>Visit our website:<br/><a href="https://drushyasinchana.in" target="_blank" rel="noopener">drushyasinchana.in</a></p>
+        </div>
+    </div>
+
+    <div class="bottom-row">
+        <div>&copy; 2025 Drushyasinchana. All rights reserved.</div>
+        <div>Made with <span class="heart">&hearts;</span> by Drushyasinchana</div>
+        <div>Registered Advocate: KAR/3037/2024</div>
+    </div>
+</footer> <!-- End of footerSction -->
+
+<script src="script.js"></script>
+</body>
 </html>

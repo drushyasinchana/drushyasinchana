@@ -1,120 +1,73 @@
-<!DOCTYPE HTML>
-<!--
-	Twenty by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
-<html>
-	<head>
-		<title>Contact - Twenty by HTML5 UP</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-	</head>
-	<body class="contact is-preload">
-		<div id="page-wrapper">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contact - Drushyasinchana</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
 
-			<!-- Header -->
-				<header id="header">
-					<h1 id="logo"><a href="index.html">Twenty <span>by HTML5 UP</span></a></h1>
-					<nav id="nav">
-						<ul>
-							<li class="current"><a href="index.html">Welcome</a></li>
-							<li class="submenu">
-								<a href="#">Layouts</a>
-								<ul>
-									<li><a href="left-sidebar.html">Left Sidebar</a></li>
-									<li><a href="right-sidebar.html">Right Sidebar</a></li>
-									<li><a href="no-sidebar.html">No Sidebar</a></li>
-									<li><a href="contact.html">Contact</a></li>
-									<li class="submenu">
-										<a href="#">Submenu</a>
-										<ul>
-											<li><a href="#">Dolore Sed</a></li>
-											<li><a href="#">Consequat</a></li>
-											<li><a href="#">Lorem Magna</a></li>
-											<li><a href="#">Sed Magna</a></li>
-											<li><a href="#">Ipsum Nisl</a></li>
-										</ul>
-									</li>
-								</ul>
-							</li>
-							<li><a href="#" class="button primary">Sign Up</a></li>
-						</ul>
-					</nav>
-				</header>
+<header>
+  <div class="logo">
+    <img src="assets/images/logo-wo-bg1.jpg" alt="Drushyasinchana Logo" width="36" height="36" />
+    Drushyasinchana
+  </div>
+  <nav>
+    <a href="index.html#home">Home</a>
+    <a href="index.html#services">Services</a>
+    <a href="index.html#videos">Videos</a>
+    <a href="index.html#about">About</a>
+    <a href="index.html#contact" class="active">Contact</a>
+  </nav>
+  <button class="contact-button" onclick="window.location.href='index.html#contact';">Contact</button>
+</header>
 
-			<!-- Main -->
-				<article id="main">
+<main>
+  <section id="contact" class="contact" style="padding: 60px 40px; max-width: 700px; margin: 60px auto; background: #fff; border-radius: 12px; box-shadow: 0 6px 18px -6px rgb(15 33 55 / 7%);">
+    <h2>Get In <span style="color:#2c62ff;">Touch</span></h2>
+    <p class="subtitle" style="text-align:center; font-size: 1.1rem; color:#666;">Ready to start your project? Contact us today and let's discuss how we can help bring your vision to life.</p>
+    <div class="contact-info" style="text-align:center; margin-bottom: 40px;">
+      <p>✉️ Email Us: <a href="mailto:drushyasinchana@gmail.com">drushyasinchana@gmail.com</a></p>
+      <p>📞 Call Us: <a href="tel:+9448209323">9448209323</a></p>
+      <p>📍 Location: Karnataka, India</p>
+      <p>🕒 Business Hours: Mon - Sat: 9AM - 6PM</p>
+    </div>
+    <form class="contact-form" onsubmit="event.preventDefault(); alert('Message sent!');" style="max-width: 100%;">
+      <label for="fullname">Full Name *</label>
+      <input id="fullname" type="text" required placeholder="Your full name" />
+      <label for="email">Email Address *</label>
+      <input id="email" type="email" required placeholder="your.email@example.com" />
+      <label for="phone">Phone Number</label>
+      <input id="phone" type="text" placeholder="Your phone number" />
+      <label for="service">Service Interested In</label>
+      <select id="service">
+        <option value="" selected>Select a service</option>
+        <option value="it-support">IT Support & Administration</option>
+        <option value="legal">Legal Services</option>
+        <option value="creative">Creative Services</option>
+        <option value="webdev">Website Development</option>
+        <option value="security">Security Solutions</option>
+        <option value="ai-tech">AI & Technology Integration</option>
+      </select>
+      <label for="subject">Subject *</label>
+      <input id="subject" type="text" placeholder="Brief subject of your inquiry" required />
+      <label for="message">Message *</label>
+      <textarea id="message" rows="6" placeholder="Please describe your project or inquiry in detail..." required></textarea>
+      <button type="submit" class="send-btn">Send Message</button>
+    </form>
+    <div style="margin-top: 30px; text-align: center; color: #2c62ff; font-weight: 600;">
+      Quick Response Guaranteed<br/>
+      We typically respond to all inquiries within 24 hours.<br/>
+      For urgent matters, please call directly.
+    </div>
+  </section>
+</main>
 
-					<header class="special container">
-						<span class="icon solid fa-envelope"></span>
-						<h2>Get In Touch</h2>
-						<p>Use the form below to give /dev/null a piece of your mind.</p>
-					</header>
+<footer class="site-footer">
+  <!-- Footer same as index.html -->
+</footer>
 
-					<!-- One -->
-						<section class="wrapper style4 special container medium">
-
-							<!-- Content -->
-								<div class="content">
-									<form>
-										<div class="row gtr-50">
-											<div class="col-6 col-12-mobile">
-												<input type="text" name="name" placeholder="Name" />
-											</div>
-											<div class="col-6 col-12-mobile">
-												<input type="text" name="email" placeholder="Email" />
-											</div>
-											<div class="col-12">
-												<input type="text" name="subject" placeholder="Subject" />
-											</div>
-											<div class="col-12">
-												<textarea name="message" placeholder="Message" rows="7"></textarea>
-											</div>
-											<div class="col-12">
-												<ul class="buttons">
-													<li><input type="submit" class="special" value="Send Message" /></li>
-												</ul>
-											</div>
-										</div>
-									</form>
-								</div>
-
-						</section>
-
-				</article>
-
-			<!-- Footer -->
-				<footer id="footer">
-
-					<ul class="icons">
-						<li><a href="#" class="icon brands circle fa-twitter"><span class="label">Twitter</span></a></li>
-						<li><a href="#" class="icon brands circle fa-facebook-f"><span class="label">Facebook</span></a></li>
-						<li><a href="#" class="icon brands circle fa-google-plus-g"><span class="label">Google+</span></a></li>
-						<li><a href="#" class="icon brands circle fa-github"><span class="label">Github</span></a></li>
-						<li><a href="#" class="icon brands circle fa-dribbble"><span class="label">Dribbble</span></a></li>
-					</ul>
-
-					<ul class="copyright">
-						<li>&copy; Untitled</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
-					</ul>
-
-				</footer>
-
-		</div>
-
-		<!-- Scripts -->
-			<script src="assets/js/jquery.min.js"></script>
-			<script src="assets/js/jquery.dropotron.min.js"></script>
-			<script src="assets/js/jquery.scrolly.min.js"></script>
-			<script src="assets/js/jquery.scrollgress.min.js"></script>
-			<script src="assets/js/jquery.scrollex.min.js"></script>
-			<script src="assets/js/browser.min.js"></script>
-			<script src="assets/js/breakpoints.min.js"></script>
-			<script src="assets/js/util.js"></script>
-			<script src="assets/js/main.js"></script>
-
-	</body>
+<script src="script.js"></script>
+</body>
 </html>
