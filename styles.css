@@ -1,3 +1,553 @@
+
+
+
+/* General Body & Typography */
+:root {
+    --bg-dark: #07071A; /* Very dark background */
+    --bg-medium: #0D0D2B; /* Slightly lighter for header/cards */
+    --bg-light-accent: #1A1A3E; /* Lightest dark for elements like taglines */
+    --text-light: #E0E0E0;
+    --text-medium: #B0B0B0;
+    --heading-color: #FFFFFF;
+    --legal-color: #8A2BE2; /* Blue Violet */
+    --it-color: #9370DB; /* Medium Purple */
+    --creative-color: #FF69B4; /* Hot Pink */
+    --bullet-color: #8A2BE2;
+
+    --button-primary-start: #6A1B9A; /* Dark Purple */
+    --button-primary-end: #8A2BE2;   /* Blue Violet */
+    --button-secondary-border: #8A2BE2;
+    --button-text-hover: #FFFFFF;
+
+    --badge-bg: rgba(255, 255, 255, 0.05);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    line-height: 1.6;
+    color: var(--text-light);
+    background-color: var(--bg-dark);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow-x: hidden; /* Prevent horizontal scroll from gradients */
+}
+
+a {
+    color: var(--legal-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--creative-color);
+}
+
+main {
+    flex: 1; /* Allow main content to grow */
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 5%;
+    background-color: var(--bg-medium);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+.logo-link {
+    display: flex;
+    align-items: center;
+    color: var(--text-light);
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.logo-img {
+    height: 36px;
+    width: 36px;
+    margin-right: 10px;
+    border-radius: 5px; /* if the logo has sharp corners and you want a slight round */
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.logo-text .firm-name {
+    font-size: 1.1rem; /* Slightly smaller for balance */
+    font-weight: 700;
+    color: var(--text-light);
+}
+
+.logo-text .proprietor-name {
+    font-size: 0.75rem; /* Matches image */
+    font-weight: 400;
+    color: var(--text-medium);
+}
+
+header nav {
+    display: flex;
+    gap: 2rem;
+}
+
+header nav a {
+    color: var(--text-light);
+    font-weight: 500;
+    padding: 0.5rem 0;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+header nav a:hover,
+header nav a.active {
+    color: var(--legal-color); /* Active/hover color from primary */
+}
+
+header nav a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0%;
+    height: 2px;
+    background-color: var(--legal-color);
+    transition: width 0.3s ease-in-out;
+}
+
+header nav a:hover::after,
+header nav a.active::after {
+    width: 100%;
+}
+
+.contact-button {
+    background: linear-gradient(90deg, var(--button-primary-start), var(--button-primary-end));
+    color: white;
+    border: none;
+    padding: 0.7rem 1.6rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.contact-button:hover {
+    background: linear-gradient(90deg, var(--button-primary-end), var(--button-primary-start)); /* Invert gradient on hover */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Hero Section */
+.hero {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6rem 5%; /* Increased padding for more space */
+    min-height: calc(100vh - 70px); /* Adjust based on header height */
+    gap: 5%; /* Flexible gap */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Background Gradients */
+.hero::before,
+.hero::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%; /* Makes them circular */
+    filter: blur(120px); /* More blur */
+    opacity: 0.4; /* Slightly less opaque */
+    z-index: 0;
+}
+
+.hero::before { /* Top-left purple glow */
+    width: 450px;
+    height: 450px;
+    top: -100px;
+    left: -100px;
+    background: radial-gradient(circle, rgba(138, 43, 226, 0.3) 0%, transparent 70%);
+}
+
+.hero::after { /* Bottom-right pinkish glow */
+    width: 500px;
+    height: 500px;
+    bottom: -150px;
+    right: -150px;
+    background: radial-gradient(circle, rgba(255, 105, 180, 0.25) 0%, transparent 70%);
+}
+
+.hero-content {
+    flex: 1;
+    max-width: 650px; /* Max width for content to align to image */
+    z-index: 1;
+    text-align: left; /* Ensure left alignment */
+}
+
+.hero-image-display {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 500px; /* Fixed width for the image area */
+    height: 500px; /* Fixed height for the image area */
+    background: rgba(255, 255, 255, 0.03); /* Subtle dark background */
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(15px); /* More blur for the glass effect */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    z-index: 1;
+}
+
+.hero-image-display::before { /* Inner dashed border effect */
+    content: '';
+    position: absolute;
+    top: 10%;
+    left: 10%;
+    right: 10%;
+    bottom: 10%;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    z-index: 0;
+}
+
+.large-logo {
+    width: 80%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px rgba(138, 43, 226, 0.6)); /* Enhanced glow */
+    z-index: 1;
+}
+
+/* Stat Bubbles around the logo */
+.stat-bubble {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.08); /* Semi-transparent background */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-light);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* Positioning specific bubbles as per image */
+.stat-bubble.s1 { top: 15%; left: -25%; } /* "27+ Years" */
+.stat-bubble.s2 { top: -5%; right: 10%; } /* "Multi-Disciplinary" */
+.stat-bubble.s3 { bottom: -5%; left: 20%; } /* "Legal & IT" */
+.stat-bubble.s4 { bottom: 20%; right: -20%; } /* "24/7 Support" */
+
+
+.tagline {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-medium);
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-light-accent);
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.tagline i {
+    color: var(--creative-color); /* Using creative color for the star icon */
+}
+
+.hero h1 {
+    font-size: 4.2rem; /* Even larger for impact */
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    color: var(--heading-color);
+}
+
+.hero h1 .bullet {
+    color: var(--bullet-color); /* Consistent bullet color */
+    font-size: 0.8em;
+    vertical-align: middle;
+}
+
+.hero h1 .creative-text {
+    color: var(--creative-color); /* Specific color for "Creative" */
+}
+
+/* Individual word colors (as seen in image for 'Legal' and 'IT') */
+/* You would need to wrap these words in spans if you want different colors.
+   For now, the overall H1 is white, and 'Creative' is pink. */
+/* Example if you wanted:
+.hero h1 .legal-word { color: var(--legal-color); }
+.hero h1 .it-word { color: var(--it-color); }
+You would change HTML to: <h1><span class="legal-word">Legal</span> <span class="bullet">•</span> <span class="it-word">IT</span> ... </h1>
+*/
+
+
+.subtitle {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--legal-color); /* Using legal color for subtitle */
+    margin-bottom: 1.5rem;
+}
+
+.description {
+    font-size: 1.05rem;
+    color: var(--text-medium);
+    margin-bottom: 2.5rem;
+    max-width: 550px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    padding: 1rem 2.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.05rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.button.primary {
+    background: linear-gradient(90deg, var(--button-primary-start), var(--button-primary-end));
+    color: white;
+    border: none;
+}
+
+.button.primary i {
+    margin-left: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.button.primary:hover {
+    background: linear-gradient(90deg, var(--button-primary-end), var(--button-primary-start));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.button.primary:hover i {
+    transform: translateX(5px);
+}
+
+.button.secondary {
+    background: transparent;
+    color: var(--button-secondary-border);
+    border: 2px solid var(--button-secondary-border);
+}
+
+.button.secondary:hover {
+    background-color: var(--button-secondary-border);
+    color: var(--button-text-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(138, 43, 226, 0.4);
+}
+
+.hero-footer-badges {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    font-size: 0.95rem;
+}
+
+.badge {
+    background-color: var(--badge-bg);
+    color: var(--text-light);
+    padding: 0.7rem 1.2rem;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.badge i {
+    color: var(--creative-color); /* Icon color in badges */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 4rem 5%;
+        gap: 3rem;
+    }
+    .hero-content {
+        max-width: 100%;
+    }
+    .hero-image-display {
+        width: 400px;
+        height: 400px;
+    }
+    .stat-bubble {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+    }
+    .stat-bubble.s1 { top: 10%; left: -15%; }
+    .stat-bubble.s2 { top: -5%; right: -5%; }
+    .stat-bubble.s3 { bottom: -5%; left: 10%; }
+    .stat-bubble.s4 { bottom: 10%; right: -15%; }
+}
+
+@media (max-width: 992px) {
+    header {
+        flex-direction: column;
+        padding: 1rem 5%;
+        gap: 1rem;
+    }
+    header nav {
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .contact-button {
+        width: 100%;
+        max-width: 250px;
+    }
+    .hero h1 {
+        font-size: 3.5rem;
+    }
+    .subtitle {
+        font-size: 1.2rem;
+    }
+    .hero-buttons, .hero-footer-badges {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    header {
+        padding: 0.8rem 4%;
+    }
+    .logo-img { height: 30px; width: 30px; }
+    .logo-text .firm-name { font-size: 1rem; }
+    .logo-text .proprietor-name { font-size: 0.7rem; }
+
+    header nav {
+        display: none; /* Hide navigation on small screens, consider a hamburger menu if needed */
+    }
+
+    .contact-button {
+        display: none; /* Hide top contact button if nav is hidden */
+    }
+
+    .hero {
+        padding: 3rem 4%;
+        min-height: auto; /* Adjust for shorter content */
+    }
+    .hero-content {
+        text-align: center;
+    }
+    .hero h1 {
+        font-size: 2.8rem;
+    }
+    .subtitle {
+        font-size: 1.1rem;
+    }
+    .description {
+        font-size: 1rem;
+    }
+    .hero-image-display {
+        width: 300px;
+        height: 300px;
+        margin-top: 3rem; /* Space between text and image */
+    }
+    .large-logo {
+        width: 70%;
+    }
+    .stat-bubble {
+        display: none; /* Hide bubbles on very small screens for cleaner look */
+    }
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    .button {
+        width: 100%;
+        max-width: 300px;
+    }
+    .hero-footer-badges {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    .badge {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+    .subtitle {
+        font-size: 1rem;
+    }
+    .description {
+        font-size: 0.9rem;
+    }
+    .hero-image-display {
+        width: 250px;
+        height: 250px;
+    }
+    .large-logo {
+        width: 60%;
+    }
+}
+
+.profile-photo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.profile-photo img {
+    max-width: 200px;
+    border-radius: 50%;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+}
+
+
 /* --- Home/Hero Section Styles --- */
 .hero {
     /* Sets up the background gradient matching the image */
@@ -1347,4 +1897,367 @@ body {
     font-size: 1.2em;
     color: #f4f7fa;
     font-weight: bold;
+}
+
+
+/* Header Styling */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 40px;
+  background: #000;  /* dark header like in your screenshot */
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Logo + Text */
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* small gap between logo and text */
+}
+
+.site-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.brand-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.sub-name {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #bbb; /* subtle grey like in uploaded image */
+}
+
+/* Navigation */
+nav {
+  display: flex;
+  gap: 20px;
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+nav a:hover,
+nav a.active {
+  color: #2c62ff; /* highlight color */
+}
+
+/* Contact Button */
+.contact-button {
+  padding: 8px 16px;
+  border: none;
+  background: #2c62ff;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.contact-button:hover {
+  background: #1a45c2;
+}
+
+.services {
+  text-align: center;
+  padding: 60px 40px;
+  background: #fff;
+}
+
+.services h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.services .subtitle {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 40px;
+}
+
+.service-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 25px;
+  margin-bottom: 50px;
+}
+
+.service-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: left;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.service-card .icon {
+  font-size: 2rem;
+  color: #2c62ff;
+  margin-bottom: 15px;
+}
+
+.service-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: #111;
+}
+
+.service-card p {
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.service-card ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #333;
+}
+
+.service-card ul li {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.view-more {
+  display: inline-block;
+  margin-top: 15px;
+  font-weight: 600;
+  color: #2c62ff;
+  text-decoration: none;
+}
+
+.view-more:hover {
+  text-decoration: underline;
+}
+
+/* CTA Box */
+.cta-box {
+  background: linear-gradient(90deg, #2c62ff, #9b4dff);
+  color: #fff;
+  padding: 40px 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.cta-box h3 {
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+}
+
+.cta-box p {
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.cta-buttons .btn-primary,
+.cta-buttons .btn-secondary {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+
+.cta-buttons .btn-primary {
+  background: #fff;
+  color: #2c62ff;
+}
+
+.cta-buttons .btn-primary:hover {
+  background: #f0f0f0;
+}
+
+.cta-buttons .btn-secondary {
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.cta-buttons .btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
+}
+.services {
+  text-align: center;
+  padding: 60px 40px;
+  background: #fff;
+}
+
+.services h2 {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+.services .highlight {
+  background: linear-gradient(90deg, #2c62ff, #9b4dff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.services .subtitle {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 40px;
+}
+
+.service-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 25px;
+  margin-bottom: 50px;
+}
+
+.service-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 25px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: left;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.service-card .icon {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  display: inline-block;
+  padding: 12px;
+  border-radius: 12px;
+  color: #fff;
+}
+
+.icon.blue { background: #2c62ff; }
+.icon.green { background: #28a745; }
+.icon.purple { background: #6f42c1; }
+.icon.orange { background: #fd7e14; }
+
+.service-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: #111;
+}
+
+.service-card p {
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.service-card ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #333;
+}
+
+.service-card ul li {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+/* Hidden services */
+.hidden {
+  display: none;
+}
+.hidden.show {
+  display: list-item;
+}
+
+.view-more {
+  display: inline-block;
+  margin-top: 15px;
+  font-weight: 600;
+  color: #2c62ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.view-more:hover {
+  text-decoration: underline;
+}
+
+/* CTA Box */
+.cta-box {
+  background: linear-gradient(90deg, #2c62ff, #9b4dff);
+  color: #fff;
+  padding: 40px 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.cta-box h3 {
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+}
+
+.cta-box p {
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.cta-buttons .btn-primary,
+.cta-buttons .btn-secondary {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+
+.cta-buttons .btn-primary {
+  background: #fff;
+  color: #2c62ff;
+}
+
+.cta-buttons .btn-primary:hover {
+  background: #f0f0f0;
+}
+
+.cta-buttons .btn-secondary {
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.cta-buttons .btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
 }
