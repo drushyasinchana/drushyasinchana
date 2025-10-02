@@ -2416,3 +2416,65 @@ nav a.active {
 .watch-link:hover {
   text-decoration: underline;
 }
+
+
+/* Hero Section */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px; /* Reduced top/bottom padding */
+  text-align: center;
+  gap: 15px; /* Reduce spacing between elements */
+}
+
+.hero .main-logo {
+  width: 150px; /* Increase logo size */
+  height: auto;
+  margin-bottom: 10px; /* Reduce space between logo and name */
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.hero .lead {
+  font-size: 1.2rem;
+  margin: 10px 0;
+}
+
+.hero .buttons {
+  margin-top: 15px; /* Reduce button spacing from text */
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.hero footer {
+  margin-top: 20px; /* Reduce space from buttons */
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hero footer a {
+  margin: 0 5px;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .hero .lead {
+    font-size: 1rem;
+  }
+
+  .hero .main-logo {
