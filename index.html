@@ -343,112 +343,216 @@
 
  <!-- Get in Touch Sction -->
 
+<!-- Get in Touch Section -->
 <section id="contact" class="contact-section">
-    <h2>Get In <span style="color:#2c62ff;">Touch</span></h2>
-    <p class="subtitle">Ready to start your project? Contact us today and let's discuss how we can help bring your vision to life.</p>
-    
-    <div class="contact-grid">
-        
-        <div class="contact-info-col">
-            <div class="contact-card">
-                <h4>Contact Information</h4>
-                <p>Reach out through any of these channels. We're here to help!</p>
-                
-                <div class="contact-item">
-                    <i class="fas fa-envelope"></i>
-                    <div>
-                        <p class="label">Email Us</p>
-                        <a href="mailto:drushyasinchana@gmail.com">drushyasinchina@gmail.com</a>
-                    </div>
-                </div>
+  <h2>Get In <span style="color:#2c62ff;">Touch</span></h2>
+  <p class="subtitle">
+    Ready to start your project? Contact us today and let's discuss how we can help bring your vision to life.
+  </p>
 
-                <div class="contact-item">
-                    <i class="fas fa-phone-alt"></i>
-                    <div>
-                        <p class="label">Call Us</p>
-                        <p class="detail">+91 </p>
-                    </div>
-                </div>
+  <div class="contact-grid">
+    <!-- Contact Info Column -->
+    <div class="contact-info-col">
+      <div class="contact-card">
+        <h4>Contact Information</h4>
+        <p>Reach out through any of these channels. We're here to help!</p>
 
-                <div class="contact-item">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <div>
-                        <p class="label">Location</p>
-                        <p class="detail">Karnataka, India</p>
-                    </div>
-                </div>
-
-                <div class="contact-item">
-                    <i class="fas fa-clock"></i>
-                    <div>
-                        <p class="label">Business Hours</p>
-                        <p class="detail">Mon - Sat: 9AM - 6PM</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="response-guarantee-card">
-                <i class="fas fa-check-circle"></i>
-                <p class="title">Quick Response Guaranteed</p>
-                <p>We typically respond to all inquiries within 24 hours. For urgent matters, please call directly.</p>
-            </div>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <div>
+            <p class="label">Email Us</p>
+            <a href="mailto:drushyasinchana@gmail.com">drushyasinchana@gmail.com</a>
+          </div>
         </div>
-        
-        <div class="contact-form-col">
-            <div class="form-card">
-                <h4>Send us a Message</h4>
-                <p>Fill out the form below and we'll get back to you as soon as possible.</p>
 
-                <form action="#" method="POST">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="full-name">Full Name *</label>
-                            <input type="text" id="full-name" name="full_name" placeholder="Your full name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email-address">Email Address *</label>
-                            <input type="email" id="email-address" name="email_address" placeholder="your.email@example.com" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="phone-number">Phone Number</label>
-                            <input type="tel" id="phone-number" name="phone_number" placeholder="Your phone number">
-                        </div>
-                        <div class="form-group">
-                            <label for="service-interest">Service Interested In</label>
-                            <select id="service-interest" name="service_interest">
-                                <option>Select a service</option>
-                                <option>IT Support & Administration</option>
-                                <option>Legal Services</option>
-                                <option>Creative Services</option>
-                                <option>Website Development</option>
-                                <option>Security Solutions</option>
-                                <option>AI & Technology Integration</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="subject">Subject *</label>
-                        <input type="text" id="subject" name="subject" placeholder="Brief subject of your inquiry" required>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="message">Message *</label>
-                        <textarea id="message" name="message" rows="5" placeholder="Please describe your project or inquiry in detail..." required></textarea>
-                    </div>
-
-                    <button type="submit" class="send-message-btn">
-                        <i class="fas fa-paper-plane"></i> Send Message
-                    </button>
-                </form>
-            </div>
+        <div class="contact-item">
+          <i class="fas fa-phone-alt"></i>
+          <div>
+            <p class="label">Call Us</p>
+            <p class="detail">+91 9448209323</p>
+          </div>
         </div>
-        
+
+        <div class="contact-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <div>
+            <p class="label">Location</p>
+            <p class="detail">Karnataka, India</p>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <i class="fas fa-clock"></i>
+          <div>
+            <p class="label">Business Hours</p>
+            <p class="detail">Mon - Sat: 9AM - 6PM</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="response-guarantee-card">
+        <i class="fas fa-check-circle"></i>
+        <p class="title">Quick Response Guaranteed</p>
+        <p>We typically respond to all inquiries within 24 hours. For urgent matters, please call directly.</p>
+      </div>
     </div>
+
+    <!-- Contact Form Column -->
+    <div class="contact-form-col">
+      <div class="form-card">
+        <h4>Send us a Message</h4>
+        <p>Fill out the form below and we'll get back to you as soon as possible.</p>
+
+        <form id="contact-form" action="https://formspree.io/f/xrbylgww" method="POST">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="full-name">Full Name *</label>
+              <input type="text" id="full-name" name="full_name" placeholder="Your full name" required>
+            </div>
+            <div class="form-group">
+              <label for="email-address">Email Address *</label>
+              <input type="email" id="email-address" name="email_address" placeholder="your.email@example.com" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="phone-number">Phone Number</label>
+              <input type="tel" id="phone-number" name="phone_number" placeholder="Your phone number">
+            </div>
+            <div class="form-group">
+              <label for="service-interest">Service Interested In</label>
+              <select id="service-interest" name="service_interest">
+                <option>Select a service</option>
+                <option>IT Support & Administration</option>
+                <option>Legal Services</option>
+                <option>Creative Services</option>
+                <option>Website Development</option>
+                <option>Security Solutions</option>
+                <option>AI & Technology Integration</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="subject">Subject *</label>
+            <input type="text" id="subject" name="subject" placeholder="Brief subject of your inquiry" required>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="message">Message *</label>
+            <textarea id="message" name="message" rows="5" placeholder="Please describe your project or inquiry in detail..." required></textarea>
+          </div>
+
+          <!-- Hidden fields for Formspree setup -->
+          <input type="hidden" name="_captcha" value="false">
+          <input type="hidden" name="_subject" value="New Message from Drushyasinchana Website">
+
+          <button type="submit" class="send-message-btn">
+            <i class="fas fa-paper-plane"></i> Send Message
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 </section>
+
+<!-- Overlay for popup -->
+<div id="popup-overlay" style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:999;
+"></div>
+
+<!-- Thank You Popup -->
+<div id="thank-you-popup" style="
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%) scale(0.8);
+    background:#fff;
+    padding:40px 50px;
+    border-radius:15px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    z-index:1000;
+    text-align:center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color:#333;
+    opacity:0;
+    transition: all 0.3s ease-in-out;
+">
+  <h3 style="font-size:1.6rem; margin-bottom:10px; color:#2c62ff;">Thank You!</h3>
+  <p style="font-size:1rem; margin-bottom:20px;">Your message has been sent successfully. We’ll get back to you shortly.</p>
+  <button id="close-popup" style="
+      padding:10px 25px;
+      border:none;
+      background:#2c62ff;
+      color:#fff;
+      font-size:1rem;
+      border-radius:8px;
+      cursor:pointer;
+      transition: background 0.3s;
+  " onmouseover="this.style.background='#1a46c1'" onmouseout="this.style.background='#2c62ff'">Close</button>
+</div>
+
+<script>
+  const form = document.getElementById('contact-form');
+  const popup = document.getElementById('thank-you-popup');
+  const overlay = document.getElementById('popup-overlay');
+  const closeBtn = document.getElementById('close-popup');
+
+  function showPopup() {
+    overlay.style.display = 'block';
+    popup.style.display = 'block';
+    setTimeout(() => {
+      popup.style.opacity = 1;
+      popup.style.transform = 'translate(-50%, -50%) scale(1)';
+    }, 10);
+  }
+
+  function hidePopup() {
+    popup.style.opacity = 0;
+    popup.style.transform = 'translate(-50%, -50%) scale(0.8)';
+    overlay.style.display = 'none';
+    setTimeout(() => popup.style.display = 'none', 300);
+  }
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (response.ok) {
+        form.reset();
+        showPopup();
+
+        // auto-close after 3 seconds
+        setTimeout(hidePopup, 3000);
+      } else {
+        alert('Oops! There was a problem submitting your form.');
+      }
+    } catch (error) {
+      alert('Oops! There was a problem submitting your form.');
+      console.error(error);
+    }
+  });
+
+  closeBtn.addEventListener('click', hidePopup);
+  overlay.addEventListener('click', hidePopup);
+</script>
  <!-- End of Get in Touch Sction -->
 
 
