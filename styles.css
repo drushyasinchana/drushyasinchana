@@ -2478,3 +2478,36 @@ nav a.active {
   }
 
   .hero .main-logo {
+
+
+
+
+.services .icon-box {
+  display: flex;
+  align-items: center;       /* vertically center icon + text */
+  gap: 10px;
+  height: 60px;              /* fixed height for all boxes */
+  padding: 0 16px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.services .icon-box i {
+  font-size: 1.5rem;
+  flex-shrink: 0;           /* icon does not shrink */
+}
+
+.services .icon-box span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;      /* force single line */
+  width: calc(100% - 35px); /* leave space for icon + gap */
+}
+
+
+

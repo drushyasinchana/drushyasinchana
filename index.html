@@ -10,10 +10,10 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
+ <!-- Header Section -->
 <header>
   <div class="logo-container">
-    <img src="assets/images/logo.png" alt="Drushyasinchana Logo" class="site-logo" />
+    <img src="assets/images/logo.png" alt="Drushyasinchana Logo" class="site-logo" /> 
     <div class="logo-text">
       <span class="brand-name">Drushyasinchana</span>
       <span class="sub-name">SNV Murthy</span>
@@ -28,9 +28,9 @@
     <a href="#contact">Contact</a>
   </nav>
 
-  <button class="contact-button" onclick="window.location.href='contact.html';">Get In Touch</button>
+<!--  <button class="contact-button" onclick="window.location.href='contact.html';">Get In Touch</button>  -->
 </header>
-
+ <!-- End of Header Section -->
 
 <main>
 
@@ -70,19 +70,20 @@
  <!-- End of Home/Hero Section Styles -->
 
 <!-- Services Section -->
-
 <section id="services" class="services">
   <h2>Professional <span class="highlight">Services</span></h2>
   <p class="subtitle">
-    Comprehensive solutions across legal, technology, and creative domains - backed by decades of experience and proven expertise.
+    Comprehensive solutions across legal, technology, creative, and insurance domains – backed by decades of experience and proven expertise.
   </p>
 
   <div class="service-cards">
 
     <!-- Legal Services -->
     <div class="service-card">
-      <div class="icon blue"><i class="fas fa-balance-scale"></i></div>
-      <h3>Legal Services</h3>
+      <div class="icon-box blue">
+        <i class="fas fa-balance-scale"></i>
+        <span>Drushyasinchana Legal</span>
+      </div>
       <p>Professional legal services backed by 27 years of judiciary experience and advocate enrollment.</p>
       <ul>
         <li>Legal Drafting & Documentation</li>
@@ -97,8 +98,10 @@
 
     <!-- IT Consulting -->
     <div class="service-card">
-      <div class="icon green"><i class="fas fa-server"></i></div>
-      <h3>IT Consulting</h3>
+      <div class="icon-box green">
+        <i class="fas fa-server"></i>
+        <span>Drushyasinchana IT Solutions</span>
+      </div>
       <p>Comprehensive IT solutions with expertise in server management, networking, and system administration.</p>
       <ul>
         <li>Server Management & Maintenance</li>
@@ -111,8 +114,10 @@
 
     <!-- Technology Solutions -->
     <div class="service-card">
-      <div class="icon purple"><i class="fas fa-code"></i></div>
-      <h3>Technology Solutions</h3>
+      <div class="icon-box purple">
+        <i class="fas fa-code"></i>
+        <span>Drushyasinchana Tech Solutions</span>
+      </div>
       <p>Modern technology solutions including web development, AI integration, and security systems.</p>
       <ul>
         <li>Website Development & Hosting</li>
@@ -125,8 +130,10 @@
 
     <!-- Creative Services -->
     <div class="service-card">
-      <div class="icon orange"><i class="fas fa-palette"></i></div>
-      <h3>Creative Services</h3>
+      <div class="icon-box orange">
+        <i class="fas fa-palette"></i>
+        <span>Drushyasinchana Creations</span>
+      </div>
       <p>Professional creative services combining technical skills with artistic vision for compelling visual content.</p>
       <ul>
         <li>Photo Editing (Photoshop)</li>
@@ -138,7 +145,26 @@
       <a href="javascript:void(0)" class="view-more">View All</a>
     </div>
 
+    <!-- Insurance Services -->
+    <div class="service-card">
+      <div class="icon-box teal">
+        <i class="fas fa-shield-alt"></i>
+        <span>Drushyasinchana Insurance Services</span>
+      </div>
+      <p>
+        Secure your family’s future with trusted LIC and Care Health Insurance plans — paperless, fast, and tailored to your current and future needs.
+      </p>
+      <ul>
+        <li>LIC Life Insurance (Endowment, Term, and Pension Plans)</li>
+        <li>Care Health Insurance (Cashless Health Plans)</li>
+        <li class="hidden">Tax Saving and Investment Options</li>
+        <li class="hidden">Customized Coverage Plans</li>
+      </ul>
+      <a href="javascript:void(0)" class="view-more">View All</a>
+    </div>
+
   </div>
+</section>
 
  <!-- End of Services Section -->
 
@@ -341,9 +367,8 @@
 <!-- End of About Section -->
 
 
- <!-- Get in Touch Sction -->
-
 <!-- Get in Touch Section -->
+
 <section id="contact" class="contact-section">
   <h2>Get In <span style="color:#2c62ff;">Touch</span></h2>
   <p class="subtitle">
@@ -369,7 +394,7 @@
           <i class="fas fa-phone-alt"></i>
           <div>
             <p class="label">Call Us</p>
-            <p class="detail">+91 9448209323</p>
+            <p class="detail">+91 </p>
           </div>
         </div>
 
@@ -572,7 +597,7 @@
             
             <p><a href="mailto:drushyasinchana@gmail.com">drushyasinchana@gmail.com</a></p>
             <p>+91</p>
-            <p>Karnataka, India</p>
+            <p>Bengaluru, Karnataka, India</p>
         </div>
 
         <div class="col">
@@ -619,3 +644,28 @@
 <script src="script.js"></script>
 </body>
 </html>
+
+
+<style>
+.icon-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  background-color: #2c62ff; /* temporary fallback */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.icon-box i {
+  font-size: 1.4rem;
+}
+.icon-box.blue { background-color: #2c62ff; }
+.icon-box.green { background-color: #28a745; }
+.icon-box.purple { background-color: #7a42f4; }
+.icon-box.orange { background-color: #ff914d; }
+.icon-box.teal { background-color: #009688; }
+</style>
