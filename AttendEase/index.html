@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AttendEase — Admin Portal | Drushyasinchana Tech Solutions</title>
+  <link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --teal:     #00838F;
+  --teal-d:   #00606B;
+  --teal-dd:  #004E57;
+  --teal-l:   #B2EBF2;
+  --teal-s:   #E0F7FA;
+  --ink:      #0D1F22;
+  --ink2:     #2E4A4F;
+  --muted:    #6B8A8F;
+  --hint:     #9EB8BC;
+  --bg:       #F0F5F6;
+  --card:     #FFFFFF;
+  --border:   #D8E8EA;
+  --success:  #2E7D32;
+  --error:    #C62828;
+  --warn:     #E65100;
+  --r:        12px;
+  --r-sm:     8px;
+  --sh:       0 2px 12px rgba(0,131,143,.10);
+  --sh-lg:    0 8px 32px rgba(0,131,143,.16);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+a    { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+img  { max-width: 100%; display: block; }
+::-webkit-scrollbar       { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--teal-l); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════════ */
+.screen { display: none; }
+.screen.active { display: flex; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+.anim { animation: fadeUp .28s ease both; }
+
+/* ═══════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════ */
+#loginScreen {
+  min-height: 100vh;
+  align-items: stretch;
+  background: linear-gradient(140deg, var(--teal-dd) 0%, var(--teal) 55%, #00ACC1 100%);
+}
+.login-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px 72px;
+  position: relative;
+  overflow: hidden;
+}
+.login-left::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 15% 50%, rgba(255,255,255,.07) 0%, transparent 65%);
+  pointer-events: none;
+}
+.login-left::after {
+  content: '';
+  position: absolute;
+  right: -80px; bottom: -80px;
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.06);
+  pointer-events: none;
+}
+.lb-inner { position: relative; z-index: 1; }
+.lb-brand-row {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 36px;
+}
+.lb-logo {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.22);
+  padding: 7px; object-fit: contain;
+}
+.lb-brand-name { font-size: 1.2rem; font-weight: 600; color: #fff; letter-spacing: -.01em; }
+.lb-brand-sub  { font-size: .73rem; color: rgba(255,255,255,.55); margin-top: 2px; }
+.lb-h1 { font-size: 2.8rem; font-weight: 600; color: #fff; letter-spacing: -.03em; line-height: 1.08; margin-bottom: 14px; }
+.lb-h1 span { color: var(--teal-l); }
+.lb-p  { color: rgba(255,255,255,.6); font-size: .92rem; line-height: 1.65; max-width: 370px; }
+.lb-features { margin-top: 44px; display: flex; flex-direction: column; gap: 13px; }
+.lb-feat { display: flex; align-items: center; gap: 11px; color: rgba(255,255,255,.72); font-size: .86rem; }
+.lb-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--teal-l); flex-shrink: 0; }
+.lb-footer {
+  margin-top: 52px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  padding-top: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.lb-footer img  { width: 20px; height: 20px; border-radius: 4px; opacity: .5; }
+.lb-footer span { font-size: .75rem; color: rgba(255,255,255,.35); }
+
+.login-right {
+  width: 460px; flex-shrink: 0;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  padding: 52px 48px;
+}
+.login-box { width: 100%; }
+.login-box h2  { font-size: 1.4rem; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.login-box .sub { color: var(--muted); font-size: .86rem; margin-bottom: 32px; }
+
+.fg { margin-bottom: 16px; }
+.fg label {
+  display: block; font-size: .76rem; font-weight: 500;
+  color: var(--ink2); margin-bottom: 6px; letter-spacing: .01em;
+}
+.fg input {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border); border-radius: var(--r-sm);
+  font-size: .9rem; color: var(--ink); background: #fff;
+  transition: border-color .18s, box-shadow .18s; outline: none;
+}
+.fg input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,131,143,.09); }
+
+.btn-login {
+  width: 100%; padding: 13px;
+  background: var(--teal); color: #fff;
+  border: none; border-radius: var(--r-sm);
+  font-size: .94rem; font-weight: 500;
+  transition: background .18s, box-shadow .18s, transform .1s;
+  margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-login:hover    { background: var(--teal-d); box-shadow: 0 4px 16px rgba(0,131,143,.28); }
+.btn-login:active   { transform: scale(.98); }
+.btn-login:disabled { opacity: .6; cursor: not-allowed; }
+
+#loginError {
+  margin-top: 14px; padding: 10px 14px;
+  border-radius: var(--r-sm); background: #FFEBEE;
+  color: var(--error); font-size: .84rem;
+  display: none; border: 1px solid #FFCDD2;
+}
+.login-note {
+  margin-top: 28px; text-align: center;
+  font-size: .76rem; color: var(--hint); line-height: 1.6;
+}
+.login-note a { color: var(--teal); }
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════ */
+#appScreen { flex-direction: row; min-height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 242px; flex-shrink: 0;
+  background: var(--teal-dd);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+.sb-brand {
+  padding: 18px 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.sb-logo-row { display: flex; align-items: center; gap: 10px; }
+.sb-logo-img {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(255,255,255,.1); padding: 3px;
+  object-fit: contain; border: 1px solid rgba(255,255,255,.14);
+}
+.sb-app-name    { font-size: 1rem; font-weight: 600; color: #fff; letter-spacing: -.01em; }
+.sb-app-tagline { font-size: .67rem; color: rgba(255,255,255,.38); margin-top: 1px; }
+.sb-company {
+  margin-top: 11px; padding: 8px 10px;
+  background: rgba(255,255,255,.06); border-radius: 7px;
+  font-size: .73rem; color: rgba(255,255,255,.5);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sb-company strong { display: block; color: rgba(255,255,255,.78); font-size: .77rem; margin-bottom: 1px; }
+.sb-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: var(--r-sm);
+  color: rgba(255,255,255,.52); font-size: .845rem;
+  cursor: pointer; transition: background .14s, color .14s;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .6; transition: opacity .14s; }
+.nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.85); }
+.nav-item:hover svg { opacity: .85; }
+.nav-item.active { background: rgba(255,255,255,.13); color: #fff; font-weight: 500; }
+.nav-item.active svg { opacity: 1; }
+.nav-sep { height: 1px; background: rgba(255,255,255,.06); margin: 6px 0; }
+.sb-footer {
+  padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.06);
+}
+.sb-footer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.sb-footer-row img { width: 18px; height: 18px; border-radius: 3px; opacity: .4; }
+.sb-footer-row span { font-size: .7rem; color: rgba(255,255,255,.3); }
+.sb-footer p { font-size: .65rem; color: rgba(255,255,255,.22); }
+
+/* TOPBAR */
+.topbar {
+  height: 56px; background: #fff;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 24px; gap: 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar-title { font-size: .96rem; font-weight: 600; color: var(--ink); flex: 1; }
+.topbar-right { display: flex; align-items: center; gap: 10px; font-size: .83rem; color: var(--muted); }
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--teal); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .72rem; font-weight: 600; flex-shrink: 0;
+}
+.btn-logout {
+  padding: 5px 13px; border: 1.5px solid var(--border);
+  border-radius: var(--r-sm); background: none;
+  font-size: .79rem; color: var(--muted); transition: all .15s;
+}
+.btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+/* MAIN */
+.main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.page-body    { flex: 1; padding: 24px 28px; overflow-y: auto; }
+.page         { display: none; }
+.page.active  { display: block; animation: fadeUp .22s ease both; }
+
+/* STAT CARDS */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 16px; margin-bottom: 22px;
+}
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px;
+  box-shadow: var(--sh); position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px; background: var(--teal);
+}
+.stat-card.green::before { background: var(--success); }
+.stat-card.amber::before { background: var(--warn); }
+.stat-card.red::before   { background: var(--error); }
+.stat-label { font-size: .7rem; color: var(--muted); font-weight: 500; letter-spacing: .04em; margin-bottom: 10px; text-transform: uppercase; }
+.stat-val   { font-size: 2rem; font-weight: 600; color: var(--ink); font-family: 'DM Mono', monospace; line-height: 1; }
+.stat-sub   { font-size: .7rem; color: var(--hint); margin-top: 6px; }
+
+/* CARD */
+.card      { background: var(--card); border-radius: var(--r); border: 1px solid var(--border); padding: 22px; box-shadow: var(--sh); }
+.card-hdr  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.card-hdr h3 { font-size: .96rem; font-weight: 600; color: var(--ink); }
+
+/* TABLES */
+.tbl-wrap { overflow-x: auto; border-radius: var(--r-sm); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: .845rem; }
+thead th {
+  background: var(--teal-s); color: var(--teal-dd);
+  font-weight: 600; font-size: .7rem; letter-spacing: .05em; text-transform: uppercase;
+  padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #F0FAFB; }
+tbody td { padding: 10px 14px; color: var(--ink2); vertical-align: middle; }
+.mono { font-family: 'DM Mono', monospace; font-size: .79rem; }
+
+/* BADGES */
+.badge       { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .69rem; font-weight: 600; letter-spacing: .02em; }
+.badge-green { background: #E8F5E9; color: #1B5E20; }
+.badge-red   { background: #FFEBEE; color: #B71C1C; }
+.badge-amber { background: #FFF3E0; color: #E65100; }
+.badge-blue  { background: #E3F2FD; color: #0D47A1; }
+.badge-gray  { background: #ECEFF1; color: #455A64; }
+
+/* FORMS */
+.form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.fgg         { display: flex; flex-direction: column; gap: 5px; }
+.fgg label   { font-size: .75rem; font-weight: 500; color: var(--ink2); letter-spacing: .01em; }
+.fgg input,
+.fgg select,
+.fgg textarea {
+  padding: 9px 12px; border: 1.5px solid var(--border);
+  border-radius: var(--r-sm); font-size: .86rem; color: var(--ink);
+  background: #fff; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.fgg input:focus, .fgg select:focus, .fgg textarea:focus {
+  border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,131,143,.08);
+}
+.fgg textarea { resize: vertical; min-height: 74px; }
+.form-actions { display: flex; gap: 10px; margin-top: 4px; }
+
+/* BUTTONS */
+.btn {
+  padding: 9px 18px; border-radius: var(--r-sm);
+  font-size: .845rem; font-weight: 500; border: 1.5px solid transparent;
+  transition: all .15s; display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+}
+.btn-teal    { background: var(--teal); color: #fff; border-color: var(--teal); }
+.btn-teal:hover { background: var(--teal-d); border-color: var(--teal-d); }
+.btn-outline { background: #fff; color: var(--ink2); border-color: var(--border); }
+.btn-outline:hover { border-color: var(--teal); color: var(--teal); }
+.btn-sm      { padding: 5px 12px; font-size: .77rem; }
+.btn svg     { width: 14px; height: 14px; }
+
+/* FILTER BAR */
+.filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+.filter-bar input,
+.filter-bar select {
+  padding: 8px 12px; border: 1.5px solid var(--border);
+  border-radius: var(--r-sm); font-size: .83rem;
+  outline: none; background: #fff; color: var(--ink); transition: border-color .15s;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color: var(--teal); }
+
+/* MODAL */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(13,31,34,.45); z-index: 100;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.modal-backdrop.open { display: flex; animation: fadeIn .18s ease; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.modal {
+  background: #fff; border-radius: var(--r); box-shadow: var(--sh-lg);
+  width: 540px; max-width: 96vw; max-height: 90vh; overflow-y: auto;
+  animation: slideUp .2s ease both;
+}
+@keyframes slideUp { from { transform:translateY(16px); opacity:0; } to { transform:none; opacity:1; } }
+.modal-hdr {
+  padding: 17px 22px 13px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 1;
+}
+.modal-hdr h3 { font-size: .96rem; font-weight: 600; }
+.modal-close {
+  width: 27px; height: 27px; border-radius: 6px; border: none;
+  background: none; color: var(--muted); font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .14s;
+}
+.modal-close:hover { background: var(--bg); }
+.modal-body   { padding: 18px 22px; }
+.modal-footer { padding: 13px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+.modal-err { color: var(--error); font-size: .82rem; display: none; padding: 8px 0; }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 22px; right: 22px; z-index: 200;
+  background: var(--ink); color: #fff; padding: 11px 18px;
+  border-radius: var(--r-sm); font-size: .86rem; box-shadow: var(--sh-lg);
+  transform: translateY(70px); opacity: 0;
+  transition: all .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none; max-width: 310px;
+}
+#toast.show    { transform: none; opacity: 1; }
+#toast.success { background: var(--success); }
+#toast.error   { background: var(--error); }
+
+/* SUMMARY CHIPS */
+.report-summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.rs-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: .77rem; font-weight: 500;
+  background: var(--card); border: 1px solid var(--border); color: var(--ink2);
+}
+.rs-chip span { font-weight: 700; margin-left: 4px; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty p { font-size: .86rem; }
+
+/* SPINNER */
+.spinner {
+  width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .65s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* RESULT BOX */
+.result-ok  { background:#E8F5E9; color:var(--success); border:1px solid #A5D6A7; padding:12px; border-radius:var(--r-sm); font-size:.86rem; margin-top:14px; }
+.result-err { background:#FFEBEE; color:var(--error);   border:1px solid #FFCDD2; padding:12px; border-radius:var(--r-sm); font-size:.86rem; margin-top:14px; }
+
+/* MINI ROWS (dashboard) */
+.mini-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1px solid var(--border);
+}
+.mini-row:last-child { border-bottom: none; }
+.mini-row .mname { font-weight: 500; font-size: .86rem; }
+.mini-row .msub  { font-size: .7rem; color: var(--muted); margin-top: 1px; }
+.mini-row .mright { text-align: right; }
+.mini-row .mtime  { font-size: .7rem; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+/* DASHBOARD GRID */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+/* GUIDE PANEL */
+.guide-panel {
+  background: linear-gradient(135deg, var(--teal-s) 0%, #fff 100%);
+  border: 1px solid var(--teal-l); border-radius: var(--r); padding: 22px;
+  margin-bottom: 22px;
+}
+.guide-panel h3 { font-size: .94rem; font-weight: 600; color: var(--teal-dd); margin-bottom: 8px; }
+.guide-steps { counter-reset: guide; display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.guide-step {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; background: #fff; border-radius: var(--r-sm);
+  border: 1px solid var(--teal-l);
+}
+.guide-step::before {
+  counter-increment: guide; content: counter(guide);
+  min-width: 24px; height: 24px; border-radius: 50%;
+  background: var(--teal); color: #fff; font-size: .72rem; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+}
+.guide-step p   { font-size: .845rem; color: var(--ink2); line-height: 1.5; }
+.guide-step code { font-family: 'DM Mono', monospace; font-size: .78rem; background: var(--teal-s); padding: 2px 6px; border-radius: 4px; color: var(--teal-dd); }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 900px) {
+  .lb-inner .lb-features, .lb-footer { display: none; }
+  .login-left { padding: 40px; }
+  .login-right { width: 100%; }
+  .sidebar { width: 208px; }
+  .dash-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 660px) {
+  .login-left { display: none; }
+  .sidebar { display: none; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .page-body { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════ LOGIN ══════════════════════════ -->
+<div id="loginScreen" class="screen active">
+
+  <div class="login-left">
+    <div class="lb-inner anim">
+      <div class="lb-brand-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="Logo" class="lb-logo" onerror="this.style.display='none'"/>
+        <div>
+          <div class="lb-brand-name">Drushyasinchana</div>
+          <div class="lb-brand-sub">Tech Solutions</div>
+        </div>
+      </div>
+      <div class="lb-h1">Attend<span>Ease</span></div>
+      <p class="lb-p">Smart attendance management for field teams, construction sites and distributed workforces — powered by GPS geofencing.</p>
+      <div class="lb-features">
+        <div class="lb-feat"><div class="lb-dot"></div>GPS-verified check-in/out from Android app</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Multi-site geofencing with shift control</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Real-time reports — day-wise &amp; month-wise</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Manual entry &amp; admin overrides with audit log</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Data lives in your own Google Sheets</div>
+      </div>
+      <div class="lb-footer">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" onerror="this.style.display='none'"/>
+        <span>drushyasinchana.in &nbsp;·&nbsp; Bengaluru, Karnataka</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box anim">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to your AttendEase admin portal</p>
+
+      <div class="fg">
+        <label>Master Control Gmail ID</label>
+        <input id="lMasterEmail" type="email" placeholder="yourcompany@gmail.com" autocomplete="username"/>
+      </div>
+      <div class="fg">
+        <label>Admin Email / Employee ID</label>
+        <input id="lEmpId" type="text" placeholder="admin@company.com or EMP001"/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <input id="lPassword" type="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">Sign In</button>
+      <div id="loginError"></div>
+
+      <div class="login-note">
+        Attendance marking is done via the mobile app.<br/>
+        This portal is for admin management only.<br/><br/>
+        <a href="https://drushyasinchana.in" target="_blank">drushyasinchana.in</a>
+        &nbsp;·&nbsp; © 2025 Drushyasinchana Tech Solutions
+      </div>
+    </div>
+  </div>
+
+</div><!-- /loginScreen -->
+
+
+<!-- ══════════════════════════ APP ══════════════════════════ -->
+<div id="appScreen" class="screen">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="Logo" class="sb-logo-img" onerror="this.style.display='none'"/>
+        <div>
+          <div class="sb-app-name">AttendEase</div>
+          <div class="sb-app-tagline">Admin Portal</div>
+        </div>
+      </div>
+      <div class="sb-company">
+        <strong id="sbCompanyName">—</strong>
+        Signed in as admin
+      </div>
+    </div>
+
+    <div class="sb-nav">
+      <button class="nav-item active" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="nav('employees',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Employees
+      </button>
+      <button class="nav-item" onclick="nav('sites',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Sites &amp; Geofencing
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="nav('attendance',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+        Attendance
+      </button>
+      <button class="nav-item" onclick="nav('reports',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reports
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="nav('manual',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Manual Entry
+      </button>
+      <button class="nav-item" onclick="nav('setup',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Setup Guide
+      </button>
+    </div>
+
+    <div class="sb-footer">
+      <div class="sb-footer-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" onerror="this.style.display='none'"/>
+        <span>Drushyasinchana Tech Solutions</span>
+      </div>
+      <p>drushyasinchana.in</p>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-right">
+        <div class="avatar" id="topbarAvatar">A</div>
+        <span id="topbarEmail">—</span>
+        <button class="btn-logout" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pgDashboard">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-val" id="stTotalEmp">—</div>
+            <div class="stat-sub">Registered</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Present Today</div>
+            <div class="stat-val" id="stPresent">—</div>
+            <div class="stat-sub" id="stDate">—</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Absent Today</div>
+            <div class="stat-val" id="stAbsent">—</div>
+            <div class="stat-sub">Expected in</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Sites</div>
+            <div class="stat-val" id="stSites">—</div>
+            <div class="stat-sub">Geofenced</div>
+          </div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-hdr">
+              <h3>Today's Attendance</h3>
+              <button class="btn btn-outline btn-sm" onclick="nav('attendance', document.querySelectorAll('.nav-item')[3])">View all</button>
+            </div>
+            <div id="dashAttendList"><div class="empty"><p>Loading…</p></div></div>
+          </div>
+          <div class="card">
+            <div class="card-hdr"><h3>Sites Overview</h3></div>
+            <div id="dashSiteList"><div class="empty"><p>Loading…</p></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEES -->
+      <div class="page" id="pgEmployees">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Employee Directory</h3>
+            <button class="btn btn-teal btn-sm" onclick="openEmpModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Register Employee
+            </button>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="empSearch" placeholder="Search name, code or email…" oninput="filterEmployees()" style="flex:1;min-width:160px;"/>
+            <select id="empStatusFilter" onchange="filterEmployees()">
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+            <select id="empSiteFilter" onchange="filterEmployees()">
+              <option value="">All Sites</option>
+            </select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Site</th><th>Join Date</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="empTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SITES -->
+      <div class="page" id="pgSites">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Site Management &amp; Geofencing</h3>
+            <button class="btn btn-teal btn-sm" onclick="openSiteModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Site
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Site ID</th><th>Site Name</th><th>Coordinates</th><th>Radius</th><th>Shift</th><th>Lunch</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="siteTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div class="page" id="pgAttendance">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Attendance Records</h3>
+            <button class="btn btn-outline btn-sm" onclick="openModal('manualModal')">Manual Entry</button>
+          </div>
+          <div class="filter-bar">
+            <input type="date" id="attDate" onchange="loadAttendance()"/>
+            <select id="attSite" onchange="loadAttendance()"><option value="">All Sites</option></select>
+            <select id="attStatus" onchange="filterAttTable()">
+              <option value="">All Status</option>
+              <option value="PRESENT">Present</option>
+              <option value="ABSENT">Absent</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAttendance()">↻ Refresh</button>
+          </div>
+          <div class="report-summary" id="attSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Employee</th><th>Code</th><th>Site</th><th>IN</th><th>OUT</th><th>Status</th><th>Location</th><th>Half Day</th><th>Marked By</th></tr></thead>
+              <tbody id="attTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="page" id="pgReports">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-hdr"><h3>Generate Report</h3></div>
+          <div class="form-grid" style="margin-bottom:14px;">
+            <div class="fgg"><label>From Date</label><input type="date" id="rptFrom"/></div>
+            <div class="fgg"><label>To Date</label><input type="date" id="rptTo"/></div>
+            <div class="fgg"><label>Site</label><select id="rptSite"><option value="">All Sites</option></select></div>
+            <div class="fgg"><label>Employee</label><select id="rptEmp"><option value="">All Employees</option></select></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" onclick="generateReport()">Generate Report</button>
+            <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Results</h3>
+            <span id="rptCount" style="font-size:.8rem;color:var(--muted);"></span>
+          </div>
+          <div class="report-summary" id="rptSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Employee</th><th>Code</th><th>Site</th><th>IN</th><th>OUT</th><th>Status</th><th>Hours</th><th>Marked By</th></tr></thead>
+              <tbody id="rptTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUAL ENTRY -->
+      <div class="page" id="pgManual">
+        <div class="card" style="max-width:580px;">
+          <div class="card-hdr"><h3>Manual Attendance Entry</h3></div>
+          <p style="font-size:.845rem;color:var(--muted);margin-bottom:20px;">Use this to correct or record missed attendance. All entries are logged with your admin ID.</p>
+          <div class="form-grid" style="margin-bottom:14px;">
+            <div class="fgg"><label>Employee ID *</label><input type="text" id="mEmpId" placeholder="EMP001"/></div>
+            <div class="fgg"><label>Date *</label><input type="date" id="mDate"/></div>
+            <div class="fgg"><label>Check-In Time *</label><input type="time" id="mCheckIn"/></div>
+            <div class="fgg"><label>Check-Out Time</label><input type="time" id="mCheckOut"/></div>
+            <div class="fgg" style="grid-column:1/-1;">
+              <label>Reason / Note</label>
+              <textarea id="mReason" placeholder="Reason for manual entry…"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" onclick="submitManual()">Save Entry</button>
+            <button class="btn btn-outline" onclick="clearManual()">Clear</button>
+          </div>
+          <div id="manualResult"></div>
+        </div>
+      </div>
+
+      <!-- SETUP GUIDE -->
+      <div class="page" id="pgSetup">
+        <div class="guide-panel">
+          <h3>⚙️ How to connect your Google Sheets — Step-by-step setup</h3>
+          <p style="font-size:.845rem;color:var(--teal-dd);margin-top:4px;">Follow these steps exactly. You only need to do this once per company account.</p>
+
+          <div class="guide-steps">
+            <div class="guide-step">
+              <p><strong>Master Control Sheet (Drushyasinchana manages this)</strong><br/>
+              The MASTER sheet at Drushyasinchana's Google account contains all company registrations. Columns are: <code>companyId</code>, <code>companyName</code>, <code>adminEmail</code>, <code>companySheetId</code>, <code>companyScriptUrl</code>, <code>isActive</code>, <code>startDate</code>, <code>endDate</code>.<br/>
+              The <code>adminEmail</code> is what you enter as "Master Control Gmail ID" at login.</p>
+            </div>
+            <div class="guide-step">
+              <p><strong>Create your company Google Sheet</strong><br/>
+              In your own Google account, create a new Google Sheet. Create 4 tabs named exactly: <code>EMPLOYEES</code>, <code>SITES</code>, <code>ATTENDANCE_YYYY_MM</code> (one per month, e.g. <code>ATTENDANCE_2026_03</code>), and <code>APP_LOGS</code>.<br/>
+              Copy the Sheet ID from the URL: <code>https://docs.google.com/spreadsheets/d/<strong>[SHEET-ID]</strong>/edit</code></p>
+            </div>
+            <div class="guide-step">
+              <p><strong>EMPLOYEES sheet columns (row 1 = header)</strong><br/>
+              <code>EMPID | EmpName | Email | Phone | PasswordHash | Site | JoinDate | Status | PhotoURL | Role | EffectiveDate</code><br/>
+              Add your first admin row. For password, use SHA-256 hash of the password. Role must be <code>ADMIN</code> or <code>EMPLOYEE</code>.</p>
+            </div>
+            <div class="guide-step">
+              <p><strong>SITES sheet columns</strong><br/>
+              <code>SiteID | SiteName | Latitude | Longitude | Radius | ShiftStart | ShiftEnd | LunchTime | Address | Status</code><br/>
+              Add at least one site (e.g. SiteID = <code>SITE001</code>, Status = <code>ACTIVE</code>). Radius is in metres.</p>
+            </div>
+            <div class="guide-step">
+              <p><strong>ATTENDANCE sheet columns (one tab per month)</strong><br/>
+              <code>Date | EMPID | Name | SiteID | InTime | OutTime | Status | LocationStatus | MarkedBy | HalfDay | ManualRemark | Remarks</code><br/>
+              The Android app writes to this sheet automatically. The portal reads from it.</p>
+            </div>
+            <div class="guide-step">
+              <p><strong>Deploy a Google Apps Script (Web App) for your company sheet</strong><br/>
+              In your company Sheet, open <code>Extensions → Apps Script</code>. Paste the Apps Script code (provided below). Click <strong>Deploy → New deployment → Web app → Execute as: Me → Anyone</strong>. Copy the deployment URL and send it to Drushyasinchana to add to the Master Control sheet.</p>
+            </div>
+            <div class="guide-step">
+              <p><strong>Register your company in Master Control</strong><br/>
+              Send Drushyasinchana: your company name, your Gmail ID (adminEmail), your Sheet ID, and your Apps Script deployment URL. They will add a row in the MASTER sheet. After that, login on this portal will work.</p>
+            </div>
+            <div class="guide-step">
+              <p><strong>How login works on this portal</strong><br/>
+              You enter your Gmail ID → portal calls the <strong>Master Script</strong> which checks MASTER sheet → finds your <code>companyScriptUrl</code> → calls your company's Apps Script → that script validates credentials from your EMPLOYEES sheet → returns success + company data → portal loads your dashboard.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr"><h3>Google Apps Script — paste this in your company sheet</h3></div>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;">Go to your Google Sheet → Extensions → Apps Script → replace all content with the code below → Save → Deploy as Web App.</p>
+          <pre id="appsScriptCode" style="background:var(--teal-dd);color:#B2EBF2;padding:18px;border-radius:var(--r-sm);font-size:.75rem;font-family:'DM Mono',monospace;overflow-x:auto;line-height:1.7;max-height:420px;overflow-y:auto;white-space:pre;"></pre>
+          <div style="margin-top:12px;">
+            <button class="btn btn-outline btn-sm" onclick="copyScript()">Copy Script</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /appScreen -->
+
+
+<!-- MODALS -->
+
+<!-- Employee Modal -->
+<div class="modal-backdrop" id="empModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="empModalTitle">Register Employee</h3>
+      <button class="modal-close" onclick="closeModal('empModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fgg"><label>Employee Code *</label><input id="eCode" placeholder="EMP001"/></div>
+        <div class="fgg"><label>Full Name *</label><input id="eName" placeholder="Full name"/></div>
+        <div class="fgg"><label>Email (Login ID) *</label><input id="eEmail" type="email" placeholder="emp@company.com"/></div>
+        <div class="fgg"><label>Phone</label><input id="ePhone" type="tel" placeholder="9876543210"/></div>
+        <div class="fgg"><label>Password *</label><input id="ePass" type="password" placeholder="Leave blank to keep existing"/></div>
+        <div class="fgg"><label>Role</label>
+          <select id="eRole">
+            <option value="EMPLOYEE">Employee</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <div class="fgg"><label>Assign Site</label><select id="eSite"><option value="">— Select site —</option></select></div>
+        <div class="fgg"><label>Joining Date</label><input id="eJoin" type="date"/></div>
+        <div class="fgg"><label>Status</label>
+          <select id="eStatus"><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select>
+        </div>
+      </div>
+      <div class="modal-err" id="empModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('empModal')">Cancel</button>
+      <button class="btn btn-teal" id="btnSaveEmp" onclick="saveEmployee()">Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- Site Modal -->
+<div class="modal-backdrop" id="siteModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="siteModalTitle">Add New Site</h3>
+      <button class="modal-close" onclick="closeModal('siteModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fgg"><label>Site Name *</label><input id="sName" placeholder="Head Office"/></div>
+        <div class="fgg"><label>Status</label><select id="sStatus"><option>ACTIVE</option><option>INACTIVE</option></select></div>
+        <div class="fgg"><label>Latitude *</label><input id="sLat" type="number" step="any" placeholder="12.9716"/></div>
+        <div class="fgg"><label>Longitude *</label><input id="sLng" type="number" step="any" placeholder="77.5946"/></div>
+        <div class="fgg"><label>Geofence Radius (metres) *</label><input id="sRadius" type="number" placeholder="100"/></div>
+        <div class="fgg"><label>Address</label><input id="sAddr" placeholder="City, State"/></div>
+        <div class="fgg"><label>Shift Start</label><input id="sShiftS" type="time" value="09:00"/></div>
+        <div class="fgg"><label>Shift End</label><input id="sShiftE" type="time" value="18:00"/></div>
+        <div class="fgg"><label>Lunch Time</label><input id="sLunch" type="time" value="13:00"/></div>
+      </div>
+      <div class="modal-err" id="siteModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('siteModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveSite()">Save Site</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Manual Modal -->
+<div class="modal-backdrop" id="manualModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>Quick Manual Entry</h3>
+      <button class="modal-close" onclick="closeModal('manualModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fgg"><label>Employee ID *</label><input id="mmEmpId" placeholder="EMP001"/></div>
+        <div class="fgg"><label>Date *</label><input id="mmDate" type="date"/></div>
+        <div class="fgg"><label>Check-In *</label><input id="mmIn" type="time"/></div>
+        <div class="fgg"><label>Check-Out</label><input id="mmOut" type="time"/></div>
+        <div class="fgg" style="grid-column:1/-1;"><label>Reason</label><textarea id="mmReason" rows="2" placeholder="Reason for manual entry…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('manualModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="submitManualModal()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIG — CHANGE ONLY MASTER_SCRIPT_URL
+══════════════════════════════════════════════════════════ */
+
+// This is Drushyasinchana's MASTER Google Apps Script URL
+// It reads from the MASTER_CONTROL sheet to authenticate any company
+const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCwLtdaz3XQZUn8_JY2_YXPdVDmQI0oCwlcoWWMH5iHJvJ0vscG0z5tljd-gP1MuQ/exec";
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+const S = {
+  prefs: {},
+  employees: [],
+  sites: [],
+  attRecords: [],
+  rptRecords: [],
+  editingEmpCode: null,
+  editingSiteId: null,
+};
+
+/* ══════════════════════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════════════════════ */
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function api(payload, scriptUrl) {
+  const url = scriptUrl || S.prefs.companyScriptUrl || MASTER_SCRIPT_URL;
+  const r = await fetch(url, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return r.json();
+}
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => (t.className = ''), 3200);
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(el =>
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); })
+);
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function today() { return new Date().toISOString().slice(0, 10); }
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return isNaN(dt) ? d : dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function calcHours(inT, outT) {
+  if (!inT || !outT) return '—';
+  const [ih, im] = inT.split(':').map(Number);
+  const [oh, om] = outT.split(':').map(Number);
+  const mins = (oh * 60 + om) - (ih * 60 + im);
+  if (mins <= 0) return '—';
+  return `${Math.floor(mins/60)}h ${mins%60}m`;
+}
+function showFieldErr(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+const PAGE_TITLES = {
+  dashboard: 'Dashboard', employees: 'Employee Directory',
+  sites: 'Sites & Geofencing', attendance: 'Attendance Records',
+  reports: 'Reports', manual: 'Manual Entry', setup: 'Setup Guide',
+};
+
+function nav(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('pg' + page.charAt(0).toUpperCase() + page.slice(1));
+  if (pg) pg.classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('topbarTitle').textContent = PAGE_TITLES[page] || page;
+  if (page === 'dashboard')  loadDashboard();
+  if (page === 'employees')  loadEmployees();
+  if (page === 'sites')      loadSites();
+  if (page === 'attendance') { if (!document.getElementById('attDate').value) document.getElementById('attDate').value = today(); loadAttendance(); }
+  if (page === 'reports')    setReportDefaults();
+}
+
+function setReportDefaults() {
+  const f = document.getElementById('rptFrom'), t = document.getElementById('rptTo');
+  if (!f.value) { const d = new Date(); d.setDate(1); f.value = d.toISOString().slice(0,10); }
+  if (!t.value) t.value = today();
+}
+
+/* ══════════════════════════════════════════════════════════
+   LOGIN
+   Flow:
+   1. User enters masterEmail + empId + password
+   2. Portal calls MASTER Apps Script with action:'login' + adminEmail
+   3. Master script looks up company in MASTER sheet by adminEmail
+   4. Returns companyScriptUrl for that company
+   5. Portal then calls COMPANY script to validate empId + password hash
+   6. Company script checks EMPLOYEES sheet → returns user data
+══════════════════════════════════════════════════════════ */
+async function doLogin() {
+  const btn    = document.getElementById('btnLogin');
+  const err    = document.getElementById('loginError');
+  const master = document.getElementById('lMasterEmail').value.trim().toLowerCase();
+  const empId  = document.getElementById('lEmpId').value.trim();
+  const pw     = document.getElementById('lPassword').value.trim();
+
+  err.style.display = 'none';
+  if (!master || !empId || !pw) { showErr(err, 'Please fill all fields.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+  try {
+    const hash = await sha256(pw);
+
+    // Step 1: Call Master Script to authenticate + get company sheet info
+    const res = await fetch(MASTER_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'login',
+        adminEmail: master,
+        empId: empId,
+        password: hash,
+        device: 'Web'
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    }).then(r => r.json());
+
+    if (res.success) {
+      const d = res.data;
+      // Only ADMIN role can use the web portal
+      if (d.role !== 'ADMIN') {
+        showErr(err, 'Web portal access is for admin accounts only. Use the mobile app.');
+        btn.disabled = false; btn.textContent = 'Sign In'; return;
+      }
+      Object.assign(S.prefs, {
+        empCode:         d.empCode        || '',
+        empName:         d.name           || '',
+        empEmail:        d.email          || '',
+        role:            d.role           || '',
+        companyName:     d.companyName    || '',
+        companySheetId:  d.companySheetId || '',
+        companyScriptUrl:d.companyScriptUrl || '',
+        siteId:          d.siteId         || '',
+      });
+
+      document.getElementById('sbCompanyName').textContent = S.prefs.companyName || master;
+      document.getElementById('topbarEmail').textContent   = S.prefs.empEmail    || empId;
+      document.getElementById('topbarAvatar').textContent  = (S.prefs.empName    || empId).slice(0,2).toUpperCase();
+
+      switchScreen('appScreen');
+      nav('dashboard', document.querySelector('.nav-item'));
+    } else {
+      showErr(err, res.message || 'Login failed. Check your credentials and try again.');
+      btn.disabled = false; btn.textContent = 'Sign In';
+    }
+  } catch (e) {
+    showErr(err, 'Connection error. Please check your internet and try again.');
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function doLogout() {
+  Object.assign(S, { prefs:{}, employees:[], sites:[], attRecords:[], rptRecords:[], editingEmpCode:null, editingSiteId:null });
+  document.getElementById('lPassword').value = '';
+  switchScreen('loginScreen');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').classList.contains('active')) doLogin();
+});
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════════════════ */
+async function loadDashboard() {
+  try {
+    const [empRes, siteRes, attRes] = await Promise.all([
+      api({ action: 'getEmployees',  companySheetId: S.prefs.companySheetId }),
+      api({ action: 'getSites',      companySheetId: S.prefs.companySheetId }),
+      api({ action: 'getAttendance', companySheetId: S.prefs.companySheetId, date: today() }),
+    ]);
+    S.employees = empRes.success  ? empRes.data.employees  || [] : [];
+    S.sites     = siteRes.success ? siteRes.data.sites     || [] : [];
+    const atts  = attRes.success  ? attRes.data.records    || [] : [];
+
+    const present = atts.filter(r => r.status === 'PRESENT').length;
+    document.getElementById('stTotalEmp').textContent = S.employees.length;
+    document.getElementById('stPresent').textContent  = present;
+    document.getElementById('stAbsent').textContent   = Math.max(0, S.employees.length - present);
+    document.getElementById('stSites').textContent    = S.sites.filter(s => !s.status || s.status === 'ACTIVE').length;
+    document.getElementById('stDate').textContent     = fmtDate(today());
+
+    const al = document.getElementById('dashAttendList');
+    al.innerHTML = atts.length ? atts.slice(0,8).map(r => `
+      <div class="mini-row">
+        <div><div class="mname">${r.name || r.empCode}</div><div class="msub">${r.site || '—'}</div></div>
+        <div class="mright">
+          <span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span>
+          <div class="mtime">${r.inTime?'IN '+r.inTime:''} ${r.outTime?'· OUT '+r.outTime:''}</div>
+        </div>
+      </div>`).join('') : '<div class="empty"><p>No attendance records yet today</p></div>';
+
+    const sl = document.getElementById('dashSiteList');
+    sl.innerHTML = S.sites.length ? S.sites.map(s => `
+      <div class="mini-row">
+        <div><div class="mname">${s.siteName}</div><div class="msub">${s.address||''}</div></div>
+        <span style="font-size:.74rem;color:var(--teal);font-family:'DM Mono',monospace;">${s.radius||''}m</span>
+      </div>`).join('') : '<div class="empty"><p>No sites added yet</p></div>';
+
+    populateSiteSelects();
+  } catch(e) { toast('Failed to load dashboard data','error'); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   EMPLOYEES
+══════════════════════════════════════════════════════════ */
+async function loadEmployees() {
+  try {
+    const res = await api({ action: 'getEmployees', companySheetId: S.prefs.companySheetId });
+    S.employees = res.success ? res.data.employees || [] : [];
+    renderEmployees(S.employees); populateSiteSelects();
+  } catch(e) { toast('Failed to load employees','error'); }
+}
+
+function renderEmployees(list) {
+  const tb = document.getElementById('empTableBody');
+  if (!list.length) { tb.innerHTML='<tr><td colspan="7"><div class="empty"><p>No employees found</p></div></td></tr>'; return; }
+  tb.innerHTML = list.map(e => `
+    <tr>
+      <td class="mono">${e.empCode||'—'}</td>
+      <td><strong>${e.name||'—'}</strong></td>
+      <td style="color:var(--muted);font-size:.8rem;">${e.email||'—'}</td>
+      <td>${e.siteName||e.site||'—'}</td>
+      <td style="color:var(--muted);font-size:.8rem;">${fmtDate(e.joinDate)}</td>
+      <td><span class="badge ${e.status==='ACTIVE'?'badge-green':'badge-gray'}">${e.status||'ACTIVE'}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick='editEmployee(${JSON.stringify(e)})'>Edit</button></td>
+    </tr>`).join('');
+}
+
+function filterEmployees() {
+  const q = document.getElementById('empSearch').value.toLowerCase();
+  const st = document.getElementById('empStatusFilter').value;
+  const si = document.getElementById('empSiteFilter').value;
+  renderEmployees(S.employees.filter(e => {
+    const mq = !q  || [e.name,e.empCode,e.email].some(v=>(v||'').toLowerCase().includes(q));
+    const ms = !st || e.status === st;
+    const mv = !si || (e.site||e.siteId||'') === si;
+    return mq && ms && mv;
+  }));
+}
+
+function openEmpModal() {
+  S.editingEmpCode = null;
+  document.getElementById('empModalTitle').textContent = 'Register Employee';
+  ['eCode','eName','eEmail','ePhone','ePass'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('eCode').disabled = false;
+  document.getElementById('eJoin').value   = today();
+  document.getElementById('eStatus').value = 'ACTIVE';
+  document.getElementById('eRole').value   = 'EMPLOYEE';
+  showFieldErr('empModalErr','');
+  openModal('empModal');
+}
+
+function editEmployee(e) {
+  S.editingEmpCode = e.empCode;
+  document.getElementById('empModalTitle').textContent = 'Edit Employee';
+  document.getElementById('eCode').value    = e.empCode  || '';
+  document.getElementById('eCode').disabled = true;
+  document.getElementById('eName').value    = e.name     || '';
+  document.getElementById('eEmail').value   = e.email    || '';
+  document.getElementById('ePhone').value   = e.phone    || '';
+  document.getElementById('ePass').value    = '';
+  document.getElementById('eSite').value    = e.siteId   || e.site || '';
+  document.getElementById('eJoin').value    = e.joinDate || today();
+  document.getElementById('eStatus').value  = e.status   || 'ACTIVE';
+  document.getElementById('eRole').value    = e.role     || 'EMPLOYEE';
+  showFieldErr('empModalErr','');
+  openModal('empModal');
+}
+
+async function saveEmployee() {
+  const empCode = document.getElementById('eCode').value.trim().toUpperCase();
+  const name    = document.getElementById('eName').value.trim().toUpperCase();
+  const email   = document.getElementById('eEmail').value.trim().toLowerCase();
+  const phone   = document.getElementById('ePhone').value.trim();
+  const pw      = document.getElementById('ePass').value.trim();
+  const siteId  = document.getElementById('eSite').value;
+  const joinDate= document.getElementById('eJoin').value;
+  const status  = document.getElementById('eStatus').value;
+  const role    = document.getElementById('eRole').value;
+
+  if (!empCode || !name || !email) { showFieldErr('empModalErr','Code, Name and Email are required.'); return; }
+  if (!S.editingEmpCode && !pw)    { showFieldErr('empModalErr','Password is required for new employees.'); return; }
+
+  const btn = document.getElementById('btnSaveEmp');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const payload = {
+      action: S.editingEmpCode ? 'updateEmployee' : 'registerEmployee',
+      companySheetId: S.prefs.companySheetId,
+      empCode, name, email, phone, siteId, joinDate, status, role,
+    };
+    if (pw) payload.password = await sha256(pw);
+    const res = await api(payload);
+    if (res.success) {
+      toast(S.editingEmpCode ? 'Employee updated!' : 'Employee registered!');
+      closeModal('empModal');
+      document.getElementById('eCode').disabled = false;
+      loadEmployees();
+    } else showFieldErr('empModalErr', res.message || 'Failed to save.');
+  } catch(e) { showFieldErr('empModalErr','Connection error.'); }
+  btn.disabled = false; btn.textContent = 'Register';
+}
+
+/* ══════════════════════════════════════════════════════════
+   SITES
+══════════════════════════════════════════════════════════ */
+async function loadSites() {
+  try {
+    const res = await api({ action: 'getSites', companySheetId: S.prefs.companySheetId });
+    S.sites = res.success ? res.data.sites || [] : [];
+    renderSites(S.sites); populateSiteSelects();
+  } catch(e) { toast('Failed to load sites','error'); }
+}
+
+function renderSites(list) {
+  const tb = document.getElementById('siteTableBody');
+  if (!list.length) { tb.innerHTML='<tr><td colspan="8"><div class="empty"><p>No sites added yet</p></div></td></tr>'; return; }
+  tb.innerHTML = list.map(s => `
+    <tr>
+      <td class="mono">${s.siteId||'—'}</td>
+      <td><strong>${s.siteName||'—'}</strong></td>
+      <td style="font-size:.78rem;color:var(--muted);">${s.latitude||''},${s.longitude||''}</td>
+      <td class="mono">${s.radius||'—'}m</td>
+      <td style="font-size:.8rem;">${s.shiftStart||'—'} – ${s.shiftEnd||'—'}</td>
+      <td style="font-size:.8rem;">${s.lunchTime||'—'}</td>
+      <td><span class="badge ${(s.status||'ACTIVE')==='ACTIVE'?'badge-green':'badge-gray'}">${s.status||'ACTIVE'}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick='editSite(${JSON.stringify(s)})'>Edit</button></td>
+    </tr>`).join('');
+}
+
+function openSiteModal() {
+  S.editingSiteId = null;
+  document.getElementById('siteModalTitle').textContent = 'Add New Site';
+  ['sName','sLat','sLng','sRadius','sAddr'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('sShiftS').value = '09:00';
+  document.getElementById('sShiftE').value = '18:00';
+  document.getElementById('sLunch').value  = '13:00';
+  document.getElementById('sStatus').value = 'ACTIVE';
+  showFieldErr('siteModalErr','');
+  openModal('siteModal');
+}
+
+function editSite(s) {
+  S.editingSiteId = s.siteId;
+  document.getElementById('siteModalTitle').textContent = 'Edit Site';
+  document.getElementById('sName').value   = s.siteName  || '';
+  document.getElementById('sLat').value    = s.latitude  || '';
+  document.getElementById('sLng').value    = s.longitude || '';
+  document.getElementById('sRadius').value = s.radius    || '';
+  document.getElementById('sAddr').value   = s.address   || '';
+  document.getElementById('sShiftS').value = s.shiftStart|| '09:00';
+  document.getElementById('sShiftE').value = s.shiftEnd  || '18:00';
+  document.getElementById('sLunch').value  = s.lunchTime || '13:00';
+  document.getElementById('sStatus').value = s.status    || 'ACTIVE';
+  showFieldErr('siteModalErr','');
+  openModal('siteModal');
+}
+
+async function saveSite() {
+  const name       = document.getElementById('sName').value.trim().toUpperCase();
+  const lat        = document.getElementById('sLat').value.trim();
+  const lng        = document.getElementById('sLng').value.trim();
+  const radius     = document.getElementById('sRadius').value.trim();
+  const addr       = document.getElementById('sAddr').value.trim();
+  const shiftStart = document.getElementById('sShiftS').value;
+  const shiftEnd   = document.getElementById('sShiftE').value;
+  const lunchTime  = document.getElementById('sLunch').value;
+  const status     = document.getElementById('sStatus').value;
+
+  if (!name || !lat || !lng || !radius) { showFieldErr('siteModalErr','Name, Lat, Lng and Radius are required.'); return; }
+  try {
+    const payload = {
+      action: S.editingSiteId ? 'updateSite' : 'addSite',
+      companySheetId: S.prefs.companySheetId,
+      siteName: name, latitude: lat, longitude: lng, radius, address: addr,
+      shiftStart, shiftEnd, lunchTime, status,
+    };
+    if (S.editingSiteId) payload.siteId = S.editingSiteId;
+    const res = await api(payload);
+    if (res.success) {
+      toast(S.editingSiteId ? 'Site updated!' : 'Site added!');
+      closeModal('siteModal'); S.editingSiteId = null; loadSites();
+    } else showFieldErr('siteModalErr', res.message || 'Failed.');
+  } catch(e) { showFieldErr('siteModalErr','Connection error.'); }
+}
+
+function populateSiteSelects() {
+  ['empSiteFilter','eSite','attSite','rptSite'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    const kept = el.querySelector('option[value=""]');
+    while (el.options.length > (kept ? 1 : 0)) el.remove(kept ? 1 : 0);
+    S.sites.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.siteId || s.siteName; o.textContent = s.siteName;
+      el.appendChild(o);
+    });
+  });
+  const rptEmp = document.getElementById('rptEmp');
+  if (rptEmp) {
+    while (rptEmp.options.length > 1) rptEmp.remove(1);
+    S.employees.forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.empCode; o.textContent = `${e.empCode} — ${e.name}`; rptEmp.appendChild(o);
+    });
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ATTENDANCE
+══════════════════════════════════════════════════════════ */
+async function loadAttendance() {
+  const date = document.getElementById('attDate').value || today();
+  try {
+    const res = await api({ action:'getAttendance', companySheetId: S.prefs.companySheetId, date });
+    S.attRecords = res.success ? res.data.records || [] : [];
+    renderAttTable(S.attRecords); updateAttSummary(S.attRecords);
+  } catch(e) { toast('Failed to load attendance','error'); }
+}
+
+function filterAttTable() {
+  const st = document.getElementById('attStatus').value;
+  renderAttTable(st ? S.attRecords.filter(r => r.status === st) : S.attRecords);
+}
+
+function renderAttTable(list) {
+  const tb = document.getElementById('attTableBody');
+  if (!list.length) { tb.innerHTML='<tr><td colspan="9"><div class="empty"><p>No records found for this date</p></div></td></tr>'; return; }
+  tb.innerHTML = list.map(r => `
+    <tr>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td class="mono">${r.empCode||'—'}</td>
+      <td>${r.site||'—'}</td>
+      <td class="mono" style="color:var(--success);">${r.inTime||'—'}</td>
+      <td class="mono" style="color:var(--error);">${r.outTime||'—'}</td>
+      <td><span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span></td>
+      <td><span class="badge ${r.locationStatus==='INSIDE'?'badge-blue':'badge-amber'}">${r.locationStatus||'—'}</span></td>
+      <td>${r.halfDay==='YES'?'<span class="badge badge-amber">Half</span>':'—'}</td>
+      <td style="font-size:.76rem;color:var(--muted);">${r.markedBy||'—'}</td>
+    </tr>`).join('');
+}
+
+function updateAttSummary(list) {
+  const present = list.filter(r => r.status==='PRESENT').length;
+  const inside  = list.filter(r => r.locationStatus==='INSIDE').length;
+  document.getElementById('attSummary').innerHTML = `
+    <div class="rs-chip">Total <span>${list.length}</span></div>
+    <div class="rs-chip" style="color:var(--success);">Present <span>${present}</span></div>
+    <div class="rs-chip" style="color:var(--error);">Absent <span>${list.length - present}</span></div>
+    <div class="rs-chip" style="color:#1565C0;">Inside Geofence <span>${inside}</span></div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   REPORTS
+══════════════════════════════════════════════════════════ */
+async function generateReport() {
+  const from = document.getElementById('rptFrom').value;
+  const to   = document.getElementById('rptTo').value;
+  const site = document.getElementById('rptSite').value;
+  const emp  = document.getElementById('rptEmp').value;
+  if (!from || !to) { toast('Please select a date range','error'); return; }
+  try {
+    const res = await api({ action:'getAttendanceRange', companySheetId: S.prefs.companySheetId, fromDate:from, toDate:to, siteId:site, empCode:emp });
+    S.rptRecords = res.success ? res.data.records || [] : [];
+    renderRptTable(S.rptRecords);
+    const present = S.rptRecords.filter(r => r.status==='PRESENT').length;
+    document.getElementById('rptCount').textContent = `${S.rptRecords.length} records`;
+    document.getElementById('rptSummary').innerHTML = `
+      <div class="rs-chip">Total <span>${S.rptRecords.length}</span></div>
+      <div class="rs-chip" style="color:var(--success);">Present <span>${present}</span></div>
+      <div class="rs-chip" style="color:var(--error);">Absent <span>${S.rptRecords.length - present}</span></div>`;
+  } catch(e) { toast('Failed to generate report','error'); }
+}
+
+function renderRptTable(list) {
+  const tb = document.getElementById('rptTableBody');
+  if (!list.length) { tb.innerHTML='<tr><td colspan="9"><div class="empty"><p>No records in this date range</p></div></td></tr>'; return; }
+  tb.innerHTML = list.map(r => `
+    <tr>
+      <td class="mono">${fmtDate(r.date)}</td>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td class="mono">${r.empCode||'—'}</td>
+      <td>${r.site||'—'}</td>
+      <td class="mono" style="color:var(--success);">${r.inTime||'—'}</td>
+      <td class="mono" style="color:var(--error);">${r.outTime||'—'}</td>
+      <td><span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span></td>
+      <td class="mono">${calcHours(r.inTime, r.outTime)}</td>
+      <td style="font-size:.76rem;color:var(--muted);">${r.markedBy||'—'}</td>
+    </tr>`).join('');
+}
+
+function exportCSV() {
+  if (!S.rptRecords.length) { toast('Generate a report first','error'); return; }
+  const cols = ['date','name','empCode','site','inTime','outTime','status','locationStatus','markedBy','halfDay','manualRemark'];
+  const csv  = [cols.join(','), ...S.rptRecords.map(r =>
+    cols.map(c => `"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(',')
+  )].join('\n');
+  const a    = document.createElement('a');
+  a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `AttendEase_Report_${document.getElementById('rptFrom').value}_${document.getElementById('rptTo').value}.csv`;
+  a.click(); toast('CSV exported!');
+}
+
+/* ══════════════════════════════════════════════════════════
+   MANUAL ENTRY
+══════════════════════════════════════════════════════════ */
+async function submitManual() {
+  const empId    = document.getElementById('mEmpId').value.trim().toUpperCase();
+  const date     = document.getElementById('mDate').value;
+  const checkIn  = document.getElementById('mCheckIn').value;
+  const checkOut = document.getElementById('mCheckOut').value;
+  const reason   = document.getElementById('mReason').value.trim();
+  const resEl    = document.getElementById('manualResult');
+  resEl.className = ''; resEl.textContent = '';
+
+  if (!empId || !date || !checkIn) { toast('Employee ID, Date and Check-In are required','error'); return; }
+  try {
+    const res = await api({
+      action: 'markAttendance', companySheetId: S.prefs.companySheetId,
+      empCode: empId, date, inTime: checkIn, outTime: checkOut,
+      markedBy: 'MANUAL_ADMIN', manualRemark: reason,
+      locationStatus: 'MANUAL', status: 'PRESENT',
+    });
+    if (res.success) {
+      resEl.className = 'result-ok';
+      resEl.textContent = `✓ Attendance saved for ${empId} on ${fmtDate(date)}`;
+      clearManual();
+    } else {
+      resEl.className = 'result-err';
+      resEl.textContent = res.message || 'Failed to save.';
+    }
+  } catch(e) {
+    resEl.className = 'result-err';
+    resEl.textContent = 'Connection error.';
+  }
+}
+
+function clearManual() {
+  ['mEmpId','mDate','mCheckIn','mCheckOut','mReason'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function submitManualModal() {
+  document.getElementById('mEmpId').value    = document.getElementById('mmEmpId').value;
+  document.getElementById('mDate').value     = document.getElementById('mmDate').value;
+  document.getElementById('mCheckIn').value  = document.getElementById('mmIn').value;
+  document.getElementById('mCheckOut').value = document.getElementById('mmOut').value;
+  document.getElementById('mReason').value   = document.getElementById('mmReason').value;
+  closeModal('manualModal');
+  nav('manual', document.querySelectorAll('.nav-item')[6]);
+  await submitManual();
+}
+
+/* ══════════════════════════════════════════════════════════
+   SETUP GUIDE — APPS SCRIPT CODE
+══════════════════════════════════════════════════════════ */
+const APPS_SCRIPT_CODE = `// ════════════════════════════════════════════════════════
+// AttendEase — Company Google Apps Script
+// Paste this in: your company Sheet → Extensions → Apps Script
+// Then Deploy as Web App (Execute as: Me, Access: Anyone)
+// ════════════════════════════════════════════════════════
+
+const SHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const action = body.action;
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+
+    if (action === 'login')             return respond(login(ss, body));
+    if (action === 'getEmployees')      return respond(getEmployees(ss));
+    if (action === 'registerEmployee')  return respond(registerEmployee(ss, body));
+    if (action === 'updateEmployee')    return respond(updateEmployee(ss, body));
+    if (action === 'getSites')          return respond(getSites(ss));
+    if (action === 'addSite')           return respond(addSite(ss, body));
+    if (action === 'updateSite')        return respond(updateSite(ss, body));
+    if (action === 'getAttendance')     return respond(getAttendance(ss, body));
+    if (action === 'getAttendanceRange')return respond(getAttendanceRange(ss, body));
+    if (action === 'markAttendance')    return respond(markAttendance(ss, body));
+    return respond({ success: false, message: 'Unknown action: ' + action });
+  } catch(err) {
+    return respond({ success: false, message: err.message });
+  }
+}
+
+function doGet(e) {
+  return respond({ success: true, message: 'AttendEase API running', sheet: SHEET_ID });
+}
+
+function respond(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── HELPERS ──────────────────────────────────────────────
+function getSheet(ss, name) {
+  return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+function sheetToObjects(sheet) {
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  const headers = data[0];
+  return data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  });
+}
+
+function getAttSheetName(date) {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return 'ATTENDANCE_' + y + '_' + m;
+}
+
+// ── LOGIN ─────────────────────────────────────────────────
+function login(ss, body) {
+  const { empId, password } = body;
+  const empSheet = getSheet(ss, 'EMPLOYEES');
+  const rows = sheetToObjects(empSheet);
+
+  // Match by EMPID or Email
+  const emp = rows.find(r =>
+    (r.EMPID || '').toString().toUpperCase() === (empId || '').toUpperCase() ||
+    (r.Email || '').toString().toLowerCase() === (empId || '').toLowerCase()
+  );
+  if (!emp) return { success: false, message: 'Employee not found.' };
+  if (emp.Status !== 'ACTIVE') return { success: false, message: 'Account is inactive.' };
+  if ((emp.PasswordHash || '') !== (password || ''))
+    return { success: false, message: 'Incorrect password.' };
+
+  // Get site info
+  const siteSheet = getSheet(ss, 'SITES');
+  const sites = sheetToObjects(siteSheet);
+  const site  = sites.find(s => s.SiteID === emp.Site) || {};
+
+  // Log the login
+  try {
+    const logSheet = getSheet(ss, 'APP_LOGS');
+    logSheet.appendRow([new Date(), emp.Email, 'LOGIN', 'Web', 'SUCCESS', '']);
+  } catch(_) {}
+
+  return {
+    success: true,
+    data: {
+      empCode:    emp.EMPID,
+      name:       emp.EmpName,
+      email:      emp.Email,
+      role:       emp.Role || 'EMPLOYEE',
+      siteId:     emp.Site,
+      siteName:   site.SiteName || '',
+      shiftStart: site.ShiftStart || '',
+      shiftEnd:   site.ShiftEnd || '',
+      lunchTime:  site.LunchTime || '',
+      companyName: SpreadsheetApp.getActiveSpreadsheet().getName(),
+      companySheetId: SHEET_ID,
+    }
+  };
+}
+
+// ── EMPLOYEES ─────────────────────────────────────────────
+function getEmployees(ss) {
+  const rows = sheetToObjects(getSheet(ss, 'EMPLOYEES'));
+  const sites = sheetToObjects(getSheet(ss, 'SITES'));
+  const siteMap = {};
+  sites.forEach(s => { siteMap[s.SiteID] = s.SiteName; });
+  const employees = rows.map(r => ({
+    empCode:  r.EMPID,
+    name:     r.EmpName,
+    email:    r.Email,
+    phone:    r.Phone,
+    site:     r.Site,
+    siteName: siteMap[r.Site] || r.Site,
+    joinDate: r.JoinDate,
+    status:   r.Status,
+    role:     r.Role,
+  }));
+  return { success: true, data: { employees } };
+}
+
+function registerEmployee(ss, body) {
+  const sheet = getSheet(ss, 'EMPLOYEES');
+  const existing = sheetToObjects(sheet);
+  if (existing.find(r => r.EMPID === body.empCode))
+    return { success: false, message: 'Employee code already exists.' };
+  sheet.appendRow([
+    body.empCode, body.name, body.email, body.phone || '',
+    body.password || '', body.siteId || '', body.joinDate || '',
+    body.status || 'ACTIVE', '', body.role || 'EMPLOYEE', body.joinDate || ''
+  ]);
+  return { success: true, message: 'Employee registered.' };
+}
+
+function updateEmployee(ss, body) {
+  const sheet = getSheet(ss, 'EMPLOYEES');
+  const data  = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const empIdx  = headers.indexOf('EMPID');
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][empIdx] === body.empCode) {
+      const map = { EmpName: body.name, Email: body.email, Phone: body.phone, Site: body.siteId, JoinDate: body.joinDate, Status: body.status, Role: body.role };
+      if (body.password) map.PasswordHash = body.password;
+      Object.entries(map).forEach(([k, v]) => {
+        const col = headers.indexOf(k);
+        if (col >= 0 && v !== undefined) sheet.getRange(i + 1, col + 1).setValue(v);
+      });
+      return { success: true, message: 'Employee updated.' };
+    }
+  }
+  return { success: false, message: 'Employee not found.' };
+}
+
+// ── SITES ─────────────────────────────────────────────────
+function getSites(ss) {
+  const rows = sheetToObjects(getSheet(ss, 'SITES'));
+  const sites = rows.map(r => ({
+    siteId:     r.SiteID,
+    siteName:   r.SiteName,
+    latitude:   r.Latitude,
+    longitude:  r.Longitude,
+    radius:     r.Radius,
+    shiftStart: r.ShiftStart,
+    shiftEnd:   r.ShiftEnd,
+    lunchTime:  r.LunchTime,
+    address:    r.Address,
+    status:     r.Status,
+  }));
+  return { success: true, data: { sites } };
+}
+
+function addSite(ss, body) {
+  const sheet = getSheet(ss, 'SITES');
+  const rows  = sheetToObjects(sheet);
+  const newId = 'SITE' + String(rows.length + 1).padStart(3, '0');
+  sheet.appendRow([
+    newId, body.siteName, body.latitude, body.longitude,
+    body.radius, body.shiftStart, body.shiftEnd, body.lunchTime,
+    body.address || '', body.status || 'ACTIVE'
+  ]);
+  return { success: true, message: 'Site added.', siteId: newId };
+}
+
+function updateSite(ss, body) {
+  const sheet = getSheet(ss, 'SITES');
+  const data  = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const siteIdx = headers.indexOf('SiteID');
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][siteIdx] === body.siteId) {
+      const map = {
+        SiteName: body.siteName, Latitude: body.latitude, Longitude: body.longitude,
+        Radius: body.radius, ShiftStart: body.shiftStart, ShiftEnd: body.shiftEnd,
+        LunchTime: body.lunchTime, Address: body.address, Status: body.status
+      };
+      Object.entries(map).forEach(([k, v]) => {
+        const col = headers.indexOf(k);
+        if (col >= 0 && v !== undefined) sheet.getRange(i + 1, col + 1).setValue(v);
+      });
+      return { success: true, message: 'Site updated.' };
+    }
+  }
+  return { success: false, message: 'Site not found.' };
+}
+
+// ── ATTENDANCE ────────────────────────────────────────────
+function getAttendance(ss, body) {
+  const date     = body.date || new Date().toISOString().slice(0, 10);
+  const sheetName= getAttSheetName(date);
+  const attSheet = ss.getSheetByName(sheetName);
+  if (!attSheet) return { success: true, data: { records: [] } };
+
+  const rows    = sheetToObjects(attSheet);
+  const empRows = sheetToObjects(getSheet(ss, 'EMPLOYEES'));
+  const empMap  = {};
+  empRows.forEach(e => { empMap[e.EMPID] = e.EmpName; });
+  const siteRows = sheetToObjects(getSheet(ss, 'SITES'));
+  const siteMap  = {};
+  siteRows.forEach(s => { siteMap[s.SiteID] = s.SiteName; });
+
+  const records = rows
+    .filter(r => {
+      const d = r.Date instanceof Date ? r.Date.toISOString().slice(0, 10) : String(r.Date).slice(0, 10);
+      return d === date && (!body.siteId || r.SiteID === body.siteId);
+    })
+    .map(r => ({
+      date:           r.Date,
+      empCode:        r.EMPID,
+      name:           empMap[r.EMPID] || r.Name || r.EMPID,
+      site:           siteMap[r.SiteID] || r.SiteID,
+      inTime:         r.InTime ? String(r.InTime).slice(0, 5) : '',
+      outTime:        r.OutTime ? String(r.OutTime).slice(0, 5) : '',
+      status:         r.Status,
+      locationStatus: r.LocationStatus,
+      markedBy:       r.MarkedBy,
+      halfDay:        r.HalfDay,
+      manualRemark:   r.ManualRemark,
+    }));
+  return { success: true, data: { records } };
+}
+
+function getAttendanceRange(ss, body) {
+  const from = new Date(body.fromDate);
+  const to   = new Date(body.toDate);
+  const empMap  = {};
+  const siteMap = {};
+  sheetToObjects(getSheet(ss, 'EMPLOYEES')).forEach(e => { empMap[e.EMPID] = e.EmpName; });
+  sheetToObjects(getSheet(ss, 'SITES')).forEach(s => { siteMap[s.SiteID] = s.SiteName; });
+
+  // Get all monthly tabs that fall within range
+  const months = new Set();
+  const cur = new Date(from);
+  while (cur <= to) {
+    months.add(getAttSheetName(cur.toISOString().slice(0, 10)));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+
+  let all = [];
+  months.forEach(sheetName => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return;
+    sheetToObjects(sheet).forEach(r => {
+      const d = r.Date instanceof Date ? r.Date : new Date(r.Date);
+      if (d < from || d > to) return;
+      if (body.siteId  && r.SiteID   !== body.siteId)  return;
+      if (body.empCode && r.EMPID    !== body.empCode)  return;
+      all.push({
+        date:           r.Date instanceof Date ? r.Date.toISOString().slice(0,10) : String(r.Date).slice(0,10),
+        empCode:        r.EMPID,
+        name:           empMap[r.EMPID]  || r.Name || r.EMPID,
+        site:           siteMap[r.SiteID]|| r.SiteID,
+        inTime:         r.InTime  ? String(r.InTime).slice(0,5)  : '',
+        outTime:        r.OutTime ? String(r.OutTime).slice(0,5) : '',
+        status:         r.Status,
+        locationStatus: r.LocationStatus,
+        markedBy:       r.MarkedBy,
+        halfDay:        r.HalfDay,
+        manualRemark:   r.ManualRemark,
+      });
+    });
+  });
+  all.sort((a,b) => a.date.localeCompare(b.date));
+  return { success: true, data: { records: all } };
+}
+
+function markAttendance(ss, body) {
+  const date      = body.date || new Date().toISOString().slice(0, 10);
+  const sheetName = getAttSheetName(date);
+  const sheet     = getSheet(ss, sheetName);
+
+  // Ensure header row
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['Date','EMPID','Name','SiteID','InTime','OutTime','Status','LocationStatus','MarkedBy','HalfDay','ManualRemark','Remarks']);
+  }
+
+  const rows    = sheetToObjects(sheet);
+  const empRows = sheetToObjects(getSheet(ss, 'EMPLOYEES'));
+  const emp     = empRows.find(e => e.EMPID === body.empCode);
+  if (!emp) return { success: false, message: 'Employee not found.' };
+
+  // Check if record for same date+emp already exists
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const empIdx  = headers.indexOf('EMPID');
+  const dateIdx = headers.indexOf('Date');
+  for (let i = 1; i < data.length; i++) {
+    const rowDate = data[i][dateIdx] instanceof Date
+      ? data[i][dateIdx].toISOString().slice(0,10)
+      : String(data[i][dateIdx]).slice(0,10);
+    if (data[i][empIdx] === body.empCode && rowDate === date) {
+      // Update existing
+      const map = { InTime: body.inTime, OutTime: body.outTime, Status: body.status, LocationStatus: body.locationStatus, MarkedBy: body.markedBy, ManualRemark: body.manualRemark };
+      Object.entries(map).forEach(([k, v]) => {
+        const col = headers.indexOf(k);
+        if (col >= 0 && v !== undefined) sheet.getRange(i + 1, col + 1).setValue(v);
+      });
+      return { success: true, message: 'Attendance updated.' };
+    }
+  }
+
+  // Append new row
+  sheet.appendRow([
+    date, body.empCode, emp.EmpName, emp.Site || '',
+    body.inTime || '', body.outTime || '', body.status || 'PRESENT',
+    body.locationStatus || 'MANUAL', body.markedBy || 'ADMIN',
+    body.halfDay || 'NO', body.manualRemark || '', ''
+  ]);
+  return { success: true, message: 'Attendance marked.' };
+}
+`;
+
+function copyScript() {
+  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(() => toast('Script copied to clipboard!'));
+}
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+(function init() {
+  document.getElementById('mDate').value  = today();
+  document.getElementById('mmDate').value = today();
+
+  // Populate the apps script code block
+  const el = document.getElementById('appsScriptCode');
+  if (el) el.textContent = APPS_SCRIPT_CODE;
+})();
+</script>
+</body>
+</html>
