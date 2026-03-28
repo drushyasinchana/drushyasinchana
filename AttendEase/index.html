@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="AttendEase — Smart Attendance Management Portal by Drushyasinchana Tech Solutions"/>
+  <meta name="author" content="Drushyasinchana Tech Solutions"/>
+  <title>AttendEase — Portal | Drushyasinchana</title>
+
+  <!-- Favicon from main site -->
+  <link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="assets/css/main.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════════════ -->
+<div id="loginScreen" class="screen active">
+
+  <!-- Left brand panel -->
+  <div class="login-left">
+    <div class="login-brand">
+
+      <div class="login-logo-wrap">
+        <img
+          src="https://drushyasinchana.in/assets/images/logo.png"
+          alt="Drushyasinchana Logo"
+          class="login-logo-img"
+          onerror="this.style.display='none'"
+        />
+        <div class="login-logo-text">
+          <div class="brand-name">Drushyasinchana</div>
+          <div class="brand-sub">Tech Solutions</div>
+        </div>
+      </div>
+
+      <h1>Attend<span>Ease</span></h1>
+      <p>
+        Smart attendance management for field teams, construction sites
+        and distributed workforces — powered by GPS geofencing.
+      </p>
+
+      <div class="login-features">
+        <div class="lf-item"><div class="lf-dot"></div>GPS-verified attendance from mobile app</div>
+        <div class="lf-item"><div class="lf-dot"></div>Multi-site geofencing with shift control</div>
+        <div class="lf-item"><div class="lf-dot"></div>Real-time reports with CSV export</div>
+        <div class="lf-item"><div class="lf-dot"></div>Manual entry &amp; admin overrides</div>
+        <div class="lf-item"><div class="lf-dot"></div>Attendance on mobile · Admin on web</div>
+      </div>
+
+      <div class="login-divider">
+        <img
+          src="https://drushyasinchana.in/assets/images/logo.png"
+          alt="Logo"
+          onerror="this.style.display='none'"
+        />
+        <span>drushyasinchana.in · Bengaluru, Karnataka</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right login form -->
+  <div class="login-right">
+    <div class="login-box">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to your AttendEase admin portal</p>
+
+      <div class="field-group">
+        <label>Company Gmail ID</label>
+        <input id="lCompanyEmail" type="email" placeholder="yourcompany@gmail.com" autocomplete="username"/>
+      </div>
+      <div class="field-group">
+        <label>Admin Email / Employee ID</label>
+        <input id="lEmpId" type="text" placeholder="admin@company.com or EMP001"/>
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input id="lPassword" type="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+
+      <button class="btn-primary" id="btnLogin" onclick="doLogin()">Sign In</button>
+      <div id="loginError"></div>
+
+      <div class="login-footer">
+        Attendance marking is done via the mobile app.<br/>
+        This portal is for admin management only.<br/><br/>
+        <a href="https://drushyasinchana.in" target="_blank">drushyasinchana.in</a>
+        &nbsp;·&nbsp; © 2025 Drushyasinchana Tech Solutions
+      </div>
+    </div>
+  </div>
+
+</div><!-- /loginScreen -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     APP SCREEN
+══════════════════════════════════════════════════════════════ -->
+<div id="appScreen" class="screen">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img
+          src="https://drushyasinchana.in/assets/images/logo.png"
+          alt="Drushyasinchana"
+          class="sb-logo-img"
+          onerror="this.style.display='none'"
+        />
+        <div class="sb-logo-text">
+          <div class="app-name">AttendEase</div>
+          <div class="app-tagline">Admin Portal</div>
+        </div>
+      </div>
+      <div class="sb-company">
+        <strong id="sbCompanyName">—</strong>
+        Signed in as admin
+      </div>
+    </div>
+
+    <div class="sb-nav">
+      <button class="nav-item active" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </button>
+
+      <button class="nav-item" onclick="nav('employees',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        Employees
+      </button>
+
+      <button class="nav-item" onclick="nav('sites',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        Sites
+      </button>
+
+      <div class="nav-sep"></div>
+
+      <button class="nav-item" onclick="nav('attendance',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+          <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+        </svg>
+        Attendance
+      </button>
+
+      <button class="nav-item" onclick="nav('reports',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        Reports
+      </button>
+
+      <div class="nav-sep"></div>
+
+      <button class="nav-item" onclick="nav('manual',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Manual Entry
+      </button>
+    </div>
+
+    <div class="sb-footer">
+      <div class="sb-footer-logo">
+        <img
+          src="https://drushyasinchana.in/assets/images/logo.png"
+          alt="Drushyasinchana"
+          onerror="this.style.display='none'"
+        />
+        <span>Drushyasinchana Tech Solutions</span>
+      </div>
+      <p>drushyasinchana.in</p>
+    </div>
+  </nav>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-user">
+        <div class="avatar" id="topbarAvatar">A</div>
+        <span id="topbarEmail">—</span>
+        <button class="btn-logout" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+
+    <!-- Pages -->
+    <div class="page-body">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="pgDashboard">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-val" id="stTotalEmp">—</div>
+            <div class="stat-sub">Registered</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Present Today</div>
+            <div class="stat-val" id="stPresent">—</div>
+            <div class="stat-sub" id="stDate">—</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Absent Today</div>
+            <div class="stat-val" id="stAbsent">—</div>
+            <div class="stat-sub">Expected in</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Sites</div>
+            <div class="stat-val" id="stSites">—</div>
+            <div class="stat-sub">Geofenced</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div class="card">
+            <div class="card-hdr">
+              <h3>Today's Attendance</h3>
+              <button class="btn btn-outline btn-sm" onclick="nav('attendance',document.querySelectorAll('.nav-item')[3])">View all</button>
+            </div>
+            <div id="dashAttendList"><div class="empty"><p>Loading…</p></div></div>
+          </div>
+          <div class="card">
+            <div class="card-hdr"><h3>Sites Overview</h3></div>
+            <div id="dashSiteList"><div class="empty"><p>Loading…</p></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EMPLOYEES ── -->
+      <div class="page" id="pgEmployees">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Employee Directory</h3>
+            <button class="btn btn-teal btn-sm" onclick="openEmpModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Register Employee
+            </button>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="empSearch" placeholder="Search name, code or email…" oninput="filterEmployees()" style="flex:1;min-width:180px;"/>
+            <select id="empStatusFilter" onchange="filterEmployees()">
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+            <select id="empSiteFilter" onchange="filterEmployees()">
+              <option value="">All Sites</option>
+            </select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Code</th><th>Name</th><th>Email</th>
+                <th>Site</th><th>Join Date</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="empTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SITES ── -->
+      <div class="page" id="pgSites">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Site Management</h3>
+            <button class="btn btn-teal btn-sm" onclick="openSiteModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Site
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Site ID</th><th>Site Name</th><th>Coordinates</th>
+                <th>Radius</th><th>Shift</th><th>Lunch</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="siteTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ATTENDANCE ── -->
+      <div class="page" id="pgAttendance">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Attendance Records</h3>
+            <button class="btn btn-outline btn-sm" onclick="openModal('manualModal')">Manual Entry</button>
+          </div>
+          <div class="filter-bar">
+            <input type="date" id="attDate" onchange="loadAttendance()"/>
+            <select id="attSite" onchange="loadAttendance()"><option value="">All Sites</option></select>
+            <select id="attStatus" onchange="filterAttTable()">
+              <option value="">All Status</option>
+              <option value="PRESENT">Present</option>
+              <option value="ABSENT">Absent</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAttendance()">↻ Refresh</button>
+          </div>
+          <div class="report-summary" id="attSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Employee</th><th>Code</th><th>Site</th>
+                <th>IN</th><th>OUT</th><th>Status</th>
+                <th>Location</th><th>Half Day</th><th>Marked By</th>
+              </tr></thead>
+              <tbody id="attTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── REPORTS ── -->
+      <div class="page" id="pgReports">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-hdr"><h3>Generate Report</h3></div>
+          <div class="form-grid" style="margin-bottom:14px;">
+            <div class="fg"><label>From Date</label><input type="date" id="rptFrom"/></div>
+            <div class="fg"><label>To Date</label><input type="date" id="rptTo"/></div>
+            <div class="fg"><label>Site</label><select id="rptSite"><option value="">All Sites</option></select></div>
+            <div class="fg"><label>Employee</label><select id="rptEmp"><option value="">All Employees</option></select></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" onclick="generateReport()">Generate Report</button>
+            <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Results</h3>
+            <span id="rptCount" style="font-size:.8rem;color:var(--muted);"></span>
+          </div>
+          <div class="report-summary" id="rptSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Date</th><th>Employee</th><th>Code</th><th>Site</th>
+                <th>IN</th><th>OUT</th><th>Status</th><th>Hours</th><th>Marked By</th>
+              </tr></thead>
+              <tbody id="rptTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MANUAL ENTRY ── -->
+      <div class="page" id="pgManual">
+        <div class="card" style="max-width:600px;">
+          <div class="card-hdr"><h3>Manual Attendance Entry</h3></div>
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px;">
+            Use this to correct or record missed attendance. All manual entries are logged with your admin ID.
+          </p>
+          <div class="form-grid" style="margin-bottom:14px;">
+            <div class="fg"><label>Employee ID *</label><input type="text" id="mEmpId" placeholder="EMP001"/></div>
+            <div class="fg"><label>Date *</label><input type="date" id="mDate"/></div>
+            <div class="fg"><label>Check-In Time *</label><input type="time" id="mCheckIn"/></div>
+            <div class="fg"><label>Check-Out Time</label><input type="time" id="mCheckOut"/></div>
+            <div class="fg" style="grid-column:1/-1;">
+              <label>Reason / Note</label>
+              <textarea id="mReason" placeholder="Reason for manual entry…"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" onclick="submitManual()">Save Entry</button>
+            <button class="btn btn-outline" onclick="clearManual()">Clear</button>
+          </div>
+          <div id="manualResult" style="margin-top:14px;display:none;"></div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /appScreen -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════════════ -->
+
+<!-- Employee Modal -->
+<div class="modal-backdrop" id="empModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="empModalTitle">Register Employee</h3>
+      <button class="modal-close" onclick="closeModal('empModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fg"><label>Employee Code *</label><input id="eCode" placeholder="EMP001"/></div>
+        <div class="fg"><label>Full Name *</label><input id="eName" placeholder="Full name"/></div>
+        <div class="fg"><label>Email (Login ID) *</label><input id="eEmail" type="email" placeholder="emp@company.com"/></div>
+        <div class="fg"><label>Phone</label><input id="ePhone" type="tel" placeholder="9876543210"/></div>
+        <div class="fg"><label>Password *</label><input id="ePass" type="password" placeholder="Leave blank to keep existing"/></div>
+        <div class="fg"><label>Assign Site</label><select id="eSite"><option value="">— Select site —</option></select></div>
+        <div class="fg"><label>Joining Date</label><input id="eJoin" type="date"/></div>
+        <div class="fg"><label>Status</label>
+          <select id="eStatus">
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div id="empModalErr" style="color:var(--error);font-size:.83rem;display:none;padding:8px 0;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('empModal')">Cancel</button>
+      <button class="btn btn-teal" id="btnSaveEmp" onclick="saveEmployee()">Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- Site Modal -->
+<div class="modal-backdrop" id="siteModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="siteModalTitle">Add New Site</h3>
+      <button class="modal-close" onclick="closeModal('siteModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fg"><label>Site Name *</label><input id="sName" placeholder="Head Office"/></div>
+        <div class="fg"><label>Status</label><select id="sStatus"><option>ACTIVE</option><option>INACTIVE</option></select></div>
+        <div class="fg"><label>Latitude *</label><input id="sLat" type="number" step="any" placeholder="12.9716"/></div>
+        <div class="fg"><label>Longitude *</label><input id="sLng" type="number" step="any" placeholder="77.5946"/></div>
+        <div class="fg"><label>Geofence Radius (metres) *</label><input id="sRadius" type="number" placeholder="100"/></div>
+        <div class="fg"><label>Address</label><input id="sAddr" placeholder="City, State"/></div>
+        <div class="fg"><label>Shift Start</label><input id="sShiftS" type="time" value="09:00"/></div>
+        <div class="fg"><label>Shift End</label><input id="sShiftE" type="time" value="18:00"/></div>
+        <div class="fg"><label>Lunch Time</label><input id="sLunch" type="time" value="13:00"/></div>
+      </div>
+      <div id="siteModalErr" style="color:var(--error);font-size:.83rem;display:none;padding:8px 0;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('siteModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveSite()">Save Site</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Manual Attendance Modal -->
+<div class="modal-backdrop" id="manualModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>Quick Manual Entry</h3>
+      <button class="modal-close" onclick="closeModal('manualModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fg"><label>Employee ID *</label><input id="mmEmpId" placeholder="EMP001"/></div>
+        <div class="fg"><label>Date *</label><input id="mmDate" type="date"/></div>
+        <div class="fg"><label>Check-In *</label><input id="mmIn" type="time"/></div>
+        <div class="fg"><label>Check-Out</label><input id="mmOut" type="time"/></div>
+        <div class="fg" style="grid-column:1/-1;"><label>Reason</label><textarea id="mmReason" rows="2" placeholder="Reason for manual entry…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('manualModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="submitManualModal()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- App JS -->
+<script src="assets/js/app.js"></script>
+
+</body>
+</html>
