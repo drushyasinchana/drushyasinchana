@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendEase — Admin Portal</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;--amber:#E65100;
+  --r:12px;--r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+  --sh-lg:0 8px 32px rgba(0,131,143,.16);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+
+/* ─── SCREENS ─────────────────────────────────────────── */
+.screen{display:none;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.anim{animation:fadeUp .25s ease both;}
+
+/* ══════════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════════ */
+#loginScreen{
+  min-height:100vh;align-items:stretch;
+  background:linear-gradient(140deg,var(--teal-dd) 0%,var(--teal) 55%,#00ACC1 100%);
+}
+.login-left{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:64px 72px;position:relative;overflow:hidden;
+}
+.login-left::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 15% 50%,rgba(255,255,255,.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.lb-inner{position:relative;z-index:1;}
+.lb-brand-row{display:flex;align-items:center;gap:14px;margin-bottom:36px;}
+.lb-logo{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:7px;object-fit:contain;}
+.lb-brand-name{font-size:1.2rem;font-weight:600;color:#fff;}
+.lb-brand-sub{font-size:.73rem;color:rgba(255,255,255,.55);margin-top:2px;}
+.lb-h1{font-size:2.8rem;font-weight:600;color:#fff;letter-spacing:-.03em;line-height:1.08;margin-bottom:14px;}
+.lb-h1 span{color:var(--teal-l);}
+.lb-p{color:rgba(255,255,255,.6);font-size:.92rem;line-height:1.65;max-width:370px;}
+.lb-features{margin-top:44px;display:flex;flex-direction:column;gap:13px;}
+.lb-feat{display:flex;align-items:center;gap:11px;color:rgba(255,255,255,.72);font-size:.86rem;}
+.lb-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-l);flex-shrink:0;}
+.lb-footer{margin-top:52px;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;}
+.lb-footer span{font-size:.75rem;color:rgba(255,255,255,.35);}
+
+.login-right{width:420px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:52px 44px;}
+.login-box{width:100%;}
+.login-box h2{font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.login-box .sub{color:var(--muted);font-size:.86rem;margin-bottom:28px;}
+
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:.76rem;font-weight:500;color:var(--ink2);margin-bottom:6px;letter-spacing:.01em;}
+.fg input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  font-size:.9rem;color:var(--ink);background:#fff;
+  transition:border-color .18s,box-shadow .18s;outline:none;
+}
+.fg input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.09);}
+
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:44px;}
+.pw-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;
+  display:flex;align-items:center;
+}
+.pw-eye:hover{color:var(--teal);}
+
+.btn-login{
+  width:100%;padding:13px;background:var(--teal);color:#fff;
+  border:none;border-radius:var(--r-sm);font-size:.94rem;font-weight:500;
+  transition:background .18s,box-shadow .18s,transform .1s;
+  margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-login:hover{background:var(--teal-d);box-shadow:0 4px 16px rgba(0,131,143,.28);}
+.btn-login:active{transform:scale(.98);}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;}
+#loginError{
+  margin-top:14px;padding:10px 14px;border-radius:var(--r-sm);
+  background:#FFEBEE;color:var(--red);font-size:.84rem;
+  display:none;border:1px solid #FFCDD2;
+}
+.login-note{margin-top:24px;text-align:center;font-size:.75rem;color:var(--hint);line-height:1.6;}
+
+/* ══════════════════════════════════════════════════════
+   SETUP PROMPT (Google Sheet ID entry)
+══════════════════════════════════════════════════════ */
+.setup-note{
+  margin-top:12px;padding:10px 13px;background:var(--teal-s);
+  border:1px solid var(--teal-l);border-radius:var(--r-sm);
+  font-size:.78rem;color:var(--teal-dd);line-height:1.5;
+}
+.setup-note a{color:var(--teal-d);text-decoration:underline;font-weight:500;}
+
+/* ══════════════════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════════════════ */
+#appScreen{flex-direction:row;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:218px;flex-shrink:0;background:var(--teal-dd);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-brand{padding:16px 14px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-row{display:flex;align-items:center;gap:10px;}
+.sb-logo-img{width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.1);padding:3px;object-fit:contain;border:1px solid rgba(255,255,255,.14);}
+.sb-app-name{font-size:.96rem;font-weight:600;color:#fff;}
+.sb-app-sub{font-size:.66rem;color:rgba(255,255,255,.38);margin-top:1px;}
+.sb-company{
+  margin-top:10px;padding:7px 9px;background:rgba(255,255,255,.06);border-radius:6px;
+  font-size:.72rem;color:rgba(255,255,255,.45);
+}
+.sb-company strong{display:block;color:rgba(255,255,255,.75);font-size:.76rem;margin-bottom:2px;}
+
+.sb-nav{flex:1;padding:10px 7px;display:flex;flex-direction:column;gap:2px;}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-sm);
+  color:rgba(255,255,255,.5);font-size:.83rem;cursor:pointer;
+  transition:background .14s,color .14s;border:none;background:none;width:100%;text-align:left;
+}
+.nav-item svg{width:14px;height:14px;flex-shrink:0;opacity:.55;transition:opacity .14s;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.nav-item:hover svg{opacity:.85;}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;font-weight:500;}
+.nav-item.active svg{opacity:1;}
+.nav-sep{height:1px;background:rgba(255,255,255,.06);margin:5px 0;}
+
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-footer span{font-size:.68rem;color:rgba(255,255,255,.28);}
+.btn-signout{
+  margin-top:7px;width:100%;padding:7px 10px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;color:rgba(255,255,255,.5);font-size:.78rem;
+  display:flex;align-items:center;gap:7px;transition:all .14s;
+}
+.btn-signout:hover{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4);color:#FCA5A5;}
+
+/* TOPBAR */
+.topbar{
+  height:54px;background:#fff;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 22px;gap:14px;
+  position:sticky;top:0;z-index:10;
+}
+.topbar-title{font-size:.94rem;font-weight:600;color:var(--ink);flex:1;}
+.topbar-right{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);}
+.avatar{
+  width:29px;height:29px;border-radius:50%;background:var(--teal);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;flex-shrink:0;
+}
+
+/* MAIN */
+.main-content{flex:1;display:flex;flex-direction:column;min-width:0;}
+.page-body{flex:1;padding:22px 26px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeUp .2s ease both;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden;
+}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.red::before{background:var(--red);}
+.stat-label{font-size:.68rem;color:var(--muted);font-weight:500;letter-spacing:.04em;margin-bottom:8px;text-transform:uppercase;}
+.stat-val{font-size:1.9rem;font-weight:600;color:var(--ink);font-family:'DM Mono',monospace;line-height:1;}
+.stat-sub{font-size:.69rem;color:var(--hint);margin-top:5px;}
+
+/* CARD */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px;box-shadow:var(--sh);}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-hdr h3{font-size:.92rem;font-weight:600;color:var(--ink);}
+
+/* SITE CARDS */
+.site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px;}
+.site-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;cursor:pointer;position:relative;overflow:hidden;
+  transition:box-shadow .15s,transform .12s;
+}
+.site-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px);}
+.site-card-bar{position:absolute;top:0;left:0;right:0;height:3px;}
+.site-card-name{font-weight:600;font-size:.85rem;color:var(--ink);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.site-card-nums{display:flex;gap:14px;}
+.site-num{text-align:center;}
+.site-num-val{font-size:1.45rem;font-weight:600;font-family:'DM Mono',monospace;line-height:1;}
+.site-num-lbl{font-size:.63rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+.site-card-foot{margin-top:9px;font-size:.69rem;color:var(--hint);}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r-sm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.835rem;}
+thead th{
+  background:var(--teal-s);color:var(--teal-dd);
+  font-weight:600;font-size:.67rem;letter-spacing:.05em;text-transform:uppercase;
+  padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F0FAFB;}
+tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
+.mono{font-family:'DM Mono',monospace;font-size:.78rem;}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.67rem;font-weight:600;letter-spacing:.02em;}
+.badge-green{background:#E8F5E9;color:#1B5E20;}
+.badge-red{background:#FFEBEE;color:#B71C1C;}
+.badge-amber{background:#FFF3E0;color:#E65100;}
+.badge-blue{background:#E3F2FD;color:#0D47A1;}
+.badge-gray{background:#ECEFF1;color:#455A64;}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgg{display:flex;flex-direction:column;gap:5px;}
+.fgg label{font-size:.74rem;font-weight:500;color:var(--ink2);letter-spacing:.01em;}
+.fgg input,.fgg select,.fgg textarea{
+  padding:9px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.85rem;color:var(--ink);
+  background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.fgg input:focus,.fgg select:focus,.fgg textarea:focus{
+  border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.08);
+}
+.fgg textarea{resize:vertical;min-height:70px;}
+.form-actions{display:flex;gap:8px;margin-top:4px;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.filter-bar input,.filter-bar select{
+  padding:7px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.82rem;
+  outline:none;background:#fff;color:var(--ink);transition:border-color .15s;
+}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--teal);}
+
+/* BUTTONS */
+.btn{
+  padding:8px 16px;border-radius:var(--r-sm);
+  font-size:.83rem;font-weight:500;border:1.5px solid transparent;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal);}
+.btn-teal:hover{background:var(--teal-d);border-color:var(--teal-d);}
+.btn-outline{background:#fff;color:var(--ink2);border-color:var(--border);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-sm{padding:5px 11px;font-size:.76rem;}
+.btn svg{width:13px;height:13px;}
+.btn:disabled{opacity:.55;cursor:not-allowed;}
+
+/* CHIPS */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.chip{padding:5px 13px;border-radius:20px;font-size:.76rem;font-weight:500;background:var(--card);border:1px solid var(--border);color:var(--ink2);}
+.chip span{font-weight:700;margin-left:4px;}
+
+/* MODAL */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(13,31,34,.45);z-index:100;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(3px);
+}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:#fff;border-radius:var(--r);box-shadow:var(--sh-lg);
+  width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;
+  animation:slideUp .2s ease both;
+}
+.modal-wide{width:700px;}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0;}to{transform:none;opacity:1;}}
+.modal-hdr{
+  padding:15px 20px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:#fff;z-index:1;
+}
+.modal-hdr h3{font-size:.92rem;font-weight:600;}
+.modal-close{
+  width:26px;height:26px;border-radius:6px;border:none;
+  background:none;color:var(--muted);font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .14s;
+}
+.modal-close:hover{background:var(--bg);}
+.modal-body{padding:16px 20px;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.modal-err{color:var(--red);font-size:.8rem;display:none;padding:7px 0;}
+
+/* MISC */
+.empty{text-align:center;padding:36px 20px;color:var(--muted);}
+.empty p{font-size:.84rem;}
+.mini-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.mini-row:last-child{border-bottom:none;}
+.mini-row .mname{font-weight:500;font-size:.84rem;}
+.mini-row .msub{font-size:.69rem;color:var(--muted);margin-top:1px;}
+.mini-row .mright{text-align:right;}
+.mini-row .mtime{font-size:.69rem;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace;}
+.result-ok{background:#E8F5E9;color:var(--green);border:1px solid #A5D6A7;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+.result-err{background:#FFEBEE;color:var(--red);border:1px solid #FFCDD2;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#toast{
+  position:fixed;bottom:20px;right:20px;z-index:200;
+  background:var(--ink);color:#fff;padding:10px 16px;
+  border-radius:var(--r-sm);font-size:.84rem;box-shadow:var(--sh-lg);
+  transform:translateY(70px);opacity:0;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;max-width:300px;
+}
+#toast.show{transform:none;opacity:1;}
+#toast.success{background:var(--green);}
+#toast.error{background:var(--red);}
+
+/* SITES PAGE */
+.sites-page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.site-detail-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;box-shadow:var(--sh);position:relative;overflow:hidden;cursor:pointer;
+  transition:box-shadow .15s,transform .12s;
+}
+.site-detail-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px);}
+.site-detail-card-bar{position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal);}
+.site-detail-name{font-weight:600;font-size:.88rem;color:var(--ink);margin-bottom:6px;}
+.site-detail-id{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);margin-bottom:10px;}
+.site-stat-row{display:flex;gap:12px;margin-top:8px;}
+.site-stat{text-align:center;flex:1;}
+.site-stat-val{font-size:1.3rem;font-weight:600;font-family:'DM Mono',monospace;}
+.site-stat-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:2px;}
+
+/* REGISTRATION (Employees) page */
+.reg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:900px){.lb-features,.lb-footer{display:none;}.login-right{width:100%;}.sidebar{width:190px;}}
+@media(max-width:660px){.login-left{display:none;}.sidebar{display:none;}.stat-grid{grid-template-columns:1fr 1fr;}.form-grid{grid-template-columns:1fr;}.page-body{padding:14px;}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ LOGIN ════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-left">
+    <div class="lb-inner anim">
+      <div class="lb-brand-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="lb-logo" onerror="this.style.display='none'"/>
+        <div>
+          <div class="lb-brand-name">Drushyasinchana</div>
+          <div class="lb-brand-sub">Tech Solutions</div>
+        </div>
+      </div>
+      <div class="lb-h1">Attend<span>Ease</span></div>
+      <p class="lb-p">Smart attendance management for field teams, construction sites and distributed workforces — powered by GPS geofencing.</p>
+      <div class="lb-features">
+        <div class="lb-feat"><div class="lb-dot"></div>GPS-verified check-in/out from Android app</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Multi-site geofencing with shift control</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Real-time reports — day-wise &amp; month-wise</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Manual attendance entry &amp; admin overrides</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Data lives in your own Google Sheets</div>
+      </div>
+      <div class="lb-footer">
+        <span>drushyasinchana.in &nbsp;·&nbsp; Bengaluru, Karnataka</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box anim">
+      <h2>Admin Sign In</h2>
+      <p class="sub">AttendEase portal — admin access only</p>
+
+      <div class="fg">
+        <label>Google Sheet ID</label>
+        <input id="lSheetId" type="text" placeholder="Paste your Google Sheet ID here" autocomplete="off"/>
+      </div>
+      <div class="fg">
+        <label>Employee ID</label>
+        <input id="lEmpId" type="text" placeholder="EMP001" autocomplete="username"/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input id="lPassword" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="pw-eye" type="button" onclick="togglePw()" tabindex="-1">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">Sign In</button>
+      <div id="loginError"></div>
+
+      <div class="setup-note">
+        📋 <strong>How to connect your Sheet:</strong><br/>
+        Open your Google Sheet → copy the ID from the URL<br/>
+        (between <code>/d/</code> and <code>/edit</code>)<br/>
+        Make sure the sheet is shared as <strong>"Anyone with the link — Viewer"</strong>.
+      </div>
+
+      <div class="login-note">
+        Attendance marking is done via the mobile app.<br/>
+        This portal is for admin management only.<br/><br/>
+        © 2025 Drushyasinchana Tech Solutions
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════ APP ════════════════════ -->
+<div id="appScreen" class="screen">
+
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="sb-logo-img" onerror="this.style.display='none'"/>
+        <div>
+          <div class="sb-app-name">AttendEase</div>
+          <div class="sb-app-sub">Admin Portal</div>
+        </div>
+      </div>
+      <div class="sb-company">
+        <strong id="sbCompanyName">—</strong>
+        <span id="sbAdminEmail">—</span>
+      </div>
+    </div>
+
+    <div class="sb-nav">
+      <button class="nav-item active" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="nav('registration',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Registration
+      </button>
+      <button class="nav-item" onclick="nav('sites',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Sites
+      </button>
+      <button class="nav-item" onclick="nav('attendance',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M8 18h.01M12 18h.01"/></svg>
+        Attendance
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="nav('reports',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reports
+      </button>
+    </div>
+
+    <div class="sb-footer">
+      <span>Drushyasinchana Tech Solutions</span>
+      <button class="btn-signout" onclick="doLogout()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-right">
+        <div class="avatar" id="topbarAvatar">A</div>
+        <span id="topbarName">—</span>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pgDashboard">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-val" id="stTotalEmp">—</div>
+            <div class="stat-sub">Registered</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Present Today</div>
+            <div class="stat-val" id="stPresent">—</div>
+            <div class="stat-sub" id="stDate">—</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Absent Today</div>
+            <div class="stat-val" id="stAbsent">—</div>
+            <div class="stat-sub">Not checked in</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Sites</div>
+            <div class="stat-val" id="stSites">—</div>
+            <div class="stat-sub">Geofenced</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-hdr">
+            <h3>Sites — Today's Attendance</h3>
+            <span id="dashSiteDate" style="font-size:.74rem;color:var(--muted);"></span>
+          </div>
+          <div id="dashSiteCards" class="site-grid">
+            <div class="empty"><p>Loading…</p></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Today's Check-ins</h3>
+            <button class="btn btn-outline btn-sm" onclick="nav('attendance',document.querySelectorAll('.nav-item')[3])">View all</button>
+          </div>
+          <div id="dashAttendList"><div class="empty"><p>Loading…</p></div></div>
+        </div>
+      </div>
+
+      <!-- REGISTRATION (Employees) -->
+      <div class="page" id="pgRegistration">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Employee Directory</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline btn-sm" onclick="loadEmployees()">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="empSearch" placeholder="Search name, code, email…" oninput="filterEmployees()" style="flex:1;min-width:160px;"/>
+            <select id="empStatusFilter" onchange="filterEmployees()">
+              <option value="">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+            </select>
+            <select id="empSiteFilter" onchange="filterEmployees()"><option value="">All Sites</option></select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Phone</th><th>Site</th><th>Joined</th><th>Role</th><th>Status</th></tr></thead>
+              <tbody id="empTableBody"><tr><td colspan="8"><div class="empty"><p>Loading…</p></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SITES -->
+      <div class="page" id="pgSites">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Sites</h3>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="date" id="siteDate" onchange="loadSitesPage()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:.82rem;outline:none;"/>
+              <button class="btn btn-outline btn-sm" onclick="loadSitesPage()">↻ Refresh</button>
+            </div>
+          </div>
+          <div id="sitesPageGrid" class="sites-page-grid">
+            <div class="empty"><p>Loading…</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div class="page" id="pgAttendance">
+        <div class="card">
+          <div class="card-hdr"><h3>Attendance Records</h3></div>
+          <div class="filter-bar">
+            <input type="date" id="attDate" onchange="loadAttendance()"/>
+            <select id="attSite" onchange="filterAttTable()"><option value="">All Sites</option></select>
+            <select id="attStatus" onchange="filterAttTable()">
+              <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAttendance()">↻ Refresh</button>
+          </div>
+          <div class="chips" id="attSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Employee</th><th>Code</th><th>Site</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th></tr></thead>
+              <tbody id="attTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="page" id="pgReports">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-hdr"><h3>Generate Report</h3></div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="fgg"><label>From Date</label><input type="date" id="rptFrom"/></div>
+            <div class="fgg"><label>To Date</label><input type="date" id="rptTo"/></div>
+            <div class="fgg"><label>Site</label><select id="rptSite"><option value="">All Sites</option></select></div>
+            <div class="fgg"><label>Employee</label><select id="rptEmp"><option value="">All Employees</option></select></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" onclick="generateReport()">Generate</button>
+            <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Results</h3>
+            <span id="rptCount" style="font-size:.78rem;color:var(--muted);"></span>
+          </div>
+          <div class="chips" id="rptSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Employee</th><th>Code</th><th>Site</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th></tr></thead>
+              <tbody id="rptTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SITE DETAIL MODAL -->
+<div class="modal-backdrop" id="siteReportModal">
+  <div class="modal modal-wide">
+    <div class="modal-hdr">
+      <h3 id="siteReportTitle">Site Report</h3>
+      <button class="modal-close" onclick="closeModal('siteReportModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="chips" id="siteReportChips"></div>
+      <div class="filter-bar" style="margin-bottom:12px;">
+        <input type="date" id="siteRptDate" onchange="loadSiteReport()"/>
+        <select id="siteRptStatus" onchange="filterSiteReport()">
+          <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadSiteReport()">↻ Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="exportSiteCSV()">Export CSV</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Employee</th><th>Code</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th></tr></thead>
+          <tbody id="siteReportBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('siteReportModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   CONFIG — Set your Google Sheets API key here
+   The sheets must be shared as "Anyone with link — Viewer"
+══════════════════════════════════════════════════════ */
+const SHEETS_API_KEY = ''; // Optional: set your Google Sheets API key for private sheets
+// If empty, uses the public CSV export endpoint (sheet must be publicly shared)
+
+/* ── STATE ─────────────────────────────────────────── */
+const S = {
+  sheetId: '',
+  empCode: '', empName: '', empEmail: '', role: '',
+  employees: [], sites: [], attRecords: [], rptRecords: [],
+};
+const SR = { siteId:'', siteName:'', records:[] };
+
+/* ── GOOGLE SHEETS READER ──────────────────────────── */
+// Reads a sheet by tab name and returns array of objects
+// Uses the public CSV export — sheet must be "Anyone with link can view"
+async function readSheet(sheetName) {
+  const url = `https://docs.google.com/spreadsheets/d/${S.sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to read sheet "${sheetName}": ${res.status}`);
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+// Parse CSV text into array of objects using first row as keys
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
+    return obj;
+  });
+}
+
+function parseLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      result.push(cur); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+/* Get attendance sheet name for current/given month */
+function attSheetName(dateStr) {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  return `ATTENDANCE_${y}_${m}`;
+}
+
+/* ── UTILITIES ─────────────────────────────────────── */
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.className='show '+type;
+  clearTimeout(t._tid); t._tid=setTimeout(()=>(t.className=''), 3200);
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(el=>
+  el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); })
+);
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function today() { return new Date().toISOString().slice(0,10); }
+function fmtDate(d) {
+  if(!d) return '—';
+  const dt=new Date(d);
+  return isNaN(dt)?d:dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function calcHours(i,o) {
+  if(!i||!o) return '—';
+  const [ih,im]=i.split(':').map(Number),[oh,om]=o.split(':').map(Number);
+  const m=(oh*60+om)-(ih*60+im);
+  return m<=0?'—':`${Math.floor(m/60)}h ${m%60}m`;
+}
+function showErr(el,msg) { el.textContent=msg; el.style.display='block'; }
+
+const PAGE_TITLES = {
+  dashboard:'Dashboard', registration:'Registration',
+  sites:'Sites', attendance:'Attendance Records', reports:'Reports'
+};
+
+function nav(page, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg = document.getElementById('pg'+page.charAt(0).toUpperCase()+page.slice(1));
+  if(pg) pg.classList.add('active');
+  if(btn) btn.classList.add('active');
+  document.getElementById('topbarTitle').textContent = PAGE_TITLES[page]||page;
+  if(page==='dashboard')    loadDashboard();
+  if(page==='registration') loadEmployees();
+  if(page==='sites')        loadSitesPage();
+  if(page==='attendance')   { if(!document.getElementById('attDate').value) document.getElementById('attDate').value=today(); loadAttendance(); }
+  if(page==='reports')      setReportDefaults();
+}
+
+/* ── PASSWORD TOGGLE ─────────────────────────────── */
+function togglePw() {
+  const inp=document.getElementById('lPassword');
+  const ic=document.getElementById('eyeIcon');
+  if(inp.type==='password'){
+    inp.type='text';
+    ic.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type='password';
+    ic.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   LOGIN — reads EMPLOYEES sheet directly from Google Sheets
+══════════════════════════════════════════════════════ */
+async function doLogin() {
+  const btn = document.getElementById('btnLogin');
+  const err = document.getElementById('loginError');
+  const sheetId = document.getElementById('lSheetId').value.trim();
+  const empId   = document.getElementById('lEmpId').value.trim().toUpperCase();
+  const pw      = document.getElementById('lPassword').value.trim();
+
+  err.style.display='none';
+
+  if(!sheetId) { showErr(err,'Please enter your Google Sheet ID.'); return; }
+  if(!empId||!pw) { showErr(err,'Please enter your Employee ID and password.'); return; }
+
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Signing in…';
+
+  try {
+    S.sheetId = sheetId;
+    const hash = await sha256(pw);
+
+    // Read EMPLOYEES sheet
+    let employees;
+    try {
+      employees = await readSheet('EMPLOYEES');
+    } catch(e) {
+      showErr(err, 'Cannot read sheet. Make sure the Sheet ID is correct and the sheet is shared as "Anyone with link — Viewer".');
+      btn.disabled=false; btn.innerHTML='Sign In';
+      return;
+    }
+
+    if(!employees.length) {
+      showErr(err,'EMPLOYEES sheet is empty or not found.');
+      btn.disabled=false; btn.innerHTML='Sign In';
+      return;
+    }
+
+    // Find employee by EMPID column
+    const emp = employees.find(e =>
+      (e['EMPID']||e['EmpID']||e['empId']||'').toUpperCase() === empId
+    );
+
+    if(!emp) {
+      showErr(err,'Employee ID not found.');
+      btn.disabled=false; btn.innerHTML='Sign In';
+      return;
+    }
+
+    // Check password hash
+    const storedHash = emp['PasswordHash']||emp['passwordhash']||emp['passwordHash']||'';
+    if(storedHash.toLowerCase() !== hash.toLowerCase()) {
+      showErr(err,'Incorrect password. Please try again.');
+      btn.disabled=false; btn.innerHTML='Sign In';
+      return;
+    }
+
+    // Check status
+    const status = (emp['Status']||emp['status']||'').toUpperCase();
+    if(status && status !== 'ACTIVE') {
+      showErr(err,'Your account is inactive. Please contact your administrator.');
+      btn.disabled=false; btn.innerHTML='Sign In';
+      return;
+    }
+
+    // Check role — only ADMIN allowed
+    const role = (emp['Role']||emp['role']||'').toUpperCase();
+    if(role !== 'ADMIN') {
+      showErr(err,'Web portal is for admin accounts only. Please use the mobile app.');
+      btn.disabled=false; btn.innerHTML='Sign In';
+      return;
+    }
+
+    // Store state
+    S.empCode  = emp['EMPID']||emp['EmpID']||empId;
+    S.empName  = emp['EmpName']||emp['empName']||emp['name']||empId;
+    S.empEmail = emp['Email']||emp['email']||'';
+    S.role     = role;
+    S.employees = employees;
+
+    // Update UI
+    document.getElementById('sbCompanyName').textContent = 'AttendEase';
+    document.getElementById('sbAdminEmail').textContent  = S.empEmail || S.empCode;
+    document.getElementById('topbarName').textContent    = S.empName;
+    document.getElementById('topbarAvatar').textContent  = S.empName.slice(0,2).toUpperCase();
+
+    switchScreen('appScreen');
+    nav('dashboard', document.querySelector('.nav-item'));
+
+  } catch(e) {
+    showErr(err,'Connection error. Please check your internet and try again.');
+    console.error(e);
+  }
+
+  btn.disabled=false; btn.innerHTML='Sign In';
+}
+
+function doLogout() {
+  S.sheetId=''; S.empCode=''; S.empName=''; S.empEmail='';
+  S.employees=[]; S.sites=[]; S.attRecords=[]; S.rptRecords=[];
+  document.getElementById('lPassword').value='';
+  document.getElementById('loginError').style.display='none';
+  document.getElementById('btnLogin').innerHTML='Sign In';
+  document.getElementById('btnLogin').disabled=false;
+  switchScreen('loginScreen');
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && document.getElementById('loginScreen').classList.contains('active')) doLogin();
+});
+
+/* ══════════════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════════════ */
+async function loadDashboard() {
+  try {
+    // Load sites and attendance in parallel
+    const [sitesData, attData] = await Promise.all([
+      readSheet('SITES').catch(()=>[]),
+      readSheet(attSheetName()).catch(()=>[]),
+    ]);
+
+    S.sites = sitesData;
+
+    // Normalize attendance — filter today's records
+    const todayStr = today(); // YYYY-MM-DD
+    const todayAtts = attData.filter(r => {
+      const d = r['Date']||r['date']||'';
+      return d && d.includes(todayStr.split('-').join(''));
+    });
+    // Also try direct date match
+    const attToday = attData.filter(r => {
+      const d = (r['Date']||r['date']||'').replace(/\//g,'-').replace(/(\d{4})-(\d{1,2})-(\d{1,2})/,
+        (_,y,m,dd)=>`${y}-${m.padStart(2,'0')}-${dd.padStart(2,'0')}`);
+      return d === todayStr;
+    });
+    const atts = attToday.length ? attToday : todayAtts;
+
+    const activeSites = S.sites.filter(s=>!s['Status']||(s['Status']||'').toUpperCase()==='ACTIVE');
+    const present = atts.filter(r=>(r['Status']||r['status']||'').toUpperCase()==='PRESENT').length;
+    const empCount = S.employees.filter(e=>(e['Status']||'').toUpperCase()==='ACTIVE').length;
+
+    document.getElementById('stTotalEmp').textContent = empCount || S.employees.length;
+    document.getElementById('stPresent').textContent  = present;
+    document.getElementById('stAbsent').textContent   = Math.max(0,(empCount||S.employees.length)-present);
+    document.getElementById('stSites').textContent    = activeSites.length;
+    document.getElementById('stDate').textContent     = fmtDate(todayStr);
+    document.getElementById('dashSiteDate').textContent = fmtDate(todayStr);
+
+    // Site cards
+    const grid = document.getElementById('dashSiteCards');
+    if(!activeSites.length) {
+      grid.innerHTML='<div class="empty"><p>No active sites found in SITES sheet</p></div>';
+    } else {
+      grid.innerHTML = activeSites.map(s=>{
+        const sName = s['SiteName']||s['siteName']||s['Site']||'Unknown';
+        const sId   = s['SiteID']||s['siteId']||s['SITEID']||sName;
+        const sAtts = atts.filter(r=>{
+          const rs = r['Site']||r['SiteID']||r['siteId']||'';
+          return rs===sId||rs===sName;
+        });
+        const sEmps    = S.employees.filter(e=>(e['Site']||e['SiteID']||'')===sId);
+        const sPresent = sAtts.filter(r=>(r['Status']||'').toUpperCase()==='PRESENT').length;
+        const sTotal   = sEmps.length||sAtts.length||0;
+        const sAbsent  = Math.max(0,sTotal-sPresent);
+        const pct      = sTotal>0?Math.round((sPresent/sTotal)*100):0;
+        const bar      = pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+        const nm       = sName.replace(/'/g,"\\'");
+        return `
+          <div class="site-card" onclick="openSiteReport('${sId}','${nm}')">
+            <div class="site-card-bar" style="background:${bar};"></div>
+            <div class="site-card-name" title="${sName}">${sName}</div>
+            <div class="site-card-nums">
+              <div class="site-num">
+                <div class="site-num-val" style="color:var(--green);">${sPresent}</div>
+                <div class="site-num-lbl">Present</div>
+              </div>
+              <div class="site-num">
+                <div class="site-num-val" style="color:var(--red);">${sAbsent}</div>
+                <div class="site-num-lbl">Absent</div>
+              </div>
+              <div class="site-num">
+                <div class="site-num-val" style="color:var(--teal);">${sTotal}</div>
+                <div class="site-num-lbl">Total</div>
+              </div>
+            </div>
+            <div class="site-card-foot">${pct}% &nbsp;·&nbsp; <span style="color:var(--teal);">View report →</span></div>
+          </div>`;
+      }).join('');
+    }
+
+    // Today's attendance list
+    const al = document.getElementById('dashAttendList');
+    al.innerHTML = atts.length
+      ? atts.slice(0,10).map(r=>`
+          <div class="mini-row">
+            <div>
+              <div class="mname">${r['EmpName']||r['empName']||r['Name']||r['EmpCode']||'—'}</div>
+              <div class="msub">${r['Site']||'—'}</div>
+            </div>
+            <div class="mright">
+              <span class="badge ${(r['Status']||'').toUpperCase()==='PRESENT'?'badge-green':'badge-red'}">${r['Status']||'—'}</span>
+              <div class="mtime">${r['InTime']||r['CheckIn']?'IN '+(r['InTime']||r['CheckIn']||''):''} ${r['OutTime']||r['CheckOut']?'· OUT '+(r['OutTime']||r['CheckOut']||''):''}</div>
+            </div>
+          </div>`).join('')
+      : '<div class="empty"><p>No attendance records yet today</p></div>';
+
+    populateSiteSelects();
+
+  } catch(e) {
+    toast('Failed to load dashboard','error');
+    console.error(e);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   EMPLOYEES / REGISTRATION
+══════════════════════════════════════════════════════ */
+async function loadEmployees() {
+  try {
+    const data = await readSheet('EMPLOYEES');
+    S.employees = data;
+    renderEmployees(data);
+    populateSiteSelects();
+  } catch(e) {
+    toast('Failed to load employees','error');
+    console.error(e);
+  }
+}
+
+function renderEmployees(list) {
+  const tb = document.getElementById('empTableBody');
+  if(!list.length) { tb.innerHTML='<tr><td colspan="8"><div class="empty"><p>No employees found</p></div></td></tr>'; return; }
+  tb.innerHTML = list.map(e=>`
+    <tr>
+      <td class="mono">${e['EMPID']||e['EmpID']||'—'}</td>
+      <td><strong>${e['EmpName']||e['empName']||'—'}</strong></td>
+      <td style="color:var(--muted);font-size:.79rem;">${e['Email']||'—'}</td>
+      <td class="mono">${e['Phone']||'—'}</td>
+      <td>${e['Site']||e['SiteID']||'—'}</td>
+      <td style="color:var(--muted);font-size:.79rem;">${fmtDate(e['JoinDate']||e['joinDate']||'')}</td>
+      <td><span class="badge ${(e['Role']||'').toUpperCase()==='ADMIN'?'badge-blue':'badge-gray'}">${e['Role']||'EMPLOYEE'}</span></td>
+      <td><span class="badge ${(e['Status']||'').toUpperCase()==='ACTIVE'?'badge-green':'badge-gray'}">${e['Status']||'ACTIVE'}</span></td>
+    </tr>`).join('');
+}
+
+function filterEmployees() {
+  const q  = document.getElementById('empSearch').value.toLowerCase();
+  const st = document.getElementById('empStatusFilter').value;
+  const si = document.getElementById('empSiteFilter').value;
+  renderEmployees(S.employees.filter(e=>{
+    const name  = (e['EmpName']||e['empName']||'').toLowerCase();
+    const code  = (e['EMPID']||e['EmpID']||'').toLowerCase();
+    const email = (e['Email']||'').toLowerCase();
+    const mq    = !q||[name,code,email].some(v=>v.includes(q));
+    const mst   = !st||(e['Status']||'').toUpperCase()===st;
+    const msi   = !si||(e['Site']||e['SiteID']||'')===si;
+    return mq&&mst&&msi;
+  }));
+}
+
+/* ══════════════════════════════════════════════════════
+   SITES PAGE
+══════════════════════════════════════════════════════ */
+async function loadSitesPage() {
+  const dateEl = document.getElementById('siteDate');
+  if(!dateEl.value) dateEl.value = today();
+  const dateStr = dateEl.value;
+  const grid = document.getElementById('sitesPageGrid');
+  grid.innerHTML = '<div class="empty"><p>Loading…</p></div>';
+
+  try {
+    const [sitesData, attData] = await Promise.all([
+      readSheet('SITES').catch(()=>[]),
+      readSheet(attSheetName(dateStr)).catch(()=>[]),
+    ]);
+
+    S.sites = sitesData;
+    const atts = filterByDate(attData, dateStr);
+
+    if(!sitesData.length) {
+      grid.innerHTML='<div class="empty"><p>No sites found in SITES sheet</p></div>';
+      return;
+    }
+
+    grid.innerHTML = sitesData.map(s=>{
+      const sName    = s['SiteName']||s['siteName']||s['Site']||'Unknown';
+      const sId      = s['SiteID']||s['siteId']||s['SITEID']||sName;
+      const sStatus  = (s['Status']||'ACTIVE').toUpperCase();
+      const sAtts    = atts.filter(r=>(r['Site']||r['SiteID']||'')=== sId||(r['Site']||'')===sName);
+      const sEmps    = S.employees.filter(e=>(e['Site']||e['SiteID']||'')===sId);
+      const sPresent = sAtts.filter(r=>(r['Status']||'').toUpperCase()==='PRESENT').length;
+      const sTotal   = sEmps.length||sAtts.length;
+      const sAbsent  = Math.max(0,sTotal-sPresent);
+      const pct      = sTotal>0?Math.round((sPresent/sTotal)*100):0;
+      const bar      = pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+      const nm       = sName.replace(/'/g,"\\'");
+      return `
+        <div class="site-detail-card" onclick="openSiteReport('${sId}','${nm}')">
+          <div class="site-detail-card-bar" style="background:${bar};"></div>
+          <div class="site-detail-name">${sName}</div>
+          <div class="site-detail-id">${sId}</div>
+          <span class="badge ${sStatus==='ACTIVE'?'badge-green':'badge-gray'}">${sStatus}</span>
+          <div class="site-stat-row">
+            <div class="site-stat">
+              <div class="site-stat-val" style="color:var(--green);">${sPresent}</div>
+              <div class="site-stat-lbl">Present</div>
+            </div>
+            <div class="site-stat">
+              <div class="site-stat-val" style="color:var(--red);">${sAbsent}</div>
+              <div class="site-stat-lbl">Absent</div>
+            </div>
+            <div class="site-stat">
+              <div class="site-stat-val" style="color:var(--teal);">${sTotal}</div>
+              <div class="site-stat-lbl">Total</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;font-size:.69rem;color:var(--hint);">${pct}% attendance · <span style="color:var(--teal);">View report →</span></div>
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    grid.innerHTML='<div class="empty"><p>Failed to load sites</p></div>';
+    console.error(e);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   ATTENDANCE
+══════════════════════════════════════════════════════ */
+function filterByDate(rows, dateStr) {
+  // Try to match rows where Date column equals dateStr
+  // Date in sheet may be stored as DD/MM/YYYY, YYYY-MM-DD, etc.
+  return rows.filter(r=>{
+    const raw = (r['Date']||r['date']||'');
+    if(!raw) return false;
+    // Normalize to YYYY-MM-DD
+    let norm = raw.trim();
+    // DD/MM/YYYY → YYYY-MM-DD
+    const m1 = norm.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m1) norm = `${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+    // M/D/YYYY → YYYY-MM-DD
+    const m2 = norm.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m2) norm = `${m2[3]}-${m2[1].padStart(2,'0')}-${m2[2].padStart(2,'0')}`;
+    // Try contains
+    return norm === dateStr || raw.replace(/\D/g,'').includes(dateStr.replace(/-/g,''));
+  });
+}
+
+async function loadAttendance() {
+  const dateStr = document.getElementById('attDate').value || today();
+  const tb = document.getElementById('attTableBody');
+  tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>';
+
+  try {
+    const attData = await readSheet(attSheetName(dateStr));
+    S.attRecords = filterByDate(attData, dateStr);
+    renderAttTable(S.attRecords);
+    updateAttSummary(S.attRecords);
+  } catch(e) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty"><p>Could not load attendance sheet for this month</p></div></td></tr>';
+    console.error(e);
+  }
+}
+
+function filterAttTable() {
+  const st   = document.getElementById('attStatus').value;
+  const site = document.getElementById('attSite').value;
+  let list   = S.attRecords;
+  if(st)   list = list.filter(r=>(r['Status']||'').toUpperCase()===st);
+  if(site) list = list.filter(r=>(r['Site']||r['SiteID']||'')===site);
+  renderAttTable(list);
+}
+
+function renderAttTable(list) {
+  const tb = document.getElementById('attTableBody');
+  if(!list.length) { tb.innerHTML='<tr><td colspan="7"><div class="empty"><p>No records for this date</p></div></td></tr>'; return; }
+  tb.innerHTML = list.map(r=>{
+    const st = (r['Status']||r['status']||'').toUpperCase();
+    const inT  = r['InTime']||r['CheckIn']||r['inTime']||'—';
+    const outT = r['OutTime']||r['CheckOut']||r['outTime']||'—';
+    return `
+      <tr>
+        <td><strong>${r['EmpName']||r['empName']||r['Name']||'—'}</strong></td>
+        <td class="mono">${r['EmpCode']||r['EMPID']||r['EmpID']||'—'}</td>
+        <td>${r['Site']||r['SiteID']||'—'}</td>
+        <td class="mono" style="color:var(--green);">${inT}</td>
+        <td class="mono" style="color:var(--red);">${outT}</td>
+        <td class="mono">${calcHours(inT,outT)}</td>
+        <td><span class="badge ${st==='PRESENT'?'badge-green':'badge-red'}">${st||'—'}</span></td>
+      </tr>`;
+  }).join('');
+}
+
+function updateAttSummary(list) {
+  const present = list.filter(r=>(r['Status']||'').toUpperCase()==='PRESENT').length;
+  document.getElementById('attSummary').innerHTML=`
+    <div class="chip">Total <span>${list.length}</span></div>
+    <div class="chip" style="color:var(--green);">Present <span>${present}</span></div>
+    <div class="chip" style="color:var(--red);">Absent <span>${list.length-present}</span></div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   SITE REPORT MODAL
+══════════════════════════════════════════════════════ */
+function openSiteReport(siteId, siteName) {
+  SR.siteId=siteId; SR.siteName=siteName; SR.records=[];
+  document.getElementById('siteReportTitle').textContent = siteName+' — Report';
+  document.getElementById('siteRptDate').value = today();
+  document.getElementById('siteRptStatus').value = '';
+  openModal('siteReportModal');
+  loadSiteReport();
+}
+
+async function loadSiteReport() {
+  const dateStr = document.getElementById('siteRptDate').value || today();
+  const tb = document.getElementById('siteReportBody');
+  tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>';
+  try {
+    const attData = await readSheet(attSheetName(dateStr));
+    const dayAtts = filterByDate(attData, dateStr);
+    SR.records = dayAtts.filter(r=>{
+      const rs = r['Site']||r['SiteID']||'';
+      return rs===SR.siteId||rs===SR.siteName;
+    });
+    renderSiteReport(SR.records);
+    updateSiteChips(SR.records);
+  } catch(e) {
+    tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:18px;">Failed to load attendance sheet.</td></tr>';
+  }
+}
+
+function filterSiteReport() {
+  const st = document.getElementById('siteRptStatus').value;
+  renderSiteReport(st ? SR.records.filter(r=>(r['Status']||'').toUpperCase()===st) : SR.records);
+}
+
+function renderSiteReport(list) {
+  const tb = document.getElementById('siteReportBody');
+  if(!list.length) { tb.innerHTML='<tr><td colspan="6"><div class="empty"><p>No records for this date/site</p></div></td></tr>'; return; }
+  tb.innerHTML = list.map(r=>{
+    const st   = (r['Status']||'').toUpperCase();
+    const inT  = r['InTime']||r['CheckIn']||'—';
+    const outT = r['OutTime']||r['CheckOut']||'—';
+    return `
+      <tr>
+        <td><strong>${r['EmpName']||r['empName']||r['Name']||'—'}</strong></td>
+        <td class="mono">${r['EmpCode']||r['EMPID']||'—'}</td>
+        <td class="mono" style="color:var(--green);">${inT}</td>
+        <td class="mono" style="color:var(--red);">${outT}</td>
+        <td class="mono">${calcHours(inT,outT)}</td>
+        <td><span class="badge ${st==='PRESENT'?'badge-green':'badge-red'}">${st||'—'}</span></td>
+      </tr>`;
+  }).join('');
+}
+
+function updateSiteChips(list) {
+  const present = list.filter(r=>(r['Status']||'').toUpperCase()==='PRESENT').length;
+  document.getElementById('siteReportChips').innerHTML=`
+    <div class="chip">Total <span>${list.length}</span></div>
+    <div class="chip" style="color:var(--green);">Present <span>${present}</span></div>
+    <div class="chip" style="color:var(--red);">Absent <span>${list.length-present}</span></div>`;
+}
+
+function exportSiteCSV() {
+  if(!SR.records.length) { toast('No records to export','error'); return; }
+  const cols=['EmpName','EmpCode','InTime','OutTime','Status'];
+  const csv=[cols.join(','),...SR.records.map(r=>cols.map(c=>`"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`${SR.siteName}_${document.getElementById('siteRptDate').value}.csv`;
+  a.click(); toast('CSV exported!');
+}
+
+/* ══════════════════════════════════════════════════════
+   REPORTS
+══════════════════════════════════════════════════════ */
+function setReportDefaults() {
+  const f=document.getElementById('rptFrom'),t=document.getElementById('rptTo');
+  if(!f.value){ const d=new Date(); d.setDate(1); f.value=d.toISOString().slice(0,10); }
+  if(!t.value) t.value=today();
+}
+
+async function generateReport() {
+  const from = document.getElementById('rptFrom').value;
+  const to   = document.getElementById('rptTo').value;
+  const site = document.getElementById('rptSite').value;
+  const emp  = document.getElementById('rptEmp').value;
+  if(!from||!to) { toast('Please select a date range','error'); return; }
+
+  // Collect unique months in range
+  const months = new Set();
+  const cur = new Date(from);
+  const end = new Date(to);
+  while(cur<=end) {
+    months.add(`ATTENDANCE_${cur.getFullYear()}_${String(cur.getMonth()+1).padStart(2,'0')}`);
+    cur.setMonth(cur.getMonth()+1);
+  }
+
+  try {
+    const allAtts = (await Promise.all([...months].map(m=>readSheet(m).catch(()=>[])))).flat();
+
+    // Filter by date range
+    const fromD = new Date(from), toD = new Date(to); toD.setHours(23,59,59);
+    S.rptRecords = allAtts.filter(r=>{
+      const raw = r['Date']||r['date']||'';
+      if(!raw) return false;
+      let norm = raw.trim();
+      const m1 = norm.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(m1) norm = `${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+      const d = new Date(norm);
+      if(isNaN(d)) return false;
+      if(d<fromD||d>toD) return false;
+      if(site && (r['Site']||r['SiteID']||'')!==site) return false;
+      if(emp  && (r['EmpCode']||r['EMPID']||'')!==emp) return false;
+      return true;
+    });
+
+    renderRptTable(S.rptRecords);
+    const present = S.rptRecords.filter(r=>(r['Status']||'').toUpperCase()==='PRESENT').length;
+    document.getElementById('rptCount').textContent=`${S.rptRecords.length} records`;
+    document.getElementById('rptSummary').innerHTML=`
+      <div class="chip">Total <span>${S.rptRecords.length}</span></div>
+      <div class="chip" style="color:var(--green);">Present <span>${present}</span></div>
+      <div class="chip" style="color:var(--red);">Absent <span>${S.rptRecords.length-present}</span></div>`;
+  } catch(e) { toast('Failed to generate report','error'); console.error(e); }
+}
+
+function renderRptTable(list) {
+  const tb=document.getElementById('rptTableBody');
+  if(!list.length){ tb.innerHTML='<tr><td colspan="8"><div class="empty"><p>No records in this range</p></div></td></tr>'; return; }
+  tb.innerHTML=list.map(r=>{
+    const st  = (r['Status']||'').toUpperCase();
+    const inT = r['InTime']||r['CheckIn']||'—';
+    const outT= r['OutTime']||r['CheckOut']||'—';
+    return `
+      <tr>
+        <td class="mono">${fmtDate(r['Date']||r['date']||'')}</td>
+        <td><strong>${r['EmpName']||r['Name']||'—'}</strong></td>
+        <td class="mono">${r['EmpCode']||r['EMPID']||'—'}</td>
+        <td>${r['Site']||'—'}</td>
+        <td class="mono" style="color:var(--green);">${inT}</td>
+        <td class="mono" style="color:var(--red);">${outT}</td>
+        <td class="mono">${calcHours(inT,outT)}</td>
+        <td><span class="badge ${st==='PRESENT'?'badge-green':'badge-red'}">${st||'—'}</span></td>
+      </tr>`;
+  }).join('');
+}
+
+function exportCSV() {
+  if(!S.rptRecords.length){ toast('Generate a report first','error'); return; }
+  const cols=['Date','EmpName','EmpCode','Site','InTime','OutTime','Status'];
+  const csv=[cols.join(','),...S.rptRecords.map(r=>cols.map(c=>`"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`AttendEase_${document.getElementById('rptFrom').value}_to_${document.getElementById('rptTo').value}.csv`;
+  a.click(); toast('CSV exported!');
+}
+
+/* ── POPULATE SELECTS ──────────────────────────────── */
+function populateSiteSelects() {
+  ['empSiteFilter','attSite','rptSite'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    const kept=el.querySelector('option[value=""]');
+    while(el.options.length>(kept?1:0)) el.remove(kept?1:0);
+    S.sites.forEach(s=>{
+      const o=document.createElement('option');
+      o.value=s['SiteID']||s['siteId']||s['SiteName']||s['siteName']||'';
+      o.textContent=s['SiteName']||s['siteName']||o.value;
+      el.appendChild(o);
+    });
+  });
+  const re=document.getElementById('rptEmp');
+  if(re){
+    while(re.options.length>1) re.remove(1);
+    S.employees.forEach(e=>{
+      const o=document.createElement('option');
+      o.value=e['EMPID']||e['EmpID']||'';
+      o.textContent=`${o.value} — ${e['EmpName']||e['empName']||''}`;
+      re.appendChild(o);
+    });
+  }
+}
+
+/* ── INIT ──────────────────────────────────────────── */
+// Pre-fill sheet ID if stored in localStorage
+(function(){
+  const saved = localStorage.getItem('attendease_sheetId');
+  if(saved) document.getElementById('lSheetId').value = saved;
+})();
+
+// Save sheet ID on login (convenience)
+document.getElementById('lSheetId').addEventListener('change', function(){
+  if(this.value.trim()) localStorage.setItem('attendease_sheetId', this.value.trim());
+});
+</script>
+</body>
+</html>
