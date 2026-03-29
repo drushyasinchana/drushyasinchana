@@ -433,6 +433,25 @@ tbody td { padding: 10px 14px; color: var(--ink2); vertical-align: middle; }
 .guide-step p   { font-size: .845rem; color: var(--ink2); line-height: 1.5; }
 .guide-step code { font-family: 'DM Mono', monospace; font-size: .78rem; background: var(--teal-s); padding: 2px 6px; border-radius: 4px; color: var(--teal-dd); }
 
+/* SITE ATTENDANCE CARDS */
+.site-att-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 16px 18px;
+  cursor: pointer; transition: box-shadow .15s, transform .12s;
+  position: relative; overflow: hidden;
+}
+.site-att-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: var(--teal);
+}
+.site-att-card:hover { box-shadow: var(--sh-lg); transform: translateY(-2px); }
+.site-att-card .s-name { font-weight:600; font-size:.88rem; color:var(--ink); margin-bottom:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.site-att-card .s-nums { display:flex; gap:12px; }
+.site-att-card .s-num  { text-align:center; }
+.site-att-card .s-val  { font-size:1.5rem; font-weight:600; font-family:'DM Mono',monospace; line-height:1; }
+.site-att-card .s-lbl  { font-size:.66rem; color:var(--muted); margin-top:3px; text-transform:uppercase; letter-spacing:.04em; }
+.site-att-card .s-footer { margin-top:10px; font-size:.7rem; color:var(--hint); }
+
 /* RESPONSIVE */
 @media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 900px) {
@@ -486,10 +505,15 @@ tbody td { padding: 10px 14px; color: var(--ink2); vertical-align: middle; }
       <h2>Welcome back</h2>
       <p class="sub">Sign in to your AttendEase admin portal</p>
 
-      <div class="fg">
-        <label>Master Control Gmail ID</label>
-        <input id="lMasterEmail" type="email" placeholder="yourcompany@gmail.com" autocomplete="username"/>
+      <!-- Company locked badge — no user input needed -->
+      <div style="display:flex;align-items:center;gap:10px;background:#F0F5F6;border:1.5px solid #D8E8EA;border-radius:8px;padding:10px 14px;margin-bottom:16px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00838F" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <div>
+          <div style="font-size:.7rem;font-weight:600;color:#6B8A8F;letter-spacing:.04em;text-transform:uppercase;">Company Account</div>
+          <div id="lCompanyBadge" style="font-size:.84rem;font-weight:500;color:#0D1F22;">Loading…</div>
+        </div>
       </div>
+
       <div class="fg">
         <label>Admin Email / Employee ID</label>
         <input id="lEmpId" type="text" placeholder="admin@company.com or EMP001"/>
@@ -604,7 +628,7 @@ tbody td { padding: 10px 14px; color: var(--ink2); vertical-align: middle; }
           <div class="stat-card amber">
             <div class="stat-label">Absent Today</div>
             <div class="stat-val" id="stAbsent">—</div>
-            <div class="stat-sub">Expected in</div>
+            <div class="stat-sub">Not yet checked in</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Active Sites</div>
@@ -612,6 +636,18 @@ tbody td { padding: 10px 14px; color: var(--ink2); vertical-align: middle; }
             <div class="stat-sub">Geofenced</div>
           </div>
         </div>
+
+        <!-- Per-site attendance cards -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-hdr">
+            <h3>Sites — Today's Attendance</h3>
+            <span id="dashSiteDate" style="font-size:.76rem;color:var(--muted);"></span>
+          </div>
+          <div id="dashSiteCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding-top:4px;">
+            <div class="empty"><p>Loading…</p></div>
+          </div>
+        </div>
+
         <div class="dash-grid">
           <div class="card">
             <div class="card-hdr">
@@ -621,7 +657,7 @@ tbody td { padding: 10px 14px; color: var(--ink2); vertical-align: middle; }
             <div id="dashAttendList"><div class="empty"><p>Loading…</p></div></div>
           </div>
           <div class="card">
-            <div class="card-hdr"><h3>Sites Overview</h3></div>
+            <div class="card-hdr"><h3>All Sites</h3></div>
             <div id="dashSiteList"><div class="empty"><p>Loading…</p></div></div>
           </div>
         </div>
@@ -908,14 +944,52 @@ tbody td { padding: 10px 14px; color: var(--ink2); vertical-align: middle; }
 
 <div id="toast"></div>
 
+<!-- ══════════════════ SITE REPORT MODAL ══════════════════ -->
+<div class="modal-backdrop" id="siteReportModal">
+  <div class="modal" style="width:680px;">
+    <div class="modal-hdr">
+      <h3 id="siteReportTitle">Site Report</h3>
+      <button class="modal-close" onclick="closeModal('siteReportModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Summary chips -->
+      <div id="siteReportSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;"></div>
+      <!-- Date filter -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+        <input type="date" id="siteRptDate" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.83rem;outline:none;" onchange="loadSiteReport()"/>
+        <select id="siteRptStatus" onchange="filterSiteReport()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.83rem;outline:none;background:#fff;">
+          <option value="">All Status</option>
+          <option value="PRESENT">Present</option>
+          <option value="ABSENT">Absent</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadSiteReport()">↻ Refresh</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Employee</th><th>Code</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Location</th><th>Marked By</th></tr></thead>
+          <tbody id="siteReportBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('siteReportModal')">Close</button>
+      <button class="btn btn-teal btn-sm" onclick="exportSiteReportCSV()">Export CSV</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ══════════════════════════════════════════════════════════
-   CONFIG — CHANGE ONLY MASTER_SCRIPT_URL
+   CONFIG
 ══════════════════════════════════════════════════════════ */
 
-// This is Drushyasinchana's MASTER Google Apps Script URL
-// It reads from the MASTER_CONTROL sheet to authenticate any company
+// Drushyasinchana's MASTER Google Apps Script URL
 const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCwLtdaz3XQZUn8_JY2_YXPdVDmQI0oCwlcoWWMH5iHJvJ0vscG0z5tljd-gP1MuQ/exec";
+
+// ── HARDCODED COMPANY EMAIL ──────────────────────────────
+// Change this per client before building/deploying.
+// Later: read from Sheets config tab automatically.
+const COMPANY_EMAIL = "murthysnv22@gmail.com";
 
 /* ══════════════════════════════════════════════════════════
    STATE
@@ -1026,14 +1100,13 @@ function setReportDefaults() {
    6. Company script checks EMPLOYEES sheet → returns user data
 ══════════════════════════════════════════════════════════ */
 async function doLogin() {
-  const btn    = document.getElementById('btnLogin');
-  const err    = document.getElementById('loginError');
-  const master = document.getElementById('lMasterEmail').value.trim().toLowerCase();
-  const empId  = document.getElementById('lEmpId').value.trim();
-  const pw     = document.getElementById('lPassword').value.trim();
+  const btn   = document.getElementById('btnLogin');
+  const err   = document.getElementById('loginError');
+  const empId = document.getElementById('lEmpId').value.trim();
+  const pw    = document.getElementById('lPassword').value.trim();
 
   err.style.display = 'none';
-  if (!master || !empId || !pw) { showErr(err, 'Please fill all fields.'); return; }
+  if (!empId || !pw) { showErr(err, 'Please enter your Employee ID and Password.'); return; }
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Signing in…';
@@ -1041,12 +1114,12 @@ async function doLogin() {
   try {
     const hash = await sha256(pw);
 
-    // Step 1: Call Master Script to authenticate + get company sheet info
+    // Use hardcoded COMPANY_EMAIL — no user input needed
     const res = await fetch(MASTER_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({
         action: 'login',
-        adminEmail: master,
+        adminEmail: COMPANY_EMAIL,
         empId: empId,
         password: hash,
         device: 'Web'
@@ -1056,23 +1129,22 @@ async function doLogin() {
 
     if (res.success) {
       const d = res.data;
-      // Only ADMIN role can use the web portal
       if (d.role !== 'ADMIN') {
         showErr(err, 'Web portal access is for admin accounts only. Use the mobile app.');
-        btn.disabled = false; btn.textContent = 'Sign In'; return;
+        btn.disabled = false; btn.innerHTML = 'Sign In'; return;
       }
       Object.assign(S.prefs, {
-        empCode:         d.empCode        || '',
-        empName:         d.name           || '',
-        empEmail:        d.email          || '',
-        role:            d.role           || '',
-        companyName:     d.companyName    || '',
-        companySheetId:  d.companySheetId || '',
-        companyScriptUrl:d.companyScriptUrl || '',
-        siteId:          d.siteId         || '',
+        empCode:          d.empCode         || '',
+        empName:          d.name            || '',
+        empEmail:         d.email           || '',
+        role:             d.role            || '',
+        companyName:      d.companyName     || '',
+        companySheetId:   d.companySheetId  || '',
+        companyScriptUrl: d.companyScriptUrl|| '',
+        siteId:           d.siteId          || '',
       });
 
-      document.getElementById('sbCompanyName').textContent = S.prefs.companyName || master;
+      document.getElementById('sbCompanyName').textContent = S.prefs.companyName || COMPANY_EMAIL;
       document.getElementById('topbarEmail').textContent   = S.prefs.empEmail    || empId;
       document.getElementById('topbarAvatar').textContent  = (S.prefs.empName    || empId).slice(0,2).toUpperCase();
 
@@ -1080,16 +1152,17 @@ async function doLogin() {
       nav('dashboard', document.querySelector('.nav-item'));
     } else {
       showErr(err, res.message || 'Login failed. Check your credentials and try again.');
-      btn.disabled = false; btn.textContent = 'Sign In';
+      btn.disabled = false; btn.innerHTML = 'Sign In';
     }
   } catch (e) {
     showErr(err, 'Connection error. Please check your internet and try again.');
-    btn.disabled = false; btn.textContent = 'Sign In';
+    btn.disabled = false; btn.innerHTML = 'Sign In';
   }
 }
 
 function doLogout() {
   Object.assign(S, { prefs:{}, employees:[], sites:[], attRecords:[], rptRecords:[], editingEmpCode:null, editingSiteId:null });
+  document.getElementById('lEmpId').value    = '';
   document.getElementById('lPassword').value = '';
   switchScreen('loginScreen');
 }
@@ -1118,7 +1191,53 @@ async function loadDashboard() {
     document.getElementById('stAbsent').textContent   = Math.max(0, S.employees.length - present);
     document.getElementById('stSites').textContent    = S.sites.filter(s => !s.status || s.status === 'ACTIVE').length;
     document.getElementById('stDate').textContent     = fmtDate(today());
+    document.getElementById('dashSiteDate').textContent = fmtDate(today());
 
+    // ── Per-site attendance cards ─────────────────────────
+    const activeSites = S.sites.filter(s => !s.status || s.status === 'ACTIVE');
+    const siteCards = document.getElementById('dashSiteCards');
+
+    if (!activeSites.length) {
+      siteCards.innerHTML = '<div class="empty"><p>No active sites found</p></div>';
+    } else {
+      siteCards.innerHTML = activeSites.map(s => {
+        // Count employees assigned to this site
+        const siteEmps  = S.employees.filter(e => (e.site || e.siteId) === s.siteId);
+        const siteAtts  = atts.filter(r => {
+          // match by site name or siteId
+          return r.site === s.siteName || r.site === s.siteId;
+        });
+        const sPresent  = siteAtts.filter(r => r.status === 'PRESENT').length;
+        const sTotal    = siteEmps.length || siteAtts.length;
+        const sAbsent   = Math.max(0, sTotal - sPresent);
+        const pct       = sTotal > 0 ? Math.round((sPresent / sTotal) * 100) : 0;
+        const color     = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warn)' : 'var(--error)';
+        return `
+          <div class="site-att-card" onclick="openSiteReport('${s.siteId}','${s.siteName.replace(/'/g,"\\'")}')">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${color};"></div>
+            <div class="s-name" title="${s.siteName}">${s.siteName}</div>
+            <div class="s-nums">
+              <div class="s-num">
+                <div class="s-val" style="color:var(--success);">${sPresent}</div>
+                <div class="s-lbl">Present</div>
+              </div>
+              <div class="s-num">
+                <div class="s-val" style="color:var(--error);">${sAbsent}</div>
+                <div class="s-lbl">Absent</div>
+              </div>
+              <div class="s-num">
+                <div class="s-val" style="color:var(--teal);">${sTotal}</div>
+                <div class="s-lbl">Total</div>
+              </div>
+            </div>
+            <div class="s-footer">
+              ${pct}% attendance &nbsp;·&nbsp; Click for report
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Today's attendance list ───────────────────────────
     const al = document.getElementById('dashAttendList');
     al.innerHTML = atts.length ? atts.slice(0,8).map(r => `
       <div class="mini-row">
@@ -1129,11 +1248,15 @@ async function loadDashboard() {
         </div>
       </div>`).join('') : '<div class="empty"><p>No attendance records yet today</p></div>';
 
+    // ── All sites list ────────────────────────────────────
     const sl = document.getElementById('dashSiteList');
     sl.innerHTML = S.sites.length ? S.sites.map(s => `
-      <div class="mini-row">
-        <div><div class="mname">${s.siteName}</div><div class="msub">${s.address||''}</div></div>
-        <span style="font-size:.74rem;color:var(--teal);font-family:'DM Mono',monospace;">${s.radius||''}m</span>
+      <div class="mini-row" style="cursor:pointer;" onclick="openSiteReport('${s.siteId}','${s.siteName.replace(/'/g,"\\'")}')">
+        <div>
+          <div class="mname">${s.siteName}</div>
+          <div class="msub">${s.address||s.siteId||''}</div>
+        </div>
+        <span style="font-size:.74rem;color:var(--teal);font-family:'DM Mono',monospace;">${s.radius||''}m radius</span>
       </div>`).join('') : '<div class="empty"><p>No sites added yet</p></div>';
 
     populateSiteSelects();
@@ -1834,11 +1957,99 @@ function copyScript() {
 }
 
 /* ══════════════════════════════════════════════════════════
+   SITE REPORT DRILL-DOWN
+══════════════════════════════════════════════════════════ */
+const SR = { siteId: '', siteName: '', records: [] };
+
+function openSiteReport(siteId, siteName) {
+  SR.siteId   = siteId;
+  SR.siteName = siteName;
+  document.getElementById('siteReportTitle').textContent = siteName + ' — Attendance';
+  document.getElementById('siteRptDate').value = today();
+  document.getElementById('siteRptStatus').value = '';
+  openModal('siteReportModal');
+  loadSiteReport();
+}
+
+async function loadSiteReport() {
+  const date = document.getElementById('siteRptDate').value || today();
+  const tb   = document.getElementById('siteReportBody');
+  tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>';
+
+  try {
+    const res = await api({
+      action: 'getAttendance',
+      companySheetId: S.prefs.companySheetId,
+      date,
+      siteId: SR.siteId,
+    });
+
+    SR.records = (res.success ? res.data.records || [] : [])
+      .filter(r => r.site === SR.siteName || r.site === SR.siteId);
+
+    renderSiteReportTable(SR.records);
+    updateSiteReportSummary(SR.records);
+  } catch(e) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--error);padding:20px;">Failed to load. Check connection.</td></tr>';
+  }
+}
+
+function filterSiteReport() {
+  const st = document.getElementById('siteRptStatus').value;
+  renderSiteReportTable(st ? SR.records.filter(r => r.status === st) : SR.records);
+}
+
+function renderSiteReportTable(list) {
+  const tb = document.getElementById('siteReportBody');
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty"><p>No records found for this date / filter</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = list.map(r => `
+    <tr>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td class="mono">${r.empCode||'—'}</td>
+      <td class="mono" style="color:var(--success);">${r.inTime||'—'}</td>
+      <td class="mono" style="color:var(--error);">${r.outTime||'—'}</td>
+      <td class="mono">${calcHours(r.inTime, r.outTime)}</td>
+      <td><span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span></td>
+      <td><span class="badge ${r.locationStatus==='INSIDE'?'badge-blue':'badge-amber'}">${r.locationStatus||'—'}</span></td>
+      <td style="font-size:.75rem;color:var(--muted);">${r.markedBy||'—'}</td>
+    </tr>`).join('');
+}
+
+function updateSiteReportSummary(list) {
+  const present = list.filter(r => r.status==='PRESENT').length;
+  const inside  = list.filter(r => r.locationStatus==='INSIDE').length;
+  document.getElementById('siteReportSummary').innerHTML = `
+    <div class="rs-chip">Total <span>${list.length}</span></div>
+    <div class="rs-chip" style="color:var(--success);">Present <span>${present}</span></div>
+    <div class="rs-chip" style="color:var(--error);">Absent <span>${list.length - present}</span></div>
+    <div class="rs-chip" style="color:#1565C0;">Inside Fence <span>${inside}</span></div>`;
+}
+
+function exportSiteReportCSV() {
+  if (!SR.records.length) { toast('No records to export','error'); return; }
+  const cols = ['name','empCode','inTime','outTime','status','locationStatus','markedBy','halfDay'];
+  const csv  = [cols.join(','), ...SR.records.map(r =>
+    cols.map(c => `"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(',')
+  )].join('\n');
+  const a    = document.createElement('a');
+  a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `${SR.siteName}_${document.getElementById('siteRptDate').value}.csv`;
+  a.click(); toast('CSV exported!');
+}
+
+/* ══════════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════════ */
 (function init() {
   document.getElementById('mDate').value  = today();
   document.getElementById('mmDate').value = today();
+
+  // Show the locked company email on the login screen
+  const badge = document.getElementById('lCompanyBadge');
+  if (badge) badge.textContent = COMPANY_EMAIL;
 
   // Populate the apps script code block
   const el = document.getElementById('appsScriptCode');
