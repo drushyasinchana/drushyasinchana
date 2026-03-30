@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendEase — Manage</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;--amber:#E65100;
+  --r:12px;--r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+  --sh-lg:0 8px 32px rgba(0,131,143,.18);
+  --sb:224px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ── SHELL ── */
+.shell{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sb);flex-shrink:0;
+  background:var(--teal-dd);
+  display:flex;flex-direction:column;
+  height:100vh;overflow-y:auto;
+}
+.sb-brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-row{display:flex;align-items:center;gap:10px;}
+.sb-logo{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:4px;object-fit:contain;}
+.sb-app-name{font-size:1.02rem;font-weight:700;color:#fff;letter-spacing:-.01em;}
+.sb-app-sub{font-size:.67rem;color:rgba(255,255,255,.35);margin-top:1px;}
+.sb-user{margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.06);border-radius:7px;}
+.sb-user-name{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.82);}
+.sb-user-co{font-size:.68rem;color:rgba(255,255,255,.36);margin-top:2px;}
+
+.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:1px;}
+.sb-sect{font-size:.62rem;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.09em;text-transform:uppercase;padding:10px 9px 4px;}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;border-radius:var(--r-sm);
+  color:rgba(255,255,255,.48);font-size:.86rem;
+  cursor:pointer;border:none;background:none;
+  width:100%;text-align:left;transition:all .13s;
+}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.5;transition:opacity .13s;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.88);}
+.nav-item:hover svg{opacity:.8;}
+.nav-item.active{background:rgba(255,255,255,.14);color:#fff;font-weight:600;}
+.nav-item.active svg{opacity:1;}
+.nav-sep{height:1px;background:rgba(255,255,255,.07);margin:5px 0;}
+.sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-foot-co{font-size:.67rem;color:rgba(255,255,255,.25);margin-bottom:8px;}
+.btn-so{
+  width:100%;padding:7px 10px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;color:rgba(255,255,255,.42);font-size:.78rem;
+  display:flex;align-items:center;gap:7px;transition:all .14s;
+}
+.btn-so:hover{background:rgba(220,38,38,.18);border-color:rgba(220,38,38,.35);color:#FCA5A5;}
+.btn-so svg{width:12px;height:12px;}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+
+/* TOPBAR */
+.topbar{
+  height:52px;flex-shrink:0;
+  background:#fff;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:12px;
+}
+.topbar-title{font-size:1rem;font-weight:700;color:var(--ink);flex:1;}
+.tb-right{display:flex;align-items:center;gap:8px;}
+.tb-avatar{width:30px;height:30px;border-radius:50%;background:var(--teal);color:#fff;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tb-name{font-size:.82rem;color:var(--muted);}
+
+/* PAGE WRAPPER */
+.page-wrap{flex:1;overflow:hidden;display:none;}
+.page-wrap.active{display:flex;flex-direction:column;animation:fadeUp .2s ease both;}
+
+/* ── SPLIT PANEL ── */
+.split{flex:1;display:grid;grid-template-columns:1fr 460px;overflow:hidden;min-height:0;}
+.pane-left{overflow-y:auto;padding:20px 18px 20px 22px;border-right:1px solid var(--border);}
+.pane-right{overflow-y:auto;padding:20px 22px 20px 18px;background:#fff;}
+
+/* Pane headers */
+.pane-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.pane-hdr-left h2{font-size:1.05rem;font-weight:700;color:var(--ink);}
+.pane-hdr-left p{font-size:.78rem;color:var(--muted);margin-top:2px;}
+.pane-actions{display:flex;gap:6px;}
+
+.form-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:14px;margin-bottom:18px;
+  border-bottom:2px solid var(--teal-s);
+}
+.form-hdr-title{font-size:1.08rem;font-weight:700;color:var(--ink);}
+.form-hdr-sub{font-size:.79rem;color:var(--muted);margin-top:3px;}
+.mode-badge{
+  padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:700;
+  background:var(--teal-s);color:var(--teal-dd);border:1px solid var(--teal-l);
+  white-space:nowrap;
+}
+.mode-badge.edit{background:#FFF3E0;color:var(--amber);border-color:#FFCC80;}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:7px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.filter-bar input,.filter-bar select{
+  padding:8px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.85rem;
+  outline:none;background:#fff;color:var(--ink);transition:border-color .15s;
+}
+.filter-bar input{flex:1;min-width:130px;}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--teal);}
+
+/* ── TABLE ── */
+.tbl-wrap{border-radius:var(--r-sm);border:1px solid var(--border);overflow:hidden;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.86rem;}
+thead th{
+  background:var(--teal-s);color:var(--teal-dd);
+  font-weight:700;font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;
+  padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#EDF8FA;}
+tbody tr.row-sel{background:#D4F1F5 !important;box-shadow:inset 3px 0 0 var(--teal);}
+tbody td{padding:10px 12px;color:var(--ink2);vertical-align:middle;}
+.mono{font-family:'DM Mono',monospace;font-size:.79rem;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.68rem;font-weight:600;}
+.g{background:#E8F5E9;color:#1B5E20;}
+.r{background:#FFEBEE;color:#B71C1C;}
+.a{background:#FFF3E0;color:#E65100;}
+.b{background:#E3F2FD;color:#0D47A1;}
+.gr{background:#ECEFF1;color:#455A64;}
+
+/* ── FORM ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fg label{font-size:.8rem;font-weight:600;color:var(--ink2);}
+.fg label .req{color:var(--red);}
+.fg input,.fg select,.fg textarea{
+  padding:10px 12px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.93rem;color:var(--ink);
+  background:#fff;outline:none;transition:border-color .14s,box-shadow .14s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.08);
+}
+.fg input.inp-err{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(198,40,40,.07)!important;}
+.fg .fe{font-size:.74rem;color:var(--red);display:none;margin-top:1px;}
+.fg .fh{font-size:.73rem;color:var(--hint);}
+.span2{grid-column:1/-1;}
+
+.fsect{
+  font-size:.69rem;font-weight:700;color:var(--teal-dd);
+  letter-spacing:.07em;text-transform:uppercase;
+  padding:12px 0 8px;border-top:1.5px solid var(--teal-s);
+  margin-top:2px;margin-bottom:2px;
+}
+
+/* pw eye wrapper */
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:40px;width:100%;}
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;display:flex;padding:3px;}
+.pw-eye:hover{color:var(--teal);}
+.pw-bar{height:3px;border-radius:2px;margin-top:5px;background:var(--border);}
+.pw-fill{height:100%;border-radius:2px;width:0;transition:width .3s,background .3s;}
+.pw-lbl{font-size:.71rem;margin-top:3px;min-height:14px;}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:9px 18px;border-radius:var(--r-sm);
+  font-size:.88rem;font-weight:600;border:1.5px solid transparent;
+  transition:all .14s;display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+}
+.btn svg{width:14px;height:14px;}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal);}
+.btn-teal:hover{background:var(--teal-d);box-shadow:0 4px 14px rgba(0,131,143,.26);}
+.btn-teal:active{transform:scale(.98);}
+.btn-out{background:#fff;color:var(--ink2);border-color:var(--border);}
+.btn-out:hover{border-color:var(--teal);color:var(--teal);}
+.btn-ghost{background:none;border-color:transparent;color:var(--muted);padding:9px 10px;}
+.btn-ghost:hover{color:var(--red);}
+.btn-sm{padding:5px 11px;font-size:.8rem;}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+.form-actions{
+  display:flex;gap:8px;align-items:center;
+  padding-top:14px;margin-top:4px;
+  border-top:1.5px solid var(--teal-s);
+}
+.form-actions .spc{flex:1;}
+
+/* ── ALERTS & BANNERS ── */
+.alert{padding:10px 14px;border-radius:var(--r-sm);font-size:.86rem;margin-top:12px;display:none;line-height:1.5;}
+.al-ok{background:#E8F5E9;color:var(--green);border:1px solid #A5D6A7;}
+.al-err{background:#FFEBEE;color:var(--red);border:1px solid #FFCDD2;}
+.dup-banner{padding:9px 13px;border-radius:var(--r-sm);font-size:.83rem;margin-bottom:14px;display:none;line-height:1.5;}
+.dup-new{background:#E8F5E9;color:var(--green);border:1px solid #A5D6A7;}
+.dup-edit{background:#FFF3E0;color:var(--amber);border:1px solid #FFCC80;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:44px 20px;color:var(--muted);}
+.empty svg{width:44px;height:44px;margin:0 auto 12px;display:block;opacity:.22;}
+.empty p{font-size:.9rem;}
+
+/* ── MAP TIP ── */
+.map-tip{
+  font-size:.79rem;color:var(--teal-dd);
+  background:var(--teal-s);border:1px dashed var(--teal-l);
+  border-radius:var(--r-sm);padding:9px 13px;
+  line-height:1.65;margin-bottom:14px;
+}
+.map-tip a{color:var(--teal);font-weight:600;}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:22px;right:22px;z-index:999;
+  background:var(--ink);color:#fff;
+  padding:11px 18px;border-radius:var(--r-sm);
+  font-size:.88rem;box-shadow:var(--sh-lg);
+  transform:translateY(60px);opacity:0;pointer-events:none;
+  transition:all .28s cubic-bezier(.34,1.56,.64,1);
+  display:flex;align-items:center;gap:8px;max-width:320px;
+}
+#toast.show{transform:none;opacity:1;}
+#toast.success{background:var(--green);}
+#toast.error{background:var(--red);}
+#toast svg{width:14px;height:14px;flex-shrink:0;}
+
+/* LOADING OVERLAY */
+#loadingOverlay{
+  position:fixed;inset:0;background:rgba(0,78,87,.92);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:500;transition:opacity .3s;
+}
+#loadingOverlay.hide{opacity:0;pointer-events:none;}
+.lov-logo{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:8px;object-fit:contain;margin-bottom:18px;}
+.lov-title{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:6px;}
+.lov-sub{font-size:.86rem;color:rgba(255,255,255,.5);margin-bottom:28px;}
+.lov-spin{width:28px;height:28px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--teal-l);border-radius:50%;animation:sp .7s linear infinite;}
+.lov-msg{font-size:.82rem;color:rgba(255,255,255,.45);margin-top:12px;}
+
+@media(max-width:1020px){
+  .split{grid-template-columns:1fr;}
+  .pane-right{border-top:1px solid var(--border);}
+}
+@media(max-width:680px){
+  :root{--sb:0px;}
+  .sidebar{display:none;}
+  .row2,.row3{grid-template-columns:1fr 1fr;}
+  .pane-left,.pane-right{padding:14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay">
+  <img src="https://drushyasinchana.in/assets/images/logo.png" class="lov-logo" alt="" onerror="this.style.display='none'"/>
+  <div class="lov-title">AttendEase</div>
+  <div class="lov-sub">Admin Management Portal</div>
+  <div class="lov-spin"></div>
+  <div class="lov-msg" id="lovMsg">Connecting to Google Sheets…</div>
+</div>
+
+<div class="shell">
+
+  <!-- ══ SIDEBAR ══ -->
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" class="sb-logo" alt="" onerror="this.style.display='none'"/>
+        <div>
+          <div class="sb-app-name">AttendEase</div>
+          <div class="sb-app-sub">Admin Portal</div>
+        </div>
+      </div>
+      <div class="sb-user">
+        <div class="sb-user-name" id="sbName">Administrator</div>
+        <div class="sb-user-co" id="sbCo">Loading…</div>
+      </div>
+    </div>
+
+    <div class="sb-nav">
+      <div class="sb-sect">Main</div>
+      <button class="nav-item" onclick="window.location.href='index.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="window.location.href='index.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Attendance
+      </button>
+      <button class="nav-item" onclick="window.location.href='index.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        Reports
+      </button>
+      <div class="nav-sep"></div>
+      <div class="sb-sect">Manage</div>
+      <button class="nav-item active" id="navEmp" onclick="showPage('emp',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Register Employee
+      </button>
+      <button class="nav-item" id="navSite" onclick="showPage('site',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 00-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+        Site Management
+      </button>
+    </div>
+
+    <div class="sb-foot">
+      <div class="sb-foot-co">Drushyasinchana Tech Solutions</div>
+      <button class="btn-so" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topTitle">Register Employee</span>
+      <div class="tb-right">
+        <div class="tb-avatar" id="tbAvatar">A</div>
+        <span class="tb-name" id="tbName">Admin</span>
+      </div>
+    </div>
+
+    <!-- ════ EMPLOYEE PAGE ════ -->
+    <div class="page-wrap active" id="pgEmp">
+      <div class="split">
+
+        <!-- LEFT: list -->
+        <div class="pane-left">
+          <div class="pane-hdr">
+            <div class="pane-hdr-left">
+              <h2>Employee Directory</h2>
+              <p>Click any row to edit &nbsp;·&nbsp; <strong id="empCnt" style="color:var(--teal);">—</strong> employees loaded</p>
+            </div>
+            <div class="pane-actions">
+              <button class="btn btn-out btn-sm" onclick="loadEmployees()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                Refresh
+              </button>
+              <button class="btn btn-teal btn-sm" onclick="newEmployee()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <input id="eSearch" placeholder="Search name, ID, email…" oninput="filterEmp()"/>
+            <select id="eStF" onchange="filterEmp()">
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+            <select id="eSiF" onchange="filterEmp()">
+              <option value="">All Sites</option>
+            </select>
+          </div>
+
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>Emp ID</th><th>Name</th><th>Email</th><th>Site</th><th>Role</th><th>Status</th></tr>
+              </thead>
+              <tbody id="empTb">
+                <tr><td colspan="6"><div class="empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  <p>Loading employees…</p>
+                </div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT: form -->
+        <div class="pane-right">
+          <div class="form-hdr">
+            <div>
+              <div class="form-hdr-title" id="empFTitle">New Employee</div>
+              <div class="form-hdr-sub" id="empFSub">Fill in the details and click Save</div>
+            </div>
+            <span class="mode-badge" id="empBadge">NEW</span>
+          </div>
+
+          <div class="dup-banner" id="empDup"></div>
+
+          <!-- ID + Lookup -->
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <div class="fg" style="flex:1;margin-bottom:0;">
+              <label>Employee ID <span class="req">*</span></label>
+              <input id="fCode" placeholder="EMP001" oninput="this.value=this.value.toUpperCase()"/>
+              <span class="fe" id="feCode"></span>
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn btn-out btn-sm" onclick="lookupEmp()" style="white-space:nowrap;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Lookup
+              </button>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="fg">
+              <label>Full Name <span class="req">*</span></label>
+              <input id="fName" placeholder="Full name"/>
+              <span class="fe" id="feName"></span>
+            </div>
+            <div class="fg">
+              <label>Phone</label>
+              <input id="fPhone" type="tel" placeholder="9876543210" maxlength="15"/>
+            </div>
+          </div>
+
+          <div class="fg">
+            <label>Email <span class="req">*</span></label>
+            <input id="fEmail" type="email" placeholder="employee@company.com" oninput="debEmail()"/>
+            <span class="fe" id="feEmail"></span>
+          </div>
+
+          <div class="row2">
+            <div class="fg">
+              <label>Assign Site</label>
+              <select id="fSite"><option value="">— Select Site —</option></select>
+            </div>
+            <div class="fg">
+              <label>Role</label>
+              <select id="fRole">
+                <option value="EMPLOYEE">Employee</option>
+                <option value="SUPERVISOR">Supervisor</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="fg">
+              <label>Joining Date</label>
+              <input id="fJoin" type="date"/>
+            </div>
+            <div class="fg">
+              <label>Effective Date</label>
+              <input id="fEff" type="date"/>
+              <span class="fh">For payroll / role change</span>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="fg">
+              <label>Status</label>
+              <select id="fStatus">
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Photo URL</label>
+              <input id="fPhoto" type="url" placeholder="https://…/photo.jpg"/>
+            </div>
+          </div>
+
+          <div class="fsect">Password</div>
+
+          <div class="row2">
+            <div class="fg">
+              <label>Password <span class="req" id="pwReq">*</span></label>
+              <div class="pw-wrap">
+                <input type="password" id="fPw" placeholder="Min 6 characters" oninput="pwStr()"/>
+                <button class="pw-eye" type="button" onclick="togglePw('fPw','pwEye')">
+                  <svg id="pwEye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="pw-bar"><div class="pw-fill" id="pwFill"></div></div>
+              <span class="pw-lbl" id="pwLbl" style="color:var(--hint);"></span>
+            </div>
+            <div class="fg">
+              <label>Confirm Password</label>
+              <input type="password" id="fCpw" placeholder="Re-enter password"/>
+              <span class="fe" id="feCpw"></span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-ghost" onclick="newEmployee()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Clear
+            </button>
+            <div class="spc"></div>
+            <button class="btn btn-teal" id="btnSaveEmp" onclick="saveEmployee()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Employee
+            </button>
+          </div>
+          <div class="alert" id="empAlert"></div>
+        </div>
+
+      </div>
+    </div><!-- /pgEmp -->
+
+    <!-- ════ SITE PAGE ════ -->
+    <div class="page-wrap" id="pgSite">
+      <div class="split">
+
+        <!-- LEFT: list -->
+        <div class="pane-left">
+          <div class="pane-hdr">
+            <div class="pane-hdr-left">
+              <h2>Site Directory</h2>
+              <p>Click any row to edit &nbsp;·&nbsp; <strong id="siteCnt" style="color:var(--teal);">—</strong> sites loaded</p>
+            </div>
+            <div class="pane-actions">
+              <button class="btn btn-out btn-sm" onclick="loadSites()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                Refresh
+              </button>
+              <button class="btn btn-teal btn-sm" onclick="newSite()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <input id="sSearch" placeholder="Search site name or ID…" oninput="filterSite()"/>
+            <select id="sStF" onchange="filterSite()">
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>Site ID</th><th>Site Name</th><th>Lat / Lng</th><th>Radius</th><th>Shift</th><th>Status</th></tr>
+              </thead>
+              <tbody id="siteTb">
+                <tr><td colspan="6"><div class="empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 00-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+                  <p>Loading sites…</p>
+                </div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT: form -->
+        <div class="pane-right">
+          <div class="form-hdr">
+            <div>
+              <div class="form-hdr-title" id="siteFTitle">New Site</div>
+              <div class="form-hdr-sub" id="siteFSub">Fill in location and shift details</div>
+            </div>
+            <span class="mode-badge" id="siteBadge">NEW</span>
+          </div>
+
+          <div class="dup-banner" id="siteDup"></div>
+
+          <!-- SiteID + Lookup -->
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <div class="fg" style="flex:1;margin-bottom:0;">
+              <label>Site ID <span class="req">*</span></label>
+              <input id="sSid" placeholder="SITE001" oninput="this.value=this.value.toUpperCase()"/>
+              <span class="fe" id="feSid"></span>
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn btn-out btn-sm" onclick="lookupSite()" style="white-space:nowrap;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Lookup
+              </button>
+            </div>
+          </div>
+
+          <div class="fg">
+            <label>Site Name <span class="req">*</span></label>
+            <input id="sSname" placeholder="e.g. Whitefield Office Block A"/>
+            <span class="fe" id="feSname"></span>
+          </div>
+
+          <div class="fsect">GPS · Geofence</div>
+
+          <div class="map-tip">
+            💡 Open <a href="https://maps.google.com" target="_blank">Google Maps</a> → right-click your site location → <strong>What's here?</strong> → copy the decimal numbers shown.
+          </div>
+
+          <div class="row3">
+            <div class="fg">
+              <label>Latitude <span class="req">*</span></label>
+              <input id="sLat" type="number" step="0.000001" placeholder="12.9716"/>
+              <span class="fe" id="feLat"></span>
+            </div>
+            <div class="fg">
+              <label>Longitude <span class="req">*</span></label>
+              <input id="sLng" type="number" step="0.000001" placeholder="77.5946"/>
+              <span class="fe" id="feLng"></span>
+            </div>
+            <div class="fg">
+              <label>Radius (m) <span class="req">*</span></label>
+              <input id="sRad" type="number" min="10" placeholder="200"/>
+              <span class="fe" id="feRad"></span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <button class="btn btn-out btn-sm" onclick="previewMap()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              Preview on Map
+            </button>
+          </div>
+          <div id="mapDiv" style="display:none;margin-bottom:16px;">
+            <iframe id="mapIf" width="100%" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;" allowfullscreen loading="lazy"></iframe>
+          </div>
+
+          <div class="fsect">Shift & Timings</div>
+
+          <div class="row2">
+            <div class="fg">
+              <label>Shift Start <span class="req">*</span></label>
+              <input id="sSS" type="time"/>
+            </div>
+            <div class="fg">
+              <label>Shift End <span class="req">*</span></label>
+              <input id="sSE" type="time"/>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="fg">
+              <label>Lunch Break</label>
+              <input id="sLunch" placeholder="e.g. 30 min or 13:00–14:00"/>
+              <span class="fh">Duration in minutes or time range</span>
+            </div>
+            <div class="fg">
+              <label>Address Status</label>
+              <select id="sAst">
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-ghost" onclick="newSite()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Clear
+            </button>
+            <div class="spc"></div>
+            <button class="btn btn-teal" id="btnSaveSite" onclick="saveSite()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Site
+            </button>
+          </div>
+          <div class="alert" id="siteAlert"></div>
+        </div>
+
+      </div>
+    </div><!-- /pgSite -->
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<div id="toast">
+  <svg id="toastIc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   CONFIG  ← update these two lines per deployment
+══════════════════════════════════════════════════════ */
+const SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzCwLtdaz3XQZUn8_JY2_YXPdVDmQI0oCwlcoWWMH5iHJvJ0vscG0z5tljd-gP1MuQ/exec";
+const COMPANY_EMAIL = "murthysnv22@gmail.com";
+
+/* ── STATE ── */
+const ST = {
+  prefs:    {},      // populated on boot from master script
+  sites:    [],
+  employees:[],
+  editEmpCode: null,
+  editSiteId:  null,
+};
+
+/* ══ UTILITIES ══ */
+async function sha256(s){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function api(payload){
+  const url = ST.prefs.scriptUrl || SCRIPT_URL;
+  return fetch(url,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'application/json'}}).then(r=>r.json());
+}
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  const ic=document.getElementById('toastIc');
+  document.getElementById('toastMsg').textContent=msg;
+  ic.innerHTML=type==='error'
+    ?'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+    :'<polyline points="20 6 9 17 4 12"/>';
+  t.className='show '+type;
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3600);
+}
+function showAlert(id,msg,type='ok'){
+  const el=document.getElementById(id);
+  el.className='alert al-'+type; el.textContent=msg; el.style.display='block';
+  if(type!=='err') setTimeout(()=>el.style.display='none',4500);
+}
+function fe(id,msg){
+  const el=document.getElementById(id); if(!el)return;
+  el.textContent=msg; el.style.display=msg?'block':'none';
+}
+function cfe(...ids){ids.forEach(id=>fe(id,''));}
+function today(){return new Date().toISOString().slice(0,10);}
+function fmtDate(d){
+  if(!d)return'—';const dt=new Date(d);
+  return isNaN(dt)?d:dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function lovMsg(m){document.getElementById('lovMsg').textContent=m;}
+function hideOverlay(){
+  const ov=document.getElementById('loadingOverlay');
+  ov.classList.add('hide');
+  setTimeout(()=>ov.style.display='none',350);
+}
+
+/* ══ PAGE NAV ══ */
+function showPage(pg,btn){
+  document.querySelectorAll('.page-wrap').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('pg'+pg.charAt(0).toUpperCase()+pg.slice(1)).classList.add('active');
+  if(btn) btn.classList.add('active');
+  document.getElementById('topTitle').textContent = pg==='emp'?'Register Employee':'Site Management';
+  if(pg==='emp') loadEmployees();
+  if(pg==='site') loadSites();
+}
+function doLogout(){
+  sessionStorage.removeItem('ae_prefs');
+  window.location.href='index.html';
+}
+
+/* ══ PW HELPERS ══ */
+function togglePw(inpId,icId){
+  const i=document.getElementById(inpId);
+  const ic=document.getElementById(icId);
+  i.type=i.type==='password'?'text':'password';
+  ic.innerHTML=i.type==='text'
+    ?'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    :'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+function pwStr(){
+  const v=document.getElementById('fPw').value;
+  const f=document.getElementById('pwFill');
+  const l=document.getElementById('pwLbl');
+  if(!v){f.style.width='0';l.textContent='';return;}
+  let s=0;
+  if(v.length>=8)s++;
+  if(/[A-Z]/.test(v)&&/[a-z]/.test(v))s++;
+  if(/[0-9]/.test(v)||/[^A-Za-z0-9]/.test(v))s++;
+  const C=['#ccc','#C62828','#E65100','#2E7D32'];
+  const W=['0%','33%','66%','100%'];
+  const L=['','Weak','Fair','Strong'];
+  f.style.width=W[s]; f.style.background=C[s];
+  l.textContent=L[s]; l.style.color=C[s];
+}
+let _emT;
+function debEmail(){
+  clearTimeout(_emT);
+  _emT=setTimeout(()=>{
+    const em=document.getElementById('fEmail').value.trim().toLowerCase();
+    const dup=ST.employees.find(e=>(e.email||'').toLowerCase()===em&&(e.empCode||e.EMPID||'')!==ST.editEmpCode);
+    fe('feEmail',dup?`⚠ Email already used by ${dup.empCode||dup.EMPID} (${dup.name||dup.EmpName})`:'');
+  },600);
+}
+
+/* ══════════════════════════════════════════════════════
+   EMPLOYEE
+══════════════════════════════════════════════════════ */
+let _emps=[];
+
+async function loadEmployees(){
+  document.getElementById('empTb').innerHTML='<tr><td colspan="6"><div class="empty"><p>Loading…</p></div></td></tr>';
+  try{
+    const r=await api({action:'getEmployees',companySheetId:ST.prefs.sheetId});
+    _emps=ST.employees=r.success?(r.data.employees||[]):[];
+    renderEmps(_emps); fillSiteSel();
+  }catch(e){
+    document.getElementById('empTb').innerHTML='<tr><td colspan="6"><div class="empty"><p style="color:var(--red)">Failed to load — check Script URL</p></div></td></tr>';
+  }
+}
+
+function renderEmps(list){
+  document.getElementById('empCnt').textContent=list.length;
+  const tb=document.getElementById('empTb');
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="6"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>No employees found</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML=list.map(e=>{
+    const code=e.empCode||e.EMPID||'—';
+    const name=e.name||e.EmpName||'—';
+    const email=e.email||e.Email||'—';
+    const site=e.siteName||e.site||e.Site||'—';
+    const role=e.role||e.Role||'EMPLOYEE';
+    const st=e.status||e.Status||'ACTIVE';
+    const sel=ST.editEmpCode===code?' row-sel':'';
+    return`<tr class="${sel}" onclick='fillEmpForm(${JSON.stringify(JSON.stringify(e))})'>
+      <td class="mono">${code}</td>
+      <td><strong>${name}</strong></td>
+      <td style="font-size:.81rem;color:var(--muted)">${email}</td>
+      <td>${site}</td>
+      <td><span class="badge ${role==='ADMIN'?'b':role==='SUPERVISOR'?'a':'gr'}">${role}</span></td>
+      <td><span class="badge ${st==='ACTIVE'?'g':'gr'}">${st}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterEmp(){
+  const q=document.getElementById('eSearch').value.toLowerCase();
+  const st=document.getElementById('eStF').value;
+  const si=document.getElementById('eSiF').value;
+  renderEmps(_emps.filter(e=>{
+    const n=(e.name||e.EmpName||'').toLowerCase();
+    const c=(e.empCode||e.EMPID||'').toLowerCase();
+    const em=(e.email||e.Email||'').toLowerCase();
+    return(!q||n.includes(q)||c.includes(q)||em.includes(q))
+      &&(!st||(e.status||e.Status||'')===st)
+      &&(!si||(e.site||e.Site||'')===si);
+  }));
+}
+
+function fillSiteSel(){
+  ['fSite','eSiF'].forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    while(el.options.length>1)el.remove(1);
+    ST.sites.forEach(s=>{
+      const o=document.createElement('option');
+      o.value=s.siteId||s.SiteID||'';
+      o.textContent=s.siteName||s.SiteName||o.value;
+      el.appendChild(o);
+    });
+  });
+}
+
+function newEmployee(){
+  ST.editEmpCode=null;
+  ['fCode','fName','fEmail','fPhone','fPw','fCpw','fPhoto','fEff'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('fRole').value='EMPLOYEE';
+  document.getElementById('fStatus').value='ACTIVE';
+  document.getElementById('fSite').value='';
+  document.getElementById('fJoin').value=today();
+  cfe('feCode','feName','feEmail','feCpw');
+  document.getElementById('empDup').style.display='none';
+  document.getElementById('empAlert').style.display='none';
+  document.getElementById('empFTitle').textContent='New Employee';
+  document.getElementById('empFSub').textContent='Fill in the details and click Save';
+  const mb=document.getElementById('empBadge'); mb.textContent='NEW'; mb.className='mode-badge';
+  document.getElementById('pwReq').style.display='';
+  document.getElementById('fPw').placeholder='Min 6 characters';
+  document.getElementById('pwFill').style.width='0';
+  document.getElementById('pwLbl').textContent='';
+  document.querySelectorAll('#empTb tr').forEach(r=>r.classList.remove('row-sel'));
+}
+
+function fillEmpForm(ej){
+  const e=JSON.parse(ej);
+  ST.editEmpCode=e.empCode||e.EMPID||'';
+  document.getElementById('fCode').value =e.empCode||e.EMPID||'';
+  document.getElementById('fName').value =e.name||e.EmpName||'';
+  document.getElementById('fEmail').value=e.email||e.Email||'';
+  document.getElementById('fPhone').value=e.phone||e.Phone||'';
+  document.getElementById('fRole').value =e.role||e.Role||'EMPLOYEE';
+  document.getElementById('fSite').value =e.siteId||e.site||e.Site||'';
+  document.getElementById('fJoin').value =e.joinDate||e.JoinDate||today();
+  document.getElementById('fStatus').value=e.status||e.Status||'ACTIVE';
+  document.getElementById('fEff').value  =e.effectiveDate||e.EffectiveDate||'';
+  document.getElementById('fPhoto').value=e.photoUrl||e.PhotoURL||'';
+  document.getElementById('fPw').value=''; document.getElementById('fCpw').value='';
+  cfe('feCode','feName','feEmail','feCpw');
+  document.getElementById('empDup').innerHTML='✏️ &nbsp;Editing existing employee — leave password blank to keep current password';
+  document.getElementById('empDup').className='dup-banner dup-edit';
+  document.getElementById('empDup').style.display='block';
+  document.getElementById('empFTitle').textContent='Edit Employee';
+  document.getElementById('empFSub').textContent=e.name||e.EmpName||'';
+  const mb=document.getElementById('empBadge'); mb.textContent='EDIT'; mb.className='mode-badge edit';
+  document.getElementById('pwReq').style.display='none';
+  document.getElementById('fPw').placeholder='Leave blank to keep existing password';
+  document.getElementById('empAlert').style.display='none';
+  document.getElementById('pwFill').style.width='0'; document.getElementById('pwLbl').textContent='';
+  document.querySelectorAll('#empTb tr').forEach(r=>r.classList.remove('row-sel'));
+  [...document.querySelectorAll('#empTb tr')].find(r=>r.cells[0]&&r.cells[0].textContent.trim()===ST.editEmpCode)?.classList.add('row-sel');
+}
+
+async function lookupEmp(){
+  const id=document.getElementById('fCode').value.trim().toUpperCase();
+  if(!id){toast('Enter an Employee ID first','error');return;}
+  const ex=_emps.find(e=>(e.empCode||e.EMPID||'').toUpperCase()===id);
+  if(ex){fillEmpForm(JSON.stringify(ex));toast('Employee loaded for editing');}
+  else{
+    const d=document.getElementById('empDup');
+    d.innerHTML='✓ &nbsp;Employee ID is available — will create a new record';
+    d.className='dup-banner dup-new'; d.style.display='block'; ST.editEmpCode=null;
+  }
+}
+
+async function saveEmployee(){
+  cfe('feCode','feName','feEmail','feCpw');
+  document.getElementById('empAlert').style.display='none';
+  const empCode=document.getElementById('fCode').value.trim().toUpperCase();
+  const name   =document.getElementById('fName').value.trim();
+  const email  =document.getElementById('fEmail').value.trim().toLowerCase();
+  const phone  =document.getElementById('fPhone').value.trim();
+  const role   =document.getElementById('fRole').value;
+  const siteId =document.getElementById('fSite').value;
+  const joinDate=document.getElementById('fJoin').value;
+  const status =document.getElementById('fStatus').value;
+  const effDate=document.getElementById('fEff').value;
+  const photo  =document.getElementById('fPhoto').value.trim();
+  const pw     =document.getElementById('fPw').value;
+  const cpw    =document.getElementById('fCpw').value;
+  let ok=true;
+  if(!empCode){fe('feCode','Employee ID is required');ok=false;}
+  if(!name)   {fe('feName','Full name is required');ok=false;}
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){fe('feEmail','Valid email is required');ok=false;}
+  if(!ST.editEmpCode&&!pw){document.getElementById('fPw').classList.add('inp-err');ok=false;}
+  if(pw&&pw.length<6){showAlert('empAlert','Password must be at least 6 characters','err');ok=false;}
+  if(pw&&pw!==cpw){fe('feCpw','Passwords do not match');ok=false;}
+  const dupEm=_emps.find(e=>(e.email||'').toLowerCase()===email&&(e.empCode||e.EMPID||'')!==empCode);
+  if(dupEm){fe('feEmail',`Email already used by ${dupEm.empCode||dupEm.EMPID} (${dupEm.name||dupEm.EmpName})`);ok=false;}
+  if(!ok){toast('Fix the highlighted errors','error');return;}
+
+  const btn=document.getElementById('btnSaveEmp');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Saving…';
+  try{
+    const payload={
+      action:ST.editEmpCode?'updateEmployee':'registerEmployee',
+      companySheetId:ST.prefs.sheetId,
+      empCode,name,email,phone,siteId,joinDate,status,role,effectiveDate:effDate,photoUrl:photo
+    };
+    if(pw) payload.password=await sha256(pw);
+    const r=await api(payload);
+    if(r.success){
+      toast(ST.editEmpCode?'Employee updated!':'Employee registered!');
+      showAlert('empAlert',(ST.editEmpCode?'✓ Updated: ':'✓ Registered: ')+name+' ('+empCode+')','ok');
+      ST.editEmpCode=empCode;
+      document.getElementById('empBadge').textContent='EDIT';
+      document.getElementById('empBadge').className='mode-badge edit';
+      document.getElementById('empFTitle').textContent='Edit Employee';
+      document.getElementById('pwReq').style.display='none';
+      document.getElementById('fPw').placeholder='Leave blank to keep existing password';
+      document.getElementById('empDup').innerHTML='✏️ &nbsp;Editing existing employee — leave password blank to keep current password';
+      document.getElementById('empDup').className='dup-banner dup-edit';
+      document.getElementById('empDup').style.display='block';
+      await loadEmployees();
+    }else{
+      showAlert('empAlert',r.message||'Save failed. Check your Apps Script.','err');
+      toast(r.message||'Save failed','error');
+    }
+  }catch(e){showAlert('empAlert','Connection error — check Script URL and CORS settings.','err');toast('Connection error','error');}
+  btn.disabled=false;
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Employee';
+}
+
+/* ══════════════════════════════════════════════════════
+   SITES
+══════════════════════════════════════════════════════ */
+let _sites=[];
+
+async function loadSites(){
+  document.getElementById('siteTb').innerHTML='<tr><td colspan="6"><div class="empty"><p>Loading…</p></div></td></tr>';
+  try{
+    const r=await api({action:'getSites',companySheetId:ST.prefs.sheetId});
+    _sites=ST.sites=r.success?(r.data.sites||[]):[];
+    renderSites(_sites); fillSiteSel();
+  }catch(e){
+    document.getElementById('siteTb').innerHTML='<tr><td colspan="6"><div class="empty"><p style="color:var(--red)">Failed to load — check Script URL</p></div></td></tr>';
+  }
+}
+
+function renderSites(list){
+  document.getElementById('siteCnt').textContent=list.length;
+  const tb=document.getElementById('siteTb');
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="6"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 00-16 0c0 3 2.7 6.9 8 11.7z"/></svg><p>No sites found</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML=list.map(s=>{
+    const id=s.siteId||s.SiteID||'—';
+    const nm=s.siteName||s.SiteName||'—';
+    const la=s.latitude||s.Latitude||'';
+    const ln=s.longitude||s.Longitude||'';
+    const coord=la&&ln?`${parseFloat(la).toFixed(4)}, ${parseFloat(ln).toFixed(4)}`:'—';
+    const rad=s.radius||s.Radius||'—';
+    const ss=s.shiftStart||s.ShiftStart||'';
+    const se=s.shiftEnd||s.ShiftEnd||'';
+    const shift=ss&&se?`${ss}–${se}`:'—';
+    const st=s.addressStatus||s.AddressStatus||'ACTIVE';
+    const sel=ST.editSiteId===id?' row-sel':'';
+    return`<tr class="${sel}" onclick='fillSiteForm(${JSON.stringify(JSON.stringify(s))})'>
+      <td class="mono">${id}</td>
+      <td><strong>${nm}</strong></td>
+      <td class="mono" style="font-size:.77rem">${coord}</td>
+      <td class="mono">${rad} m</td>
+      <td class="mono" style="font-size:.79rem">${shift}</td>
+      <td><span class="badge ${st==='ACTIVE'?'g':'gr'}">${st}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterSite(){
+  const q=document.getElementById('sSearch').value.toLowerCase();
+  const st=document.getElementById('sStF').value;
+  renderSites(_sites.filter(s=>{
+    const nm=(s.siteName||s.SiteName||'').toLowerCase();
+    const id=(s.siteId||s.SiteID||'').toLowerCase();
+    const stat=s.addressStatus||s.AddressStatus||'';
+    return(!q||nm.includes(q)||id.includes(q))&&(!st||stat===st);
+  }));
+}
+
+function newSite(){
+  ST.editSiteId=null;
+  ['sSid','sSname','sLat','sLng','sRad','sLunch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('sSS').value=''; document.getElementById('sSE').value='';
+  document.getElementById('sAst').value='ACTIVE';
+  cfe('feSid','feSname','feLat','feLng','feRad');
+  document.getElementById('siteDup').style.display='none';
+  document.getElementById('siteAlert').style.display='none';
+  document.getElementById('mapDiv').style.display='none';
+  document.getElementById('siteFTitle').textContent='New Site';
+  document.getElementById('siteFSub').textContent='Fill in location and shift details';
+  const mb=document.getElementById('siteBadge'); mb.textContent='NEW'; mb.className='mode-badge';
+  document.querySelectorAll('#siteTb tr').forEach(r=>r.classList.remove('row-sel'));
+}
+
+function fillSiteForm(sj){
+  const s=JSON.parse(sj);
+  ST.editSiteId=s.siteId||s.SiteID||'';
+  document.getElementById('sSid').value  =s.siteId||s.SiteID||'';
+  document.getElementById('sSname').value=s.siteName||s.SiteName||'';
+  document.getElementById('sLat').value  =s.latitude||s.Latitude||'';
+  document.getElementById('sLng').value  =s.longitude||s.Longitude||'';
+  document.getElementById('sRad').value  =s.radius||s.Radius||'';
+  document.getElementById('sSS').value   =s.shiftStart||s.ShiftStart||'';
+  document.getElementById('sSE').value   =s.shiftEnd||s.ShiftEnd||'';
+  document.getElementById('sLunch').value=s.lunchTime||s.LunchTime||'';
+  document.getElementById('sAst').value  =s.addressStatus||s.AddressStatus||'ACTIVE';
+  cfe('feSid','feSname','feLat','feLng','feRad');
+  document.getElementById('siteDup').innerHTML='✏️ &nbsp;Editing existing site — changes will update the existing record';
+  document.getElementById('siteDup').className='dup-banner dup-edit';
+  document.getElementById('siteDup').style.display='block';
+  document.getElementById('siteFTitle').textContent='Edit Site';
+  document.getElementById('siteFSub').textContent=s.siteName||s.SiteName||'';
+  const mb=document.getElementById('siteBadge'); mb.textContent='EDIT'; mb.className='mode-badge edit';
+  document.getElementById('siteAlert').style.display='none';
+  document.getElementById('mapDiv').style.display='none';
+  document.querySelectorAll('#siteTb tr').forEach(r=>r.classList.remove('row-sel'));
+  [...document.querySelectorAll('#siteTb tr')].find(r=>r.cells[0]&&r.cells[0].textContent.trim()===ST.editSiteId)?.classList.add('row-sel');
+}
+
+async function lookupSite(){
+  const id=document.getElementById('sSid').value.trim().toUpperCase();
+  if(!id){toast('Enter a Site ID first','error');return;}
+  const ex=_sites.find(s=>(s.siteId||s.SiteID||'').toUpperCase()===id);
+  if(ex){fillSiteForm(JSON.stringify(ex));toast('Site loaded for editing');}
+  else{
+    const d=document.getElementById('siteDup');
+    d.innerHTML='✓ &nbsp;Site ID is available — will create a new site';
+    d.className='dup-banner dup-new'; d.style.display='block'; ST.editSiteId=null;
+  }
+}
+
+function previewMap(){
+  const lat=parseFloat(document.getElementById('sLat').value);
+  const lng=parseFloat(document.getElementById('sLng').value);
+  if(isNaN(lat)||isNaN(lng)){toast('Enter valid coordinates first','error');return;}
+  document.getElementById('mapIf').src=`https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+  document.getElementById('mapDiv').style.display='block';
+}
+
+async function saveSite(){
+  cfe('feSid','feSname','feLat','feLng','feRad');
+  document.getElementById('siteAlert').style.display='none';
+  const siteId  =document.getElementById('sSid').value.trim().toUpperCase();
+  const siteName=document.getElementById('sSname').value.trim();
+  const lat     =parseFloat(document.getElementById('sLat').value);
+  const lng     =parseFloat(document.getElementById('sLng').value);
+  const radius  =parseInt(document.getElementById('sRad').value);
+  const shiftS  =document.getElementById('sSS').value;
+  const shiftE  =document.getElementById('sSE').value;
+  const lunch   =document.getElementById('sLunch').value.trim();
+  const addrSt  =document.getElementById('sAst').value;
+  let ok=true;
+  if(!siteId)  {fe('feSid',  'Site ID is required');ok=false;}
+  if(!siteName){fe('feSname','Site Name is required');ok=false;}
+  if(isNaN(lat)||lat<-90||lat>90)    {fe('feLat','Valid latitude required (-90 to 90)');ok=false;}
+  if(isNaN(lng)||lng<-180||lng>180)  {fe('feLng','Valid longitude required (-180 to 180)');ok=false;}
+  if(isNaN(radius)||radius<10)       {fe('feRad','Radius must be ≥ 10 metres');ok=false;}
+  if(!shiftS||!shiftE){showAlert('siteAlert','Shift Start and End times are required','err');ok=false;}
+  if(!ok){toast('Fix the highlighted errors','error');return;}
+
+  const btn=document.getElementById('btnSaveSite');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Saving…';
+  try{
+    const r=await api({
+      action:ST.editSiteId?'updateSite':'addSite',
+      companySheetId:ST.prefs.sheetId,
+      siteId,siteName,latitude:lat,longitude:lng,radius,
+      shiftStart:shiftS,shiftEnd:shiftE,lunchTime:lunch,addressStatus:addrSt
+    });
+    if(r.success){
+      toast(ST.editSiteId?'Site updated!':'Site added!');
+      showAlert('siteAlert',(ST.editSiteId?'✓ Updated: ':'✓ Added: ')+siteName,'ok');
+      ST.editSiteId=siteId;
+      document.getElementById('siteBadge').textContent='EDIT';
+      document.getElementById('siteBadge').className='mode-badge edit';
+      document.getElementById('siteFTitle').textContent='Edit Site';
+      document.getElementById('siteDup').innerHTML='✏️ &nbsp;Editing existing site — changes will update the existing record';
+      document.getElementById('siteDup').className='dup-banner dup-edit';
+      document.getElementById('siteDup').style.display='block';
+      await loadSites();
+    }else{
+      showAlert('siteAlert',r.message||'Save failed. Check your Apps Script.','err');
+      toast(r.message||'Save failed','error');
+    }
+  }catch(e){showAlert('siteAlert','Connection error — check Script URL and CORS settings.','err');toast('Connection error','error');}
+  btn.disabled=false;
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Site';
+}
+
+/* ══════════════════════════════════════════════════════
+   BOOT — validate company then load data
+══════════════════════════════════════════════════════ */
+(async function boot(){
+  document.getElementById('fJoin').value=today();
+
+  try{
+    lovMsg('Validating company account…');
+    const mRes=await fetch(SCRIPT_URL,{
+      method:'POST',
+      body:JSON.stringify({action:'validateCompany',adminEmail:COMPANY_EMAIL}),
+      headers:{'Content-Type':'application/json'}
+    }).then(r=>r.json());
+
+    if(!mRes.success){
+      lovMsg('⚠ Company not registered — contact Drushyasinchana Tech Solutions');
+      // Still show the page, just won't be able to load data
+      ST.prefs={sheetId:'',scriptUrl:SCRIPT_URL};
+      hideOverlay();
+      return;
+    }
+
+    const co=mRes.data;
+    ST.prefs={
+      sheetId   : co.companySheetId   || '',
+      scriptUrl : co.companyScriptUrl || SCRIPT_URL,
+      coName    : co.companyName      || COMPANY_EMAIL,
+      isActive  : co.isActive,
+    };
+
+    // Update UI
+    document.getElementById('sbName').textContent = sessionStorage.getItem('ae_adminName') || 'Administrator';
+    document.getElementById('sbCo').textContent   = ST.prefs.coName;
+    document.getElementById('tbAvatar').textContent = (sessionStorage.getItem('ae_adminName')||'AD').slice(0,2).toUpperCase();
+    document.getElementById('tbName').textContent   = sessionStorage.getItem('ae_adminName') || 'Administrator';
+
+    lovMsg('Loading sites and employees…');
+    // Load sites first so emp dropdown is ready
+    const sr=await api({action:'getSites',companySheetId:ST.prefs.sheetId}).catch(()=>({success:false}));
+    _sites=ST.sites=sr.success?(sr.data.sites||[]):[];
+    fillSiteSel();
+
+    await loadEmployees();
+    hideOverlay();
+
+  }catch(err){
+    lovMsg('Connection failed — showing page anyway. Refresh to retry.');
+    ST.prefs={sheetId:'',scriptUrl:SCRIPT_URL};
+    setTimeout(hideOverlay,2000);
+  }
+})();
+</script>
+</body>
+</html>
