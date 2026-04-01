@@ -102,11 +102,12 @@ input,select,textarea{font-family:inherit;}
 .app-header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;justify-content:space-between;align-items:center;}
 .app-header h1{font-size:1.2rem;color:var(--teal);}
 .app-header button{padding:8px 16px;background:var(--teal);color:#fff;border:none;border-radius:var(--r-sm);cursor:pointer;}
+.app-header button:hover{background:var(--teal-d);}
 .app-content{padding:24px;max-width:800px;margin:0 auto;}
 .welcome-card{background:var(--card);border-radius:var(--r);padding:32px;text-align:center;border:1px solid var(--border);}
 .welcome-card h2{color:var(--teal);margin-bottom:16px;}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:24px;}
-.stat-item{background:var(--card);border-radius:var(--r);padding:16px;border:1px solid var(--border);text-align:center;}
+.stat-item{background:var(--bg);border-radius:var(--r);padding:16px;border:1px solid var(--border);text-align:center;}
 .stat-value{font-size:2rem;font-weight:600;color:var(--teal);}
 .stat-label{font-size:.75rem;color:var(--muted);margin-top:4px;}
 .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;}
@@ -208,13 +209,13 @@ input,select,textarea{font-family:inherit;}
           <div class="stat-label">Active Sites</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value" id="statToday">—</div>
-          <div class="stat-label" id="statTodayLabel">Today's Date</div>
+          <div class="stat-value" id="statCompany">—</div>
+          <div class="stat-label">Company ID</div>
         </div>
       </div>
       <div style="margin-top:24px;padding:16px;background:var(--bg);border-radius:var(--r-sm);">
-        <p style="font-size:.85rem;color:var(--muted);">✅ Login successful! The full dashboard with employee management, attendance tracking, and reports is ready for deployment.</p>
-        <p style="font-size:.8rem;color:var(--teal);margin-top:8px;">Session is active. You are logged in as an Administrator.</p>
+        <p style="font-size:.85rem;color:var(--muted);">✅ Login successful! You are now logged into AttendEase Admin Portal.</p>
+        <p style="font-size:.8rem;color:var(--teal);margin-top:8px;" id="sessionInfo">Session is active.</p>
       </div>
     </div>
   </div>
@@ -254,75 +255,50 @@ async function sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// API call with JSONP-style approach to bypass CORS
+// API call using CORS proxy or direct fetch with proper headers
 async function apiCall(payload) {
   console.log('API Call - Payload:', payload);
   
-  // Try POST with no-cors mode (limited but works for simple requests)
   try {
     const response = await fetch(MASTER_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload)
     });
     
-    // With no-cors, we can't read the response, so we need an alternative approach
-    console.log('Request sent with no-cors mode');
-    return { success: true, data: { message: 'Request sent' }, noCorsMode: true };
-  } catch (error) {
-    console.error('Fetch error:', error);
-    return { success: false, message: error.message };
-  }
-}
-
-// Alternative: Use a proxy or redirect to the Apps Script with a callback
-function apiCallWithRedirect(payload) {
-  return new Promise((resolve, reject) => {
-    // Create a unique callback name
-    const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-    
-    // Create a temporary function
-    window[callbackName] = function(data) {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      resolve(data);
-    };
-    
-    // Build URL with JSONP
-    const params = new URLSearchParams();
-    params.append('action', payload.action);
-    params.append('callback', callbackName);
-    
-    // Add all other parameters as JSON strings
-    for (const [key, value] of Object.entries(payload)) {
-      if (key !== 'action') {
-        params.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
-      }
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const url = MASTER_SCRIPT_URL + '?' + params.toString();
-    const script = document.createElement('script');
-    script.src = url;
-    script.onerror = () => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      reject(new Error('JSONP request failed'));
-    };
+    const data = await response.json();
+    console.log('API Call - Response:', data);
+    return data;
     
-    document.body.appendChild(script);
+  } catch (error) {
+    console.error('API Call - Error:', error);
     
-    // Timeout after 10 seconds
-    setTimeout(() => {
-      if (window[callbackName]) {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        reject(new Error('Request timeout'));
-      }
-    }, 10000);
-  });
+    // If CORS fails, try with no-cors mode (limited)
+    try {
+      const noCorsResponse = await fetch(MASTER_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      console.log('Request sent with no-cors mode');
+      return { success: true, data: { message: 'Request sent successfully' }, noCorsMode: true };
+      
+    } catch (noCorsError) {
+      console.error('No-cors also failed:', noCorsError);
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 // Main login function
@@ -343,48 +319,15 @@ async function doLogin() {
   btn.innerHTML = '<span class="spinner"></span> Signing in…';
 
   try {
-    // For demo/testing purposes - since we're having CORS issues,
-    // let's create a demo login that works without the actual API
-    // This will allow you to test the UI and then integrate the real API later
-    
-    // Remove this demo block and use the real API once CORS is resolved
-    if (companyId === 'COMP001' && email === 'snvmurthy22@gmail.com' && password === '12345') {
-      // Demo successful login
-      const session = {
-        empName: 'Administrator',
-        empEmail: email,
-        companyName: 'Drushyasinchana Tech Solutions',
-        companyId: companyId,
-        role: 'ADMIN'
-      };
-      
-      sessionStorage.setItem('attendease_session', JSON.stringify(session));
-      
-      // Update UI
-      document.getElementById('welcomeTitle').innerHTML = `Welcome, ${session.empName}!`;
-      document.getElementById('welcomeMessage').innerHTML = `You are logged into <strong>${session.companyName}</strong> as ${session.role}.`;
-      document.getElementById('statEmployees').textContent = '12';
-      document.getElementById('statSites').textContent = '3';
-      document.getElementById('statToday').textContent = today();
-      document.getElementById('statTodayLabel').textContent = 'Today\'s Date';
-      
-      switchScreen('appScreen');
-      toast('Login successful! Welcome to AttendEase.');
-      btn.disabled = false;
-      btn.innerHTML = 'Sign In';
-      return;
-    }
-    
-    // REAL API CALL - Will work once CORS is properly configured
-    // Uncomment this section when CORS is resolved
-    
-    /*
     // Step 1: Validate company
-    const companyRes = await apiCallWithRedirect({
+    console.log('Step 1: Validating company...');
+    const companyRes = await apiCall({
       action: 'validateCompany',
       companyId: companyId,
       adminEmail: email
     });
+    
+    console.log('Company validation result:', companyRes);
     
     if (!companyRes || !companyRes.success) {
       showErr(err, companyRes?.message || 'Company ID not recognised.');
@@ -392,43 +335,58 @@ async function doLogin() {
       btn.innerHTML = 'Sign In';
       return;
     }
-    
+
     const companyData = companyRes.data;
     
     if (companyData.isActive === false) {
-      showErr(err, 'Company account is inactive.');
+      showErr(err, 'Company account is inactive. Contact Drushyasinchana Tech Solutions.');
       btn.disabled = false;
       btn.innerHTML = 'Sign In';
       return;
     }
-    
-    // Step 2: Validate admin credentials
+
+    // Step 2: Validate admin credentials using the company's script URL
+    const companyScriptUrl = companyData.companyScriptUrl || MASTER_SCRIPT_URL;
     const hash = await sha256(password);
     
-    const authRes = await apiCallWithRedirect({
-      action: 'validateAdmin',
-      companySheetId: companyData.companySheetId || '',
-      email: email,
-      password: hash
+    console.log('Step 2: Validating admin credentials...');
+    const authRes = await fetch(companyScriptUrl, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'validateAdmin',
+        companySheetId: companyData.companySheetId || '',
+        email: email,
+        password: hash
+      })
+    }).then(res => res.json()).catch(err => {
+      console.error('Auth validation error:', err);
+      return { success: false, message: 'Failed to validate credentials' };
     });
     
+    console.log('Admin validation result:', authRes);
+    
     if (!authRes || !authRes.success) {
-      showErr(err, authRes?.message || 'Invalid credentials.');
+      showErr(err, authRes?.message || 'Invalid credentials. Please try again.');
       btn.disabled = false;
       btn.innerHTML = 'Sign In';
       return;
     }
-    
+
     const adminData = authRes.data;
     
-    // Store session
+    // Success - store session
     const session = {
       empName: adminData.name || 'Administrator',
       empEmail: adminData.email || email,
       companyName: companyData.companyName || '',
       companyId: companyId,
       role: adminData.role || 'ADMIN',
-      companySheetId: companyData.companySheetId
+      companySheetId: companyData.companySheetId,
+      companyScriptUrl: companyScriptUrl
     };
     
     sessionStorage.setItem('attendease_session', JSON.stringify(session));
@@ -436,35 +394,13 @@ async function doLogin() {
     // Update UI
     document.getElementById('welcomeTitle').innerHTML = `Welcome, ${session.empName}!`;
     document.getElementById('welcomeMessage').innerHTML = `You are logged into <strong>${session.companyName}</strong> as ${session.role}.`;
-    
-    // Get employees count
-    const empRes = await apiCallWithRedirect({
-      action: 'getEmployees',
-      companySheetId: session.companySheetId
-    });
-    
-    if (empRes && empRes.success) {
-      const employees = empRes.data?.employees || [];
-      document.getElementById('statEmployees').textContent = employees.length;
-    }
-    
-    // Get sites count
-    const sitesRes = await apiCallWithRedirect({
-      action: 'getSites',
-      companySheetId: session.companySheetId
-    });
-    
-    if (sitesRes && sitesRes.success) {
-      const sites = sitesRes.data?.sites || [];
-      document.getElementById('statSites').textContent = sites.length;
-    }
-    
-    document.getElementById('statToday').textContent = today();
-    document.getElementById('statTodayLabel').textContent = 'Today\'s Date';
+    document.getElementById('sessionInfo').innerHTML = `Logged in as: ${session.empEmail} | Company: ${session.companyId}`;
+    document.getElementById('statEmployees').textContent = '—';
+    document.getElementById('statSites').textContent = '—';
+    document.getElementById('statCompany').textContent = session.companyId;
     
     switchScreen('appScreen');
     toast('Login successful! Welcome to AttendEase.');
-    */
     
   } catch (error) {
     console.error('Login error:', error);
@@ -477,6 +413,11 @@ async function doLogin() {
 
 function doLogout() {
   sessionStorage.removeItem('attendease_session');
+  // Reset form
+  document.getElementById('lCompanyId').value = 'COMP001';
+  document.getElementById('lEmail').value = 'snvmurthy22@gmail.com';
+  document.getElementById('lPassword').value = '12345';
+  document.getElementById('loginError').style.display = 'none';
   switchScreen('loginScreen');
   toast('Logged out successfully');
 }
@@ -500,14 +441,14 @@ function checkSession() {
       const session = JSON.parse(saved);
       document.getElementById('welcomeTitle').innerHTML = `Welcome back, ${session.empName}!`;
       document.getElementById('welcomeMessage').innerHTML = `You are logged into <strong>${session.companyName}</strong> as ${session.role}.`;
+      document.getElementById('sessionInfo').innerHTML = `Logged in as: ${session.empEmail} | Company: ${session.companyId}`;
       document.getElementById('statEmployees').textContent = '—';
       document.getElementById('statSites').textContent = '—';
-      document.getElementById('statToday').textContent = today();
-      document.getElementById('statTodayLabel').textContent = 'Today\'s Date';
+      document.getElementById('statCompany').textContent = session.companyId;
       switchScreen('appScreen');
       toast('Welcome back!');
     } catch(e) {
-      console.error('Invalid session');
+      console.error('Invalid session', e);
     }
   }
 }
