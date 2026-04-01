@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendEase — Admin Portal</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;--amber:#E65100;
+  --r:12px;--r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+  --sh-lg:0 8px 32px rgba(0,131,143,.16);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+
+/* ─── SCREENS ─────────────────────────────────────────── */
+.screen{display:none;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.anim{animation:fadeUp .25s ease both;}
+
+/* ══════════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════════ */
+#loginScreen{
+  min-height:100vh;align-items:stretch;
+  background:linear-gradient(140deg,var(--teal-dd) 0%,var(--teal) 55%,#00ACC1 100%);
+}
+.login-left{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:64px 72px;position:relative;overflow:hidden;
+}
+.login-left::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 15% 50%,rgba(255,255,255,.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.lb-inner{position:relative;z-index:1;}
+.lb-brand-row{display:flex;align-items:center;gap:14px;margin-bottom:36px;}
+.lb-logo{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:7px;object-fit:contain;}
+.lb-brand-name{font-size:1.2rem;font-weight:600;color:#fff;}
+.lb-brand-sub{font-size:.73rem;color:rgba(255,255,255,.55);margin-top:2px;}
+.lb-h1{font-size:2.8rem;font-weight:600;color:#fff;letter-spacing:-.03em;line-height:1.08;margin-bottom:14px;}
+.lb-h1 span{color:var(--teal-l);}
+.lb-p{color:rgba(255,255,255,.6);font-size:.92rem;line-height:1.65;max-width:370px;}
+.lb-features{margin-top:44px;display:flex;flex-direction:column;gap:13px;}
+.lb-feat{display:flex;align-items:center;gap:11px;color:rgba(255,255,255,.72);font-size:.86rem;}
+.lb-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-l);flex-shrink:0;}
+.lb-footer{margin-top:52px;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;}
+.lb-footer span{font-size:.75rem;color:rgba(255,255,255,.35);}
+
+.login-right{width:420px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:52px 44px;}
+.login-box{width:100%;}
+.login-box h2{font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.login-box .sub{color:var(--muted);font-size:.86rem;margin-bottom:28px;}
+
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:.76rem;font-weight:500;color:var(--ink2);margin-bottom:6px;letter-spacing:.01em;}
+.fg input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  font-size:.9rem;color:var(--ink);background:#fff;
+  transition:border-color .18s,box-shadow .18s;outline:none;
+}
+.fg input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.09);}
+
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:44px;}
+.pw-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;
+  display:flex;align-items:center;
+}
+.pw-eye:hover{color:var(--teal);}
+
+.btn-login{
+  width:100%;padding:13px;background:var(--teal);color:#fff;
+  border:none;border-radius:var(--r-sm);font-size:.94rem;font-weight:500;
+  transition:background .18s,box-shadow .18s,transform .1s;
+  margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-login:hover{background:var(--teal-d);box-shadow:0 4px 16px rgba(0,131,143,.28);}
+.btn-login:active{transform:scale(.98);}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;}
+#loginError{
+  margin-top:14px;padding:10px 14px;border-radius:var(--r-sm);
+  background:#FFEBEE;color:var(--red);font-size:.84rem;
+  display:none;border:1px solid #FFCDD2;
+}
+.login-note{margin-top:24px;text-align:center;font-size:.75rem;color:var(--hint);line-height:1.6;}
+
+/* ══════════════════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════════════════ */
+#appScreen{flex-direction:row;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:218px;flex-shrink:0;background:var(--teal-dd);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-brand{padding:16px 14px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-row{display:flex;align-items:center;gap:10px;}
+.sb-logo-img{width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.1);padding:3px;object-fit:contain;border:1px solid rgba(255,255,255,.14);}
+.sb-app-name{font-size:.96rem;font-weight:600;color:#fff;}
+.sb-app-sub{font-size:.66rem;color:rgba(255,255,255,.38);margin-top:1px;}
+.sb-company{
+  margin-top:10px;padding:7px 9px;background:rgba(255,255,255,.06);border-radius:6px;
+  font-size:.72rem;color:rgba(255,255,255,.45);
+}
+.sb-company strong{display:block;color:rgba(255,255,255,.75);font-size:.76rem;margin-bottom:2px;}
+
+.sb-nav{flex:1;padding:10px 7px;display:flex;flex-direction:column;gap:2px;}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-sm);
+  color:rgba(255,255,255,.5);font-size:.83rem;cursor:pointer;
+  transition:background .14s,color .14s;border:none;background:none;width:100%;text-align:left;
+}
+.nav-item svg{width:14px;height:14px;flex-shrink:0;opacity:.55;transition:opacity .14s;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.nav-item:hover svg{opacity:.85;}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;font-weight:500;}
+.nav-item.active svg{opacity:1;}
+.nav-sep{height:1px;background:rgba(255,255,255,.06);margin:5px 0;}
+
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-footer span{font-size:.68rem;color:rgba(255,255,255,.28);}
+.btn-signout{
+  margin-top:7px;width:100%;padding:7px 10px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;color:rgba(255,255,255,.5);font-size:.78rem;
+  display:flex;align-items:center;gap:7px;transition:all .14s;
+}
+.btn-signout:hover{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4);color:#FCA5A5;}
+
+/* TOPBAR */
+.topbar{
+  height:54px;background:#fff;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 22px;gap:14px;
+  position:sticky;top:0;z-index:10;
+}
+.topbar-title{font-size:.94rem;font-weight:600;color:var(--ink);flex:1;}
+.topbar-right{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);}
+.avatar{
+  width:29px;height:29px;border-radius:50%;background:var(--teal);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;flex-shrink:0;
+}
+
+/* MAIN */
+.main-content{flex:1;display:flex;flex-direction:column;min-width:0;}
+.page-body{flex:1;padding:22px 26px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeUp .2s ease both;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden;
+}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.red::before{background:var(--red);}
+.stat-label{font-size:.68rem;color:var(--muted);font-weight:500;letter-spacing:.04em;margin-bottom:8px;text-transform:uppercase;}
+.stat-val{font-size:1.9rem;font-weight:600;color:var(--ink);font-family:'DM Mono',monospace;line-height:1;}
+.stat-sub{font-size:.69rem;color:var(--hint);margin-top:5px;}
+
+/* CARD */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px;box-shadow:var(--sh);}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-hdr h3{font-size:.92rem;font-weight:600;color:var(--ink);}
+
+/* SITE CARDS */
+.site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px;}
+.site-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;cursor:pointer;position:relative;overflow:hidden;
+  transition:box-shadow .15s,transform .12s;
+}
+.site-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px);}
+.site-card-bar{position:absolute;top:0;left:0;right:0;height:3px;}
+.site-card-name{font-weight:600;font-size:.85rem;color:var(--ink);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.site-card-nums{display:flex;gap:14px;}
+.site-num{text-align:center;}
+.site-num-val{font-size:1.45rem;font-weight:600;font-family:'DM Mono',monospace;line-height:1;}
+.site-num-lbl{font-size:.63rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+.site-card-foot{margin-top:9px;font-size:.69rem;color:var(--hint);}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r-sm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.835rem;}
+thead th{
+  background:var(--teal-s);color:var(--teal-dd);
+  font-weight:600;font-size:.67rem;letter-spacing:.05em;text-transform:uppercase;
+  padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F0FAFB;}
+tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
+.mono{font-family:'DM Mono',monospace;font-size:.78rem;}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.67rem;font-weight:600;letter-spacing:.02em;}
+.badge-green{background:#E8F5E9;color:#1B5E20;}
+.badge-red{background:#FFEBEE;color:#B71C1C;}
+.badge-amber{background:#FFF3E0;color:#E65100;}
+.badge-blue{background:#E3F2FD;color:#0D47A1;}
+.badge-gray{background:#ECEFF1;color:#455A64;}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgg{display:flex;flex-direction:column;gap:5px;}
+.fgg label{font-size:.74rem;font-weight:500;color:var(--ink2);letter-spacing:.01em;}
+.fgg input,.fgg select,.fgg textarea{
+  padding:9px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.85rem;color:var(--ink);
+  background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.fgg input:focus,.fgg select:focus,.fgg textarea:focus{
+  border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.08);
+}
+.fgg textarea{resize:vertical;min-height:70px;}
+.form-actions{display:flex;gap:8px;margin-top:4px;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.filter-bar input,.filter-bar select{
+  padding:7px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.82rem;
+  outline:none;background:#fff;color:var(--ink);transition:border-color .15s;
+}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--teal);}
+
+/* BUTTONS */
+.btn{
+  padding:8px 16px;border-radius:var(--r-sm);
+  font-size:.83rem;font-weight:500;border:1.5px solid transparent;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal);}
+.btn-teal:hover{background:var(--teal-d);border-color:var(--teal-d);}
+.btn-outline{background:#fff;color:var(--ink2);border-color:var(--border);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-sm{padding:5px 11px;font-size:.76rem;}
+.btn svg{width:13px;height:13px;}
+.btn:disabled{opacity:.55;cursor:not-allowed;}
+
+/* CHIPS */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.chip{padding:5px 13px;border-radius:20px;font-size:.76rem;font-weight:500;background:var(--card);border:1px solid var(--border);color:var(--ink2);}
+.chip span{font-weight:700;margin-left:4px;}
+
+/* MODAL */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(13,31,34,.45);z-index:100;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(3px);
+}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:#fff;border-radius:var(--r);box-shadow:var(--sh-lg);
+  width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;
+  animation:slideUp .2s ease both;
+}
+.modal-wide{width:700px;}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0;}to{transform:none;opacity:1;}}
+.modal-hdr{
+  padding:15px 20px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:#fff;z-index:1;
+}
+.modal-hdr h3{font-size:.92rem;font-weight:600;}
+.modal-close{
+  width:26px;height:26px;border-radius:6px;border:none;
+  background:none;color:var(--muted);font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .14s;
+}
+.modal-close:hover{background:var(--bg);}
+.modal-body{padding:16px 20px;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.modal-err{color:var(--red);font-size:.8rem;display:none;padding:7px 0;}
+
+/* MISC */
+.empty{text-align:center;padding:36px 20px;color:var(--muted);}
+.empty p{font-size:.84rem;}
+.mini-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.mini-row:last-child{border-bottom:none;}
+.mini-row .mname{font-weight:500;font-size:.84rem;}
+.mini-row .msub{font-size:.69rem;color:var(--muted);margin-top:1px;}
+.mini-row .mright{text-align:right;}
+.mini-row .mtime{font-size:.69rem;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace;}
+.result-ok{background:#E8F5E9;color:var(--green);border:1px solid #A5D6A7;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+.result-err{background:#FFEBEE;color:var(--red);border:1px solid #FFCDD2;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#toast{
+  position:fixed;bottom:20px;right:20px;z-index:200;
+  background:var(--ink);color:#fff;padding:10px 16px;
+  border-radius:var(--r-sm);font-size:.84rem;box-shadow:var(--sh-lg);
+  transform:translateY(70px);opacity:0;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;max-width:300px;
+}
+#toast.show{transform:none;opacity:1;}
+#toast.success{background:var(--green);}
+#toast.error{background:var(--red);}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:900px){.lb-features,.lb-footer{display:none;}.login-right{width:100%;}.sidebar{width:190px;}}
+@media(max-width:660px){.login-left{display:none;}.sidebar{display:none;}.stat-grid{grid-template-columns:1fr 1fr;}.form-grid{grid-template-columns:1fr;}.page-body{padding:14px;}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ LOGIN ════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-left">
+    <div class="lb-inner anim">
+      <div class="lb-brand-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="lb-logo" onerror="this.style.display='none'"/>
+        <div>
+          <div class="lb-brand-name">Drushyasinchana</div>
+          <div class="lb-brand-sub">Tech Solutions</div>
+        </div>
+      </div>
+      <div class="lb-h1">Attend<span>Ease</span></div>
+      <p class="lb-p">Smart attendance management for field teams, construction sites and distributed workforces — powered by GPS geofencing.</p>
+      <div class="lb-features">
+        <div class="lb-feat"><div class="lb-dot"></div>GPS-verified check-in/out from Android app</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Multi-site geofencing with shift control</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Real-time reports — day-wise &amp; month-wise</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Manual attendance entry &amp; admin overrides</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Data lives in your own Google Sheets</div>
+      </div>
+      <div class="lb-footer">
+        <span>drushyasinchana.in &nbsp;·&nbsp; Bengaluru, Karnataka</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box anim">
+      <h2>Admin Sign In</h2>
+      <p class="sub">AttendEase portal — admin access only</p>
+
+      <div class="fg">
+        <label>Company ID</label>
+        <input id="lCompanyId" type="text" placeholder="e.g. COMP001" autocomplete="organization" style="text-transform:uppercase;" value="COMP001"/>
+      </div>
+      <div class="fg">
+        <label>Email ID</label>
+        <input id="lEmail" type="email" placeholder="admin@company.com" autocomplete="username" value="snvmurthy22@gmail.com"/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input id="lPassword" type="password" placeholder="••••••••" autocomplete="current-password" value="12345"/>
+          <button class="pw-eye" type="button" onclick="togglePw()" tabindex="-1">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">Sign In</button>
+      <div id="loginError"></div>
+      <div class="login-note">
+        Attendance marking is done via the mobile app.<br/>
+        This portal is for admin management only.<br/><br/>
+        © 2025 Drushyasinchana Tech Solutions
+      </div>
+      <div style="margin-top:16px;padding:10px 13px;background:#F0F7F9;border:1px dashed var(--teal-l);border-radius:var(--r-sm);font-size:.73rem;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--teal);display:block;margin-bottom:3px;">Test Credentials</strong>
+        Company ID: <code style="font-family:'DM Mono',monospace;color:var(--ink);">COMP001</code><br/>
+        Email: <code style="font-family:'DM Mono',monospace;color:var(--ink);">snvmurthy22@gmail.com</code><br/>
+        Password: <code style="font-family:'DM Mono',monospace;color:var(--ink);">12345</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════ APP (Dashboard) ════════════════════ -->
+<div id="appScreen" class="screen">
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="sb-logo-img" onerror="this.style.display='none'"/>
+        <div>
+          <div class="sb-app-name">AttendEase</div>
+          <div class="sb-app-sub">Admin Portal</div>
+        </div>
+      </div>
+      <div class="sb-company">
+        <strong id="sbCompanyName">—</strong>
+        <span id="sbAdminEmail">—</span>
+      </div>
+    </div>
+    <div class="sb-footer">
+      <span>Drushyasinchana Tech Solutions</span>
+      <button class="btn-signout" onclick="doLogout()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title">Dashboard</span>
+      <div class="topbar-right">
+        <div class="avatar" id="topbarAvatar">A</div>
+        <span id="topbarName">—</span>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Employees</div>
+          <div class="stat-val" id="stTotalEmp">—</div>
+          <div class="stat-sub">Registered</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Present Today</div>
+          <div class="stat-val" id="stPresent">—</div>
+          <div class="stat-sub" id="stDate">—</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-label">Absent Today</div>
+          <div class="stat-val" id="stAbsent">—</div>
+          <div class="stat-sub">Not checked in</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Sites</div>
+          <div class="stat-val" id="stSites">—</div>
+          <div class="stat-sub">Geofenced</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-hdr">
+          <h3>Welcome to AttendEase Admin Portal</h3>
+        </div>
+        <div id="welcomeMessage" style="padding:20px;text-align:center;color:var(--muted);">
+          Loading dashboard...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ─── CONFIG ─────────────────────────────────────────── */
+const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwweZhH6KFJcE5SS2XiN7QndRDlnSCDOk_wdHoY5yvopkjQdxXEgL-iLRgeuYoG-7s/exec";
+
+/* ─── GLOBAL STATE ──────────────────────────────────── */
+let currentSession = null;
+
+/* ─── UTILITIES ─────────────────────────────────────── */
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; 
+  t.className = 'show ' + type;
+  clearTimeout(t._tid); 
+  t._tid = setTimeout(() => (t.className = ''), 3200);
+}
+
+function showErr(el, msg) { 
+  el.textContent = msg; 
+  el.style.display = 'block'; 
+}
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function formatDate(date) {
+  if (!date) return '—';
+  const d = new Date(date);
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/* ─── API CALL WITH POST AND JSON BODY ───────────────── */
+async function apiCall(payload) {
+  console.log('API Call - Sending payload:', payload);
+  
+  try {
+    const response = await fetch(MASTER_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    const text = await response.text();
+    console.log('API Call - Raw response:', text);
+    
+    // Try to parse as JSON
+    try {
+      const data = JSON.parse(text);
+      console.log('API Call - Parsed JSON:', data);
+      return data;
+    } catch (e) {
+      console.error('Failed to parse JSON:', text);
+      return { 
+        success: false, 
+        message: 'Server returned invalid JSON', 
+        raw: text.substring(0, 200) 
+      };
+    }
+  } catch (error) {
+    console.error('API Call - Fetch error:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+/* ─── LOGIN FUNCTION ─────────────────────────────────── */
+async function doLogin() {
+  const btn = document.getElementById('btnLogin');
+  const err = document.getElementById('loginError');
+  const companyId = document.getElementById('lCompanyId').value.trim().toUpperCase();
+  const email = document.getElementById('lEmail').value.trim().toLowerCase();
+  const password = document.getElementById('lPassword').value.trim();
+
+  err.style.display = 'none';
+  
+  if (!companyId) { showErr(err, 'Please enter your Company ID.'); return; }
+  if (!email) { showErr(err, 'Please enter your Email ID.'); return; }
+  if (!password) { showErr(err, 'Please enter your Password.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+  try {
+    // Step 1: Validate company
+    console.log('Step 1: Validating company...');
+    const companyRes = await apiCall({
+      action: 'validateCompany',
+      companyId: companyId,
+      adminEmail: email
+    });
+    
+    console.log('Company validation result:', companyRes);
+    
+    if (!companyRes || !companyRes.success) {
+      showErr(err, companyRes?.message || 'Company ID not recognised.');
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+      return;
+    }
+
+    const companyData = companyRes.data;
+    
+    if (companyData.isActive === false) {
+      showErr(err, 'Company account is inactive. Contact Drushyasinchana Tech Solutions.');
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+      return;
+    }
+
+    // Step 2: Validate admin credentials
+    console.log('Step 2: Validating admin credentials...');
+    const hash = await sha256(password);
+    
+    const authRes = await apiCall({
+      action: 'validateAdmin',
+      companySheetId: companyData.companySheetId || '',
+      email: email,
+      password: hash
+    });
+    
+    console.log('Admin validation result:', authRes);
+    
+    if (!authRes || !authRes.success) {
+      showErr(err, authRes?.message || 'Invalid credentials. Please try again.');
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+      return;
+    }
+
+    const adminData = authRes.data;
+    
+    // Success - store session
+    currentSession = {
+      empCode: adminData.empCode || 'ADMIN',
+      empName: adminData.name || 'Administrator',
+      empEmail: adminData.email || email,
+      role: adminData.role || 'ADMIN',
+      companyId: companyId,
+      companyName: companyData.companyName || '',
+      companySheetId: companyData.companySheetId || '',
+      companyScriptUrl: companyData.companyScriptUrl || MASTER_SCRIPT_URL
+    };
+    
+    sessionStorage.setItem('attendease_session', JSON.stringify(currentSession));
+    
+    // Update UI with session info
+    document.getElementById('sbCompanyName').textContent = currentSession.companyName || currentSession.companyId;
+    document.getElementById('sbAdminEmail').textContent = currentSession.empEmail;
+    document.getElementById('topbarName').textContent = currentSession.empName;
+    document.getElementById('topbarAvatar').textContent = currentSession.empName.charAt(0).toUpperCase();
+    document.getElementById('stDate').textContent = formatDate(today());
+    
+    // Update welcome message
+    const welcomeMsg = document.getElementById('welcomeMessage');
+    welcomeMsg.innerHTML = `
+      <div style="text-align:center;">
+        <p style="font-size:1.2rem;margin-bottom:10px;">✅ Login Successful!</p>
+        <p>Welcome back, <strong>${currentSession.empName}</strong>!</p>
+        <p style="margin-top:10px;color:var(--teal);">Company: ${currentSession.companyName || currentSession.companyId}</p>
+        <p style="margin-top:5px;font-size:0.85rem;">You are logged in as ${currentSession.role}</p>
+        <hr style="margin:20px 0;border-color:var(--border);">
+        <p style="font-size:0.85rem;color:var(--muted);">The full AttendEase dashboard with employee management,<br>attendance tracking, and reports is ready for integration.</p>
+      </div>
+    `;
+    
+    // Get total employees count
+    const employeesRes = await apiCall({
+      action: 'getEmployees',
+      companySheetId: currentSession.companySheetId
+    });
+    
+    if (employeesRes && employeesRes.success) {
+      const employees = employeesRes.data?.employees || [];
+      document.getElementById('stTotalEmp').textContent = employees.length;
+    }
+    
+    // Get sites count
+    const sitesRes = await apiCall({
+      action: 'getSites',
+      companySheetId: currentSession.companySheetId
+    });
+    
+    if (sitesRes && sitesRes.success) {
+      const sites = sitesRes.data?.sites || [];
+      const activeSites = sites.filter(s => s.status !== 'INACTIVE');
+      document.getElementById('stSites').textContent = activeSites.length;
+    }
+    
+    // Switch to app screen
+    switchScreen('appScreen');
+    toast('Welcome to AttendEase, ' + currentSession.empName);
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    showErr(err, 'Connection error: ' + (error.message || 'Please check your internet and try again.'));
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Sign In';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('attendease_session');
+  currentSession = null;
+  // Clear input fields
+  document.getElementById('lCompanyId').value = 'COMP001';
+  document.getElementById('lEmail').value = 'snvmurthy22@gmail.com';
+  document.getElementById('lPassword').value = '12345';
+  document.getElementById('loginError').style.display = 'none';
+  switchScreen('loginScreen');
+  toast('Logged out successfully');
+}
+
+/* ─── PASSWORD TOGGLE ───────────────────────────────── */
+function togglePw() {
+  const inp = document.getElementById('lPassword');
+  const ic = document.getElementById('eyeIcon');
+  if(inp.type === 'password') {
+    inp.type = 'text';
+    ic.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type = 'password';
+    ic.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+/* ─── CHECK EXISTING SESSION ────────────────────────── */
+function checkSession() {
+  const saved = sessionStorage.getItem('attendease_session');
+  if (saved) {
+    try {
+      currentSession = JSON.parse(saved);
+      // Update UI
+      document.getElementById('sbCompanyName').textContent = currentSession.companyName || currentSession.companyId;
+      document.getElementById('sbAdminEmail').textContent = currentSession.empEmail;
+      document.getElementById('topbarName').textContent = currentSession.empName;
+      document.getElementById('topbarAvatar').textContent = currentSession.empName.charAt(0).toUpperCase();
+      document.getElementById('stDate').textContent = formatDate(today());
+      
+      const welcomeMsg = document.getElementById('welcomeMessage');
+      welcomeMsg.innerHTML = `
+        <div style="text-align:center;">
+          <p style="font-size:1.2rem;margin-bottom:10px;">✅ Welcome Back!</p>
+          <p>Hello, <strong>${currentSession.empName}</strong>!</p>
+          <p style="margin-top:10px;color:var(--teal);">Company: ${currentSession.companyName || currentSession.companyId}</p>
+          <hr style="margin:20px 0;border-color:var(--border);">
+          <p style="font-size:0.85rem;color:var(--muted);">Session restored. You are logged in as ${currentSession.role}</p>
+        </div>
+      `;
+      
+      switchScreen('appScreen');
+      toast('Welcome back, ' + currentSession.empName);
+    } catch(e) {
+      console.error('Invalid session:', e);
+    }
+  }
+}
+
+/* ─── ENTER KEY HANDLER ─────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && document.getElementById('loginScreen').classList.contains('active')) {
+    const active = document.activeElement;
+    if(['lCompanyId', 'lEmail', 'lPassword'].includes(active && active.id)) {
+      doLogin();
+    }
+  }
+});
+
+/* ─── INIT ──────────────────────────────────────────── */
+checkSession();
+
+// Add spinner CSS if not present
+if (!document.querySelector('#spinner-style')) {
+  const style = document.createElement('style');
+  style.id = 'spinner-style';
+  style.textContent = `
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+</script>
+</body>
+</html>
