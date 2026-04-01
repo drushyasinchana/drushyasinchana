@@ -696,10 +696,33 @@ async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+
+/**
+ * Apps Script fetch — NO custom headers (they trigger CORS preflight which GAS blocks).
+ * Send as URLSearchParams; Apps Script doPost reads e.parameter.payload (JSON string).
+ * Apps Script doGet reads e.parameter.* for GET calls.
+ */
+async function gasCall(url, payload) {
+  // Try GET first (simplest, no preflight)
+  const qs = new URLSearchParams();
+  for (const [k,v] of Object.entries(payload)) qs.append(k, typeof v === 'object' ? JSON.stringify(v) : v);
+  try {
+    const r = await fetch(url + '?' + qs.toString(), { method: 'GET' });
+    const text = await r.text();
+    return JSON.parse(text);
+  } catch(e1) {
+    // Fallback: POST with URLSearchParams (no Content-Type header override)
+    const form = new URLSearchParams();
+    form.append('payload', JSON.stringify(payload));
+    const r = await fetch(url, { method: 'POST', body: form });
+    const text = await r.text();
+    return JSON.parse(text);
+  }
+}
+
 async function api(payload) {
   const url = S.prefs.companyScriptUrl || MASTER_SCRIPT_URL;
-  const r = await fetch(url, { method:'POST', body:JSON.stringify(payload), headers:{'Content-Type':'application/json'} });
-  return r.json();
+  return gasCall(url, payload);
 }
 function toast(msg, type='success') {
   const t = document.getElementById('toast');
@@ -761,12 +784,13 @@ function togglePw() {
 }
 
 /* ── LOGIN ─────────────────────────────────────────────
-   Step 1 → Master Script: validateCompany (companyId)
-            reads MASTER sheet → returns companyName, companySheetId,
-            isActive, companyScriptUrl, adminEmail, password
-   Step 2 → Client Script (or Master): validateEmployee
-            returns empCode, name, email, role …
-   ADMIN role only allowed through → redirect to manage.html
+   Step 1 → MASTER_SCRIPT_URL with action=validateCompany,
+            companyId=COMP001, adminEmail=snvmurthy22@gmail.com
+            → returns { success, data:{ companyName, companySheetId,
+              isActive, companyScriptUrl, adminEmail, password } }
+   Step 2 → companyScriptUrl with action=validateEmployee
+            → returns { success, data:{ empCode, name, email, role } }
+   On success → save session to sessionStorage, redirect to manage.html
 ──────────────────────────────────────────────────────── */
 async function doLogin() {
   const btn       = document.getElementById('btnLogin');
@@ -776,7 +800,6 @@ async function doLogin() {
   const pw        = document.getElementById('lPassword').value.trim();
 
   err.style.display = 'none';
-
   if (!companyId)    { showErr(err, 'Please enter your Company ID.'); return; }
   if (!empId || !pw) { showErr(err, 'Please enter your Email / Employee ID and Password.'); return; }
 
@@ -784,83 +807,64 @@ async function doLogin() {
   btn.innerHTML = '<span class="spinner"></span> Signing in…';
 
   try {
-    // ── Step 1: validate company from MASTER sheet ────────────
-    let mRes;
-    try {
-      const resp = await fetch(MASTER_SCRIPT_URL + '?action=validateCompany&companyId=' + encodeURIComponent(companyId), {
-        method: 'GET',
-      });
-      mRes = await resp.json();
-    } catch (_) {
-      // Fallback: POST
-      const resp = await fetch(MASTER_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'validateCompany', companyId }),
-        headers: { 'Content-Type': 'application/json' },
-      });
-      mRes = await resp.json();
-    }
+    // ── Step 1: lookup company in MASTER sheet ────────────────
+    const mRes = await gasCall(MASTER_SCRIPT_URL, {
+      action:     'validateCompany',
+      companyId:  companyId,
+      adminEmail: empId,   // send whatever the user typed as adminEmail too
+    });
 
-    if (!mRes.success) {
-      showErr(err, mRes.message || 'Company ID not found. Please check and try again.');
+    if (!mRes || !mRes.success) {
+      showErr(err, (mRes && mRes.message) || 'Company ID not recognised. Please check and try again.');
       btn.disabled = false; btn.innerHTML = 'Sign In'; return;
     }
+
     const co = mRes.data;
-    if (!co.isActive) {
+    if (!co.isActive && co.isActive !== undefined) {
       showErr(err, 'Company account is inactive. Contact Drushyasinchana Tech Solutions.');
       btn.disabled = false; btn.innerHTML = 'Sign In'; return;
     }
 
     const clientUrl = co.companyScriptUrl || MASTER_SCRIPT_URL;
 
-    // ── Step 2: validate employee ─────────────────────────────
+    // ── Step 2: validate employee credentials ─────────────────
     const hash = await sha256(pw);
-    let eRes;
-    try {
-      const resp = await fetch(clientUrl, {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'validateEmployee',
-          companySheetId: co.companySheetId,
-          empId,
-          password: hash,
-          device: 'Web',
-        }),
-        headers: { 'Content-Type': 'application/json' },
-      });
-      eRes = await resp.json();
-    } catch (_) {
-      showErr(err, 'Connection error. Please check your internet and try again.');
-      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
-    }
+    const eRes = await gasCall(clientUrl, {
+      action:         'validateEmployee',
+      companySheetId: co.companySheetId || '',
+      empId:          empId,
+      password:       hash,
+      device:         'Web',
+    });
 
-    if (!eRes.success) {
-      showErr(err, eRes.message || 'Invalid credentials. Please try again.');
+    if (!eRes || !eRes.success) {
+      showErr(err, (eRes && eRes.message) || 'Invalid credentials. Please try again.');
       btn.disabled = false; btn.innerHTML = 'Sign In'; return;
     }
 
     const d = eRes.data;
-    if (d.role !== 'ADMIN') {
+    if (d.role && d.role !== 'ADMIN') {
       showErr(err, 'Web portal is for admin accounts only. Please use the mobile app.');
       btn.disabled = false; btn.innerHTML = 'Sign In'; return;
     }
 
-    // ── Success: store session & redirect ─────────────────────
+    // ── Success: persist session and redirect ─────────────────
     const session = {
-      empCode:        d.empCode   || '',
-      empName:        d.name      || '',
-      empEmail:       d.email     || empId,
-      role:           d.role      || '',
-      companyId:      companyId,
-      companyName:    co.companyName      || '',
-      companySheetId: co.companySheetId   || '',
+      empCode:         d.empCode          || '',
+      empName:         d.name             || '',
+      empEmail:        d.email            || empId,
+      role:            d.role             || 'ADMIN',
+      companyId:       companyId,
+      companyName:     co.companyName     || '',
+      companySheetId:  co.companySheetId  || '',
       companyScriptUrl: clientUrl,
     };
     sessionStorage.setItem('attendease_session', JSON.stringify(session));
     window.location.href = 'manage.html';
 
   } catch (e) {
-    showErr(err, 'Connection error. Please check your internet and try again.');
+    console.error('Login error:', e);
+    showErr(err, 'Connection error: ' + (e.message || 'Please check your internet and try again.'));
     btn.disabled = false; btn.innerHTML = 'Sign In';
   }
 }
