@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendEase — Admin Portal</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;--amber:#E65100;
+  --r:12px;--r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+  --sh-lg:0 8px 32px rgba(0,131,143,.16);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+
+/* ─── SCREENS ─────────────────────────────────────────── */
+.screen{display:none;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.anim{animation:fadeUp .25s ease both;}
+
+/* ══════════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════════ */
+#loginScreen{
+  min-height:100vh;align-items:stretch;
+  background:linear-gradient(140deg,var(--teal-dd) 0%,var(--teal) 55%,#00ACC1 100%);
+}
+.login-left{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:64px 72px;position:relative;overflow:hidden;
+}
+.login-left::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 15% 50%,rgba(255,255,255,.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.lb-inner{position:relative;z-index:1;}
+.lb-brand-row{display:flex;align-items:center;gap:14px;margin-bottom:36px;}
+.lb-logo{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:7px;object-fit:contain;}
+.lb-brand-name{font-size:1.2rem;font-weight:600;color:#fff;}
+.lb-brand-sub{font-size:.73rem;color:rgba(255,255,255,.55);margin-top:2px;}
+.lb-h1{font-size:2.8rem;font-weight:600;color:#fff;letter-spacing:-.03em;line-height:1.08;margin-bottom:14px;}
+.lb-h1 span{color:var(--teal-l);}
+.lb-p{color:rgba(255,255,255,.6);font-size:.92rem;line-height:1.65;max-width:370px;}
+.lb-features{margin-top:44px;display:flex;flex-direction:column;gap:13px;}
+.lb-feat{display:flex;align-items:center;gap:11px;color:rgba(255,255,255,.72);font-size:.86rem;}
+.lb-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-l);flex-shrink:0;}
+.lb-footer{margin-top:52px;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;}
+.lb-footer span{font-size:.75rem;color:rgba(255,255,255,.35);}
+
+.login-right{width:420px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:52px 44px;}
+.login-box{width:100%;}
+.login-box h2{font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.login-box .sub{color:var(--muted);font-size:.86rem;margin-bottom:28px;}
+
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:.76rem;font-weight:500;color:var(--ink2);margin-bottom:6px;letter-spacing:.01em;}
+.fg input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  font-size:.9rem;color:var(--ink);background:#fff;
+  transition:border-color .18s,box-shadow .18s;outline:none;
+}
+.fg input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.09);}
+
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:44px;}
+.pw-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;
+  display:flex;align-items:center;
+}
+.pw-eye:hover{color:var(--teal);}
+
+.btn-login{
+  width:100%;padding:13px;background:var(--teal);color:#fff;
+  border:none;border-radius:var(--r-sm);font-size:.94rem;font-weight:500;
+  transition:background .18s,box-shadow .18s,transform .1s;
+  margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-login:hover{background:var(--teal-d);box-shadow:0 4px 16px rgba(0,131,143,.28);}
+.btn-login:active{transform:scale(.98);}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;}
+#loginError{
+  margin-top:14px;padding:10px 14px;border-radius:var(--r-sm);
+  background:#FFEBEE;color:var(--red);font-size:.84rem;
+  display:none;border:1px solid #FFCDD2;
+}
+.login-note{margin-top:24px;text-align:center;font-size:.75rem;color:var(--hint);line-height:1.6;}
+
+/* ══════════════════════════════════════════════════════
+   APP SHELL (minimal for demo)
+══════════════════════════════════════════════════════ */
+#appScreen{flex-direction:column;min-height:100vh;background:var(--bg);padding:40px;text-align:center;}
+#appScreen h1{color:var(--teal);margin-bottom:20px;}
+#appScreen p{color:var(--ink2);margin-bottom:20px;}
+#appScreen button{margin-top:20px;}
+
+/* RESPONSIVE */
+@media(max-width:660px){.login-left{display:none;}.login-right{width:100%;}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ LOGIN ════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-left">
+    <div class="lb-inner anim">
+      <div class="lb-brand-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="lb-logo" onerror="this.style.display='none'"/>
+        <div>
+          <div class="lb-brand-name">Drushyasinchana</div>
+          <div class="lb-brand-sub">Tech Solutions</div>
+        </div>
+      </div>
+      <div class="lb-h1">Attend<span>Ease</span></div>
+      <p class="lb-p">Smart attendance management for field teams, construction sites and distributed workforces — powered by GPS geofencing.</p>
+      <div class="lb-features">
+        <div class="lb-feat"><div class="lb-dot"></div>GPS-verified check-in/out from Android app</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Multi-site geofencing with shift control</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Real-time reports — day-wise &amp; month-wise</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Manual attendance entry &amp; admin overrides</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Data lives in your own Google Sheets</div>
+      </div>
+      <div class="lb-footer">
+        <span>drushyasinchana.in &nbsp;·&nbsp; Bengaluru, Karnataka</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box anim">
+      <h2>Admin Sign In</h2>
+      <p class="sub">AttendEase portal — admin access only</p>
+
+      <div class="fg">
+        <label>Company ID</label>
+        <input id="lCompanyId" type="text" placeholder="e.g. COMP001" autocomplete="organization" style="text-transform:uppercase;" value="COMP001"/>
+      </div>
+      <div class="fg">
+        <label>Email ID</label>
+        <input id="lEmail" type="email" placeholder="admin@company.com" autocomplete="username" value="snvmurthy22@gmail.com"/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input id="lPassword" type="password" placeholder="••••••••" autocomplete="current-password" value="12345"/>
+          <button class="pw-eye" type="button" onclick="togglePw()" tabindex="-1">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">Sign In</button>
+      <div id="loginError"></div>
+      <div class="login-note">
+        Attendance marking is done via the mobile app.<br/>
+        This portal is for admin management only.<br/><br/>
+        © 2025 Drushyasinchana Tech Solutions
+      </div>
+      <div style="margin-top:16px;padding:10px 13px;background:#F0F7F9;border:1px dashed var(--teal-l);border-radius:var(--r-sm);font-size:.73rem;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--teal);display:block;margin-bottom:3px;">Test Credentials</strong>
+        Company ID: <code style="font-family:'DM Mono',monospace;color:var(--ink);">COMP001</code><br/>
+        Email: <code style="font-family:'DM Mono',monospace;color:var(--ink);">snvmurthy22@gmail.com</code><br/>
+        Password: <code style="font-family:'DM Mono',monospace;color:var(--ink);">12345</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════ APP (simple success page) ════════════════════ -->
+<div id="appScreen" class="screen">
+  <div style="max-width:600px;margin:0 auto;">
+    <h1>✅ Login Successful!</h1>
+    <p>You have successfully logged in to AttendEase Admin Portal.</p>
+    <div id="sessionInfo" style="background:var(--card);border-radius:var(--r);padding:20px;margin:20px 0;text-align:left;border:1px solid var(--border);"></div>
+    <button class="btn btn-teal" onclick="doLogout()">Sign Out</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ─── CONFIG ─────────────────────────────────────────── */
+const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwweZhH6KFJcE5SS2XiN7QndRDlnSCDOk_wdHoY5yvopkjQdxXEgL-iLRgeuYoG-7s/exec";
+
+/* ─── UTILITIES ─────────────────────────────────────── */
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.className='show '+type;
+  clearTimeout(t._tid); t._tid=setTimeout(()=>(t.className=''), 3200);
+}
+function showErr(el,msg) { 
+  el.textContent=msg; 
+  el.style.display='block'; 
+}
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ─── API CALL WITH PROPER HANDLING ─────────────────── */
+async function apiCall(action, params = {}) {
+  // Build URL with query parameters (GET request - simplest, avoids CORS issues)
+  const urlParams = new URLSearchParams();
+  urlParams.append('action', action);
+  
+  // Add all parameters
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) {
+      urlParams.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+    }
+  }
+  
+  const url = MASTER_SCRIPT_URL + '?' + urlParams.toString();
+  
+  console.log('Calling URL:', url);
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors'
+    });
+    
+    const text = await response.text();
+    console.log('Raw response:', text);
+    
+    // Check if response is empty
+    if (!text || text.trim() === '') {
+      return { success: false, message: 'Empty response from server' };
+    }
+    
+    // Try to parse as JSON
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch (e) {
+      // If not JSON, check if it's a URL-encoded response
+      if (text.includes('=') && !text.startsWith('{')) {
+        // Try to parse as URL encoded
+        const parsed = {};
+        text.split('&').forEach(pair => {
+          const [key, value] = pair.split('=');
+          if (key) parsed[decodeURIComponent(key)] = decodeURIComponent(value || '');
+        });
+        console.log('Parsed as URL encoded:', parsed);
+        return { success: false, message: 'Server returned form data instead of JSON', raw: parsed };
+      }
+      
+      return { success: false, message: 'Invalid JSON response', raw: text.substring(0, 200) };
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+/* ─── LOGIN FUNCTION ─────────────────────────────────── */
+async function doLogin() {
+  const btn = document.getElementById('btnLogin');
+  const err = document.getElementById('loginError');
+  const companyId = document.getElementById('lCompanyId').value.trim().toUpperCase();
+  const email = document.getElementById('lEmail').value.trim().toLowerCase();
+  const password = document.getElementById('lPassword').value.trim();
+
+  err.style.display = 'none';
+  
+  if (!companyId) { showErr(err, 'Please enter your Company ID.'); return; }
+  if (!email) { showErr(err, 'Please enter your Email ID.'); return; }
+  if (!password) { showErr(err, 'Please enter your Password.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+  try {
+    // Step 1: Validate company
+    console.log('Validating company:', companyId);
+    const companyRes = await apiCall('validateCompany', {
+      companyId: companyId,
+      adminEmail: email
+    });
+    
+    console.log('Company validation response:', companyRes);
+    
+    if (!companyRes || !companyRes.success) {
+      let errorMsg = companyRes?.message || 'Company ID not recognised.';
+      if (companyRes?.raw) {
+        errorMsg += ' Server response: ' + JSON.stringify(companyRes.raw);
+      }
+      showErr(err, errorMsg);
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+      return;
+    }
+
+    const companyData = companyRes.data;
+    
+    if (companyData.isActive === false) {
+      showErr(err, 'Company account is inactive. Contact Drushyasinchana Tech Solutions.');
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+      return;
+    }
+
+    // Step 2: Validate admin credentials
+    const hash = await sha256(password);
+    console.log('Validating admin with email:', email);
+    
+    const authRes = await apiCall('validateAdmin', {
+      companySheetId: companyData.companySheetId || '',
+      email: email,
+      password: hash
+    });
+    
+    console.log('Admin validation response:', authRes);
+    
+    if (!authRes || !authRes.success) {
+      showErr(err, authRes?.message || 'Invalid credentials. Please try again.');
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+      return;
+    }
+
+    const adminData = authRes.data;
+    
+    // Success - show app screen with session info
+    const session = {
+      empCode: adminData.empCode || 'ADMIN',
+      empName: adminData.name || 'Administrator',
+      empEmail: adminData.email || email,
+      role: adminData.role || 'ADMIN',
+      companyId: companyId,
+      companyName: companyData.companyName || '',
+      companySheetId: companyData.companySheetId || '',
+      companyScriptUrl: companyData.companyScriptUrl || MASTER_SCRIPT_URL
+    };
+    
+    // Store session
+    sessionStorage.setItem('attendease_session', JSON.stringify(session));
+    
+    // Display session info
+    const sessionInfo = document.getElementById('sessionInfo');
+    sessionInfo.innerHTML = `
+      <p><strong>Company:</strong> ${session.companyName} (${session.companyId})</p>
+      <p><strong>Admin:</strong> ${session.empName} (${session.empEmail})</p>
+      <p><strong>Role:</strong> ${session.role}</p>
+      <p><strong>Sheet ID:</strong> ${session.companySheetId || 'N/A'}</p>
+    `;
+    
+    // Switch to app screen
+    switchScreen('appScreen');
+    
+    toast('Login successful! Welcome ' + session.empName);
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    showErr(err, 'Connection error: ' + (error.message || 'Please check your internet and try again.'));
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Sign In';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('attendease_session');
+  // Clear input fields
+  document.getElementById('lCompanyId').value = 'COMP001';
+  document.getElementById('lEmail').value = 'snvmurthy22@gmail.com';
+  document.getElementById('lPassword').value = '12345';
+  document.getElementById('loginError').style.display = 'none';
+  switchScreen('loginScreen');
+  toast('Logged out successfully');
+}
+
+/* ─── PASSWORD TOGGLE ───────────────────────────────── */
+function togglePw() {
+  const inp = document.getElementById('lPassword');
+  const ic = document.getElementById('eyeIcon');
+  if(inp.type === 'password') {
+    inp.type = 'text';
+    ic.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type = 'password';
+    ic.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+/* ─── CHECK EXISTING SESSION ────────────────────────── */
+function checkSession() {
+  const saved = sessionStorage.getItem('attendease_session');
+  if (saved) {
+    try {
+      const session = JSON.parse(saved);
+      const sessionInfo = document.getElementById('sessionInfo');
+      if (sessionInfo) {
+        sessionInfo.innerHTML = `
+          <p><strong>Company:</strong> ${session.companyName || session.companyId} (${session.companyId})</p>
+          <p><strong>Admin:</strong> ${session.empName} (${session.empEmail})</p>
+          <p><strong>Role:</strong> ${session.role}</p>
+        `;
+      }
+      switchScreen('appScreen');
+      toast('Welcome back, ' + session.empName);
+    } catch(e) {
+      console.error('Invalid session');
+    }
+  }
+}
+
+/* ─── ENTER KEY HANDLER ─────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && document.getElementById('loginScreen').classList.contains('active')) {
+    const active = document.activeElement;
+    if(['lCompanyId', 'lEmail', 'lPassword'].includes(active && active.id)) {
+      doLogin();
+    }
+  }
+});
+
+/* ─── INIT ──────────────────────────────────────────── */
+checkSession();
+
+// Add spinner CSS if not present
+if (!document.querySelector('#spinner-style')) {
+  const style = document.createElement('style');
+  style.id = 'spinner-style';
+  style.textContent = `
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 200;
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: var(--r-sm);
+      font-size: .84rem;
+      box-shadow: var(--sh-lg);
+      transform: translateY(70px);
+      opacity: 0;
+      transition: all .25s cubic-bezier(.34,1.56,.64,1);
+      pointer-events: none;
+      max-width: 300px;
+    }
+    #toast.show {
+      transform: none;
+      opacity: 1;
+    }
+    #toast.success { background: var(--green); }
+    #toast.error { background: var(--red); }
+  `;
+  document.head.appendChild(style);
+}
+</script>
+</body>
+</html>
