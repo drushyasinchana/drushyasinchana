@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendEase — Admin Portal</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;--amber:#E65100;
+  --r:12px;--r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+  --sh-lg:0 8px 32px rgba(0,131,143,.16);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+
+/* ─── SCREENS ─────────────────────────────────────────── */
+.screen{display:none;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.anim{animation:fadeUp .25s ease both;}
+
+/* ══════════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════════ */
+#loginScreen{
+  min-height:100vh;align-items:stretch;
+  background:linear-gradient(140deg,var(--teal-dd) 0%,var(--teal) 55%,#00ACC1 100%);
+}
+.login-left{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:64px 72px;position:relative;overflow:hidden;
+}
+.login-left::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 15% 50%,rgba(255,255,255,.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.lb-inner{position:relative;z-index:1;}
+.lb-brand-row{display:flex;align-items:center;gap:14px;margin-bottom:36px;}
+.lb-logo{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:7px;object-fit:contain;}
+.lb-brand-name{font-size:1.2rem;font-weight:600;color:#fff;}
+.lb-brand-sub{font-size:.73rem;color:rgba(255,255,255,.55);margin-top:2px;}
+.lb-h1{font-size:2.8rem;font-weight:600;color:#fff;letter-spacing:-.03em;line-height:1.08;margin-bottom:14px;}
+.lb-h1 span{color:var(--teal-l);}
+.lb-p{color:rgba(255,255,255,.6);font-size:.92rem;line-height:1.65;max-width:370px;}
+.lb-features{margin-top:44px;display:flex;flex-direction:column;gap:13px;}
+.lb-feat{display:flex;align-items:center;gap:11px;color:rgba(255,255,255,.72);font-size:.86rem;}
+.lb-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-l);flex-shrink:0;}
+.lb-footer{margin-top:52px;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;}
+.lb-footer span{font-size:.75rem;color:rgba(255,255,255,.35);}
+
+.login-right{width:420px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:52px 44px;}
+.login-box{width:100%;}
+.login-box h2{font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.login-box .sub{color:var(--muted);font-size:.86rem;margin-bottom:28px;}
+
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:.76rem;font-weight:500;color:var(--ink2);margin-bottom:6px;letter-spacing:.01em;}
+.fg input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  font-size:.9rem;color:var(--ink);background:#fff;
+  transition:border-color .18s,box-shadow .18s;outline:none;
+}
+.fg input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.09);}
+
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:44px;}
+.pw-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;
+  display:flex;align-items:center;
+}
+.pw-eye:hover{color:var(--teal);}
+
+.btn-login{
+  width:100%;padding:13px;background:var(--teal);color:#fff;
+  border:none;border-radius:var(--r-sm);font-size:.94rem;font-weight:500;
+  transition:background .18s,box-shadow .18s,transform .1s;
+  margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-login:hover{background:var(--teal-d);box-shadow:0 4px 16px rgba(0,131,143,.28);}
+.btn-login:active{transform:scale(.98);}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;}
+#loginError{
+  margin-top:14px;padding:10px 14px;border-radius:var(--r-sm);
+  background:#FFEBEE;color:var(--red);font-size:.84rem;
+  display:none;border:1px solid #FFCDD2;
+}
+.login-note{margin-top:24px;text-align:center;font-size:.75rem;color:var(--hint);line-height:1.6;}
+
+/* ══════════════════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════════════════ */
+#appScreen{flex-direction:row;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:218px;flex-shrink:0;background:var(--teal-dd);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-brand{padding:16px 14px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-row{display:flex;align-items:center;gap:10px;}
+.sb-logo-img{width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.1);padding:3px;object-fit:contain;border:1px solid rgba(255,255,255,.14);}
+.sb-app-name{font-size:.96rem;font-weight:600;color:#fff;}
+.sb-app-sub{font-size:.66rem;color:rgba(255,255,255,.38);margin-top:1px;}
+.sb-company{
+  margin-top:10px;padding:7px 9px;background:rgba(255,255,255,.06);border-radius:6px;
+  font-size:.72rem;color:rgba(255,255,255,.45);
+}
+.sb-company strong{display:block;color:rgba(255,255,255,.75);font-size:.76rem;margin-bottom:2px;}
+
+.sb-nav{flex:1;padding:10px 7px;display:flex;flex-direction:column;gap:2px;}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-sm);
+  color:rgba(255,255,255,.5);font-size:.83rem;cursor:pointer;
+  transition:background .14s,color .14s;border:none;background:none;width:100%;text-align:left;
+}
+.nav-item svg{width:14px;height:14px;flex-shrink:0;opacity:.55;transition:opacity .14s;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.nav-item:hover svg{opacity:.85;}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;font-weight:500;}
+.nav-item.active svg{opacity:1;}
+.nav-sep{height:1px;background:rgba(255,255,255,.06);margin:5px 0;}
+
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-footer span{font-size:.68rem;color:rgba(255,255,255,.28);}
+.btn-signout{
+  margin-top:7px;width:100%;padding:7px 10px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;color:rgba(255,255,255,.5);font-size:.78rem;
+  display:flex;align-items:center;gap:7px;transition:all .14s;
+}
+.btn-signout:hover{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4);color:#FCA5A5;}
+
+/* TOPBAR */
+.topbar{
+  height:54px;background:#fff;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 22px;gap:14px;
+  position:sticky;top:0;z-index:10;
+}
+.topbar-title{font-size:.94rem;font-weight:600;color:var(--ink);flex:1;}
+.topbar-right{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);}
+.avatar{
+  width:29px;height:29px;border-radius:50%;background:var(--teal);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;flex-shrink:0;
+}
+
+/* MAIN */
+.main-content{flex:1;display:flex;flex-direction:column;min-width:0;}
+.page-body{flex:1;padding:22px 26px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeUp .2s ease both;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden;
+}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.red::before{background:var(--red);}
+.stat-label{font-size:.68rem;color:var(--muted);font-weight:500;letter-spacing:.04em;margin-bottom:8px;text-transform:uppercase;}
+.stat-val{font-size:1.9rem;font-weight:600;color:var(--ink);font-family:'DM Mono',monospace;line-height:1;}
+.stat-sub{font-size:.69rem;color:var(--hint);margin-top:5px;}
+
+/* CARD */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px;box-shadow:var(--sh);}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-hdr h3{font-size:.92rem;font-weight:600;color:var(--ink);}
+
+/* SITE CARDS */
+.site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px;}
+.site-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;cursor:pointer;position:relative;overflow:hidden;
+  transition:box-shadow .15s,transform .12s;
+}
+.site-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px);}
+.site-card-bar{position:absolute;top:0;left:0;right:0;height:3px;}
+.site-card-name{font-weight:600;font-size:.85rem;color:var(--ink);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.site-card-nums{display:flex;gap:14px;}
+.site-num{text-align:center;}
+.site-num-val{font-size:1.45rem;font-weight:600;font-family:'DM Mono',monospace;line-height:1;}
+.site-num-lbl{font-size:.63rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+.site-card-foot{margin-top:9px;font-size:.69rem;color:var(--hint);}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r-sm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.835rem;}
+thead th{
+  background:var(--teal-s);color:var(--teal-dd);
+  font-weight:600;font-size:.67rem;letter-spacing:.05em;text-transform:uppercase;
+  padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F0FAFB;}
+tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
+.mono{font-family:'DM Mono',monospace;font-size:.78rem;}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.67rem;font-weight:600;letter-spacing:.02em;}
+.badge-green{background:#E8F5E9;color:#1B5E20;}
+.badge-red{background:#FFEBEE;color:#B71C1C;}
+.badge-amber{background:#FFF3E0;color:#E65100;}
+.badge-blue{background:#E3F2FD;color:#0D47A1;}
+.badge-gray{background:#ECEFF1;color:#455A64;}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgg{display:flex;flex-direction:column;gap:5px;}
+.fgg label{font-size:.74rem;font-weight:500;color:var(--ink2);letter-spacing:.01em;}
+.fgg input,.fgg select,.fgg textarea{
+  padding:9px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.85rem;color:var(--ink);
+  background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.fgg input:focus,.fgg select:focus,.fgg textarea:focus{
+  border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.08);
+}
+.fgg textarea{resize:vertical;min-height:70px;}
+.form-actions{display:flex;gap:8px;margin-top:4px;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.filter-bar input,.filter-bar select{
+  padding:7px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.82rem;
+  outline:none;background:#fff;color:var(--ink);transition:border-color .15s;
+}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--teal);}
+
+/* BUTTONS */
+.btn{
+  padding:8px 16px;border-radius:var(--r-sm);
+  font-size:.83rem;font-weight:500;border:1.5px solid transparent;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal);}
+.btn-teal:hover{background:var(--teal-d);border-color:var(--teal-d);}
+.btn-outline{background:#fff;color:var(--ink2);border-color:var(--border);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-sm{padding:5px 11px;font-size:.76rem;}
+.btn svg{width:13px;height:13px;}
+.btn:disabled{opacity:.55;cursor:not-allowed;}
+
+/* CHIPS */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.chip{padding:5px 13px;border-radius:20px;font-size:.76rem;font-weight:500;background:var(--card);border:1px solid var(--border);color:var(--ink2);}
+.chip span{font-weight:700;margin-left:4px;}
+
+/* MODAL */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(13,31,34,.45);z-index:100;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(3px);
+}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:#fff;border-radius:var(--r);box-shadow:var(--sh-lg);
+  width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;
+  animation:slideUp .2s ease both;
+}
+.modal-wide{width:700px;}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0;}to{transform:none;opacity:1;}}
+.modal-hdr{
+  padding:15px 20px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:#fff;z-index:1;
+}
+.modal-hdr h3{font-size:.92rem;font-weight:600;}
+.modal-close{
+  width:26px;height:26px;border-radius:6px;border:none;
+  background:none;color:var(--muted);font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .14s;
+}
+.modal-close:hover{background:var(--bg);}
+.modal-body{padding:16px 20px;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.modal-err{color:var(--red);font-size:.8rem;display:none;padding:7px 0;}
+
+/* MISC */
+.empty{text-align:center;padding:36px 20px;color:var(--muted);}
+.empty p{font-size:.84rem;}
+.mini-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.mini-row:last-child{border-bottom:none;}
+.mini-row .mname{font-weight:500;font-size:.84rem;}
+.mini-row .msub{font-size:.69rem;color:var(--muted);margin-top:1px;}
+.mini-row .mright{text-align:right;}
+.mini-row .mtime{font-size:.69rem;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace;}
+.result-ok{background:#E8F5E9;color:var(--green);border:1px solid #A5D6A7;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+.result-err{background:#FFEBEE;color:var(--red);border:1px solid #FFCDD2;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#toast{
+  position:fixed;bottom:20px;right:20px;z-index:200;
+  background:var(--ink);color:#fff;padding:10px 16px;
+  border-radius:var(--r-sm);font-size:.84rem;box-shadow:var(--sh-lg);
+  transform:translateY(70px);opacity:0;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;max-width:300px;
+}
+#toast.show{transform:none;opacity:1;}
+#toast.success{background:var(--green);}
+#toast.error{background:var(--red);}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:900px){.lb-features,.lb-footer{display:none;}.login-right{width:100%;}.sidebar{width:190px;}}
+@media(max-width:660px){.login-left{display:none;}.sidebar{display:none;}.stat-grid{grid-template-columns:1fr 1fr;}.form-grid{grid-template-columns:1fr;}.page-body{padding:14px;}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ LOGIN ════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-left">
+    <div class="lb-inner anim">
+      <div class="lb-brand-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="lb-logo" onerror="this.style.display='none'"/>
+        <div>
+          <div class="lb-brand-name">Drushyasinchana</div>
+          <div class="lb-brand-sub">Tech Solutions</div>
+        </div>
+      </div>
+      <div class="lb-h1">Attend<span>Ease</span></div>
+      <p class="lb-p">Smart attendance management for field teams, construction sites and distributed workforces — powered by GPS geofencing.</p>
+      <div class="lb-features">
+        <div class="lb-feat"><div class="lb-dot"></div>GPS-verified check-in/out from Android app</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Multi-site geofencing with shift control</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Real-time reports — day-wise &amp; month-wise</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Manual attendance entry &amp; admin overrides</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Data lives in your own Google Sheets</div>
+      </div>
+      <div class="lb-footer">
+        <span>drushyasinchana.in &nbsp;·&nbsp; Bengaluru, Karnataka</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box anim">
+      <h2>Admin Sign In</h2>
+      <p class="sub">AttendEase portal — admin access only</p>
+
+      <div class="fg">
+        <label>Company ID</label>
+        <input id="lCompanyId" type="text" placeholder="e.g. COMP001" autocomplete="organization" style="text-transform:uppercase;" value="COMP001"/>
+      </div>
+      <div class="fg">
+        <label>Email ID</label>
+        <input id="lEmail" type="email" placeholder="admin@company.com" autocomplete="username" value="snvmurthy22@gmail.com"/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input id="lPassword" type="password" placeholder="••••••••" autocomplete="current-password" value="12345"/>
+          <button class="pw-eye" type="button" onclick="togglePw()" tabindex="-1">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">Sign In</button>
+      <div id="loginError"></div>
+      <div class="login-note">
+        Attendance marking is done via the mobile app.<br/>
+        This portal is for admin management only.<br/><br/>
+        © 2025 Drushyasinchana Tech Solutions
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════ APP ════════════════════ -->
+<div id="appScreen" class="screen">
+
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="sb-logo-img" onerror="this.style.display='none'"/>
+        <div>
+          <div class="sb-app-name">AttendEase</div>
+          <div class="sb-app-sub">Admin Portal</div>
+        </div>
+      </div>
+      <div class="sb-company">
+        <strong id="sbCompanyName">—</strong>
+        <span id="sbAdminEmail">—</span>
+      </div>
+    </div>
+
+    <div class="sb-nav">
+      <button class="nav-item active" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="nav('employees',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Employees
+      </button>
+      <button class="nav-item" onclick="nav('attendance',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M8 18h.01M12 18h.01"/></svg>
+        Attendance
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="nav('reports',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reports
+      </button>
+      <button class="nav-item" onclick="nav('manual',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Manual Entry
+      </button>
+    </div>
+
+    <div class="sb-footer">
+      <span>Drushyasinchana Tech Solutions</span>
+      <button class="btn-signout" onclick="doLogout()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-right">
+        <div class="avatar" id="topbarAvatar">A</div>
+        <span id="topbarName">—</span>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pgDashboard">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-val" id="stTotalEmp">—</div>
+            <div class="stat-sub">Registered</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Present Today</div>
+            <div class="stat-val" id="stPresent">—</div>
+            <div class="stat-sub" id="stDate">—</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Absent Today</div>
+            <div class="stat-val" id="stAbsent">—</div>
+            <div class="stat-sub">Not checked in</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Sites</div>
+            <div class="stat-val" id="stSites">—</div>
+            <div class="stat-sub">Geofenced</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-hdr">
+            <h3>Sites — Today's Attendance</h3>
+            <span id="dashSiteDate" style="font-size:.74rem;color:var(--muted);"></span>
+          </div>
+          <div id="dashSiteCards" class="site-grid">
+            <div class="empty"><p>Loading…</p></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Today's Check-ins</h3>
+            <button class="btn btn-outline btn-sm" onclick="nav('attendance',document.querySelectorAll('.nav-item')[2])">View all</button>
+          </div>
+          <div id="dashAttendList"><div class="empty"><p>Loading…</p></div></div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEES -->
+      <div class="page" id="pgEmployees">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Employee Directory</h3>
+            <button class="btn btn-teal btn-sm" onclick="openEmpModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Employee
+            </button>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="empSearch" placeholder="Search name, code, email…" oninput="filterEmployees()" style="flex:1;min-width:160px;"/>
+            <select id="empStatusFilter" onchange="filterEmployees()">
+              <option value="">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+            </select>
+            <select id="empSiteFilter" onchange="filterEmployees()"><option value="">All Sites</option></select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Site</th><th>Joined</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="empTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div class="page" id="pgAttendance">
+        <div class="card">
+          <div class="card-hdr"><h3>Attendance Records</h3></div>
+          <div class="filter-bar">
+            <input type="date" id="attDate" onchange="loadAttendance()"/>
+            <select id="attSite" onchange="loadAttendance()"><option value="">All Sites</option></select>
+            <select id="attStatus" onchange="filterAttTable()">
+              <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAttendance()">↻ Refresh</button>
+          </div>
+          <div class="chips" id="attSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Employee</th><th>Code</th><th>Site</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Location</th><th>Marked By</th></tr></thead>
+              <tbody id="attTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="page" id="pgReports">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-hdr"><h3>Generate Report</h3></div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="fgg"><label>From Date</label><input type="date" id="rptFrom"/></div>
+            <div class="fgg"><label>To Date</label><input type="date" id="rptTo"/></div>
+            <div class="fgg"><label>Site</label><select id="rptSite"><option value="">All Sites</option></select></div>
+            <div class="fgg"><label>Employee</label><select id="rptEmp"><option value="">All Employees</option></select></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" onclick="generateReport()">Generate</button>
+            <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Results</h3>
+            <span id="rptCount" style="font-size:.78rem;color:var(--muted);"></span>
+          </div>
+          <div class="chips" id="rptSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Employee</th><th>Code</th><th>Site</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Marked By</th></tr></thead>
+              <tbody id="rptTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUAL ENTRY -->
+      <div class="page" id="pgManual">
+        <div class="card" style="max-width:560px;">
+          <div class="card-hdr"><h3>Manual Attendance Entry</h3></div>
+          <p style="font-size:.83rem;color:var(--muted);margin-bottom:18px;">Correct or record missed attendance. All entries are logged with your admin ID.</p>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="fgg"><label>Employee ID *</label><input type="text" id="mEmpId" placeholder="EMP001"/></div>
+            <div class="fgg"><label>Date *</label><input type="date" id="mDate"/></div>
+            <div class="fgg"><label>Check-In Time *</label><input type="time" id="mCheckIn"/></div>
+            <div class="fgg"><label>Check-Out Time</label><input type="time" id="mCheckOut"/></div>
+            <div class="fgg" style="grid-column:1/-1;"><label>Reason / Note</label><textarea id="mReason" placeholder="Reason for manual entry…"></textarea></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-teal" onclick="submitManual()">Save Entry</button>
+            <button class="btn btn-outline" onclick="clearManual()">Clear</button>
+          </div>
+          <div id="manualResult"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- EMPLOYEE MODAL -->
+<div class="modal-backdrop" id="empModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="empModalTitle">Add Employee</h3>
+      <button class="modal-close" onclick="closeModal('empModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:10px;">
+        <div class="fgg"><label>Employee Code *</label><input id="eCode" placeholder="EMP001"/></div>
+        <div class="fgg"><label>Full Name *</label><input id="eName" placeholder="Full name"/></div>
+        <div class="fgg"><label>Email *</label><input id="eEmail" type="email" placeholder="emp@company.com"/></div>
+        <div class="fgg"><label>Phone</label><input id="ePhone" type="tel" placeholder="9876543210"/></div>
+        <div class="fgg"><label>Password *</label><input id="ePass" type="password" placeholder="Leave blank to keep existing"/></div>
+        <div class="fgg"><label>Role</label>
+          <select id="eRole"><option value="EMPLOYEE">Employee</option><option value="ADMIN">Admin</option></select>
+        </div>
+        <div class="fgg"><label>Assign Site</label><select id="eSite"><option value="">— Select —</option></select></div>
+        <div class="fgg"><label>Joining Date</label><input id="eJoin" type="date"/></div>
+        <div class="fgg"><label>Status</label>
+          <select id="eStatus"><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select>
+        </div>
+      </div>
+      <div class="modal-err" id="empModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('empModal')">Cancel</button>
+      <button class="btn btn-teal" id="btnSaveEmp" onclick="saveEmployee()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SITE REPORT MODAL -->
+<div class="modal-backdrop" id="siteReportModal">
+  <div class="modal modal-wide">
+    <div class="modal-hdr">
+      <h3 id="siteReportTitle">Site Report</h3>
+      <button class="modal-close" onclick="closeModal('siteReportModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="chips" id="siteReportChips"></div>
+      <div class="filter-bar" style="margin-bottom:12px;">
+        <input type="date" id="siteRptDate" onchange="loadSiteReport()"/>
+        <select id="siteRptStatus" onchange="filterSiteReport()">
+          <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadSiteReport()">↻ Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="exportSiteCSV()">Export CSV</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Employee</th><th>Code</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Location</th><th>Marked By</th></tr></thead>
+          <tbody id="siteReportBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('siteReportModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ── CONFIG ──────────────────────────────────────────── */
+const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwweZhH6KFJcE5SS2XiN7QndRDlnSCDOk_wdHoY5yvopkjQdxXEgL-iLRgeuYoG-7s/exec";
+
+/* ── STATE ─────────────────────────────────────────── */
+let SESSION = null;
+let S = {
+  prefs:{}, employees:[], sites:[],
+  attRecords:[], rptRecords:[],
+  editingEmpCode: null,
+};
+const SR = { siteId:'', siteName:'', records:[] };
+
+/* ── UTILITIES ─────────────────────────────────────── */
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function apiCall(payload) {
+  const url = SESSION?.companyScriptUrl || MASTER_SCRIPT_URL;
+  
+  // Use POST with URLSearchParams to avoid CORS preflight
+  const formData = new URLSearchParams();
+  formData.append('action', payload.action);
+  
+  // Add all other parameters as strings
+  for (const [key, value] of Object.entries(payload)) {
+    if (key !== 'action') {
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+    }
+  }
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      }
+    });
+    
+    const text = await response.text();
+    
+    // Try to parse as JSON
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch (e) {
+      console.error('Failed to parse JSON:', text);
+      return { success: false, message: 'Invalid response from server' };
+    }
+  } catch (error) {
+    console.error('API call failed:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+async function api(payload) {
+  return apiCall(payload);
+}
+
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.className='show '+type;
+  clearTimeout(t._tid); t._tid=setTimeout(()=>(t.className=''), 3200);
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(el=>
+  el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); })
+);
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function today() { return new Date().toISOString().slice(0,10); }
+function fmtDate(d) {
+  if(!d) return '—';
+  const dt=new Date(d);
+  return isNaN(dt)?d:dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function calcHours(i,o) {
+  if(!i||!o) return '—';
+  const [ih,im]=i.split(':').map(Number), [oh,om]=o.split(':').map(Number);
+  const m=(oh*60+om)-(ih*60+im);
+  return m<=0?'—':`${Math.floor(m/60)}h ${m%60}m`;
+}
+function showErr(el,msg)    { el.textContent=msg; el.style.display='block'; }
+function showFieldErr(id,msg) {
+  const el=document.getElementById(id); if(!el) return;
+  el.textContent=msg; el.style.display=msg?'block':'none';
+}
+const PAGE_TITLES={dashboard:'Dashboard',employees:'Employee Directory',attendance:'Attendance Records',reports:'Reports',manual:'Manual Entry'};
+
+function nav(page, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('pg'+page.charAt(0).toUpperCase()+page.slice(1));
+  if(pg) pg.classList.add('active');
+  if(btn) btn.classList.add('active');
+  document.getElementById('topbarTitle').textContent=PAGE_TITLES[page]||page;
+  if(page==='dashboard')  loadDashboard();
+  if(page==='employees')  loadEmployees();
+  if(page==='attendance') { if(!document.getElementById('attDate').value) document.getElementById('attDate').value=today(); loadAttendance(); }
+  if(page==='reports')    setReportDefaults();
+}
+
+/* ── PASSWORD TOGGLE ───────────────────────────────── */
+function togglePw() {
+  const inp=document.getElementById('lPassword');
+  const ic=document.getElementById('eyeIcon');
+  if(inp.type==='password'){
+    inp.type='text';
+    ic.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type='password';
+    ic.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+/* ── LOGIN ─────────────────────────────────────────────
+   Steps:
+   1. Validate company and get companyScriptUrl from MASTER sheet
+   2. Validate admin credentials using company's script URL
+──────────────────────────────────────────────────────── */
+async function doLogin() {
+  const btn       = document.getElementById('btnLogin');
+  const err       = document.getElementById('loginError');
+  const companyId = document.getElementById('lCompanyId').value.trim().toUpperCase();
+  const email     = document.getElementById('lEmail').value.trim().toLowerCase();
+  const pw        = document.getElementById('lPassword').value.trim();
+
+  err.style.display = 'none';
+  if (!companyId)    { showErr(err, 'Please enter your Company ID.'); return; }
+  if (!email)        { showErr(err, 'Please enter your Email ID.'); return; }
+  if (!pw)           { showErr(err, 'Please enter your Password.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+  try {
+    // Step 1: Validate company from MASTER sheet
+    const companyRes = await apiCall({
+      action: 'validateCompany',
+      companyId: companyId,
+      adminEmail: email
+    });
+
+    if (!companyRes || !companyRes.success) {
+      showErr(err, (companyRes && companyRes.message) || 'Company ID not recognised. Please check and try again.');
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+
+    const companyData = companyRes.data;
+    
+    if (companyData.isActive === false) {
+      showErr(err, 'Company account is inactive. Contact Drushyasinchana Tech Solutions.');
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+
+    const clientUrl = companyData.companyScriptUrl || MASTER_SCRIPT_URL;
+
+    // Step 2: Validate admin credentials using company's script
+    const hash = await sha256(pw);
+    const authRes = await apiCall({
+      action: 'validateAdmin',
+      companySheetId: companyData.companySheetId || '',
+      email: email,
+      password: hash
+    });
+
+    if (!authRes || !authRes.success) {
+      showErr(err, (authRes && authRes.message) || 'Invalid credentials. Please try again.');
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+
+    const adminData = authRes.data;
+    
+    if (adminData.role !== 'ADMIN' && adminData.role !== 'admin') {
+      showErr(err, 'Web portal is for admin accounts only. Please use the mobile app.');
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+
+    // Success: Store session and redirect
+    SESSION = {
+      empCode: adminData.empCode || '',
+      empName: adminData.name || '',
+      empEmail: adminData.email || email,
+      role: adminData.role || 'ADMIN',
+      companyId: companyId,
+      companyName: companyData.companyName || '',
+      companySheetId: companyData.companySheetId || '',
+      companyScriptUrl: clientUrl
+    };
+    
+    sessionStorage.setItem('attendease_session', JSON.stringify(SESSION));
+    
+    // Redirect to manage.html (same domain)
+    window.location.href = 'manage.html';
+
+  } catch (e) {
+    console.error('Login error:', e);
+    showErr(err, 'Connection error: ' + (e.message || 'Please check your internet and try again.'));
+    btn.disabled = false; btn.innerHTML = 'Sign In';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('attendease_session');
+  SESSION = null;
+  Object.assign(S,{prefs:{},employees:[],sites:[],attRecords:[],rptRecords:[],editingEmpCode:null});
+  switchScreen('loginScreen');
+}
+
+// Check if already logged in on page load
+function checkSession() {
+  const saved = sessionStorage.getItem('attendease_session');
+  if (saved) {
+    try {
+      SESSION = JSON.parse(saved);
+      // Validate session by making a test call
+      // For now, redirect to manage.html
+      window.location.href = 'manage.html';
+    } catch(e) {
+      console.error('Invalid session');
+    }
+  }
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && document.getElementById('loginScreen').classList.contains('active')) {
+    const active = document.activeElement;
+    if(['lCompanyId','lEmail','lPassword'].includes(active && active.id)) doLogin();
+  }
+});
+
+/* ── DASHBOARD ─────────────────────────────────────── */
+async function loadDashboard() {
+  if (!SESSION) return;
+  try {
+    const [empRes,siteRes,attRes] = await Promise.all([
+      api({ action:'getEmployees',  companySheetId:SESSION.companySheetId }),
+      api({ action:'getSites',      companySheetId:SESSION.companySheetId }),
+      api({ action:'getAttendance', companySheetId:SESSION.companySheetId, date:today() }),
+    ]);
+    S.employees = empRes.success ? (empRes.data.employees || []) : [];
+    S.sites     = siteRes.success ? (siteRes.data.sites || []) : [];
+    const atts  = attRes.success ? (attRes.data.records || []) : [];
+    const activeSites = S.sites.filter(s=>!s.status||s.status==='ACTIVE');
+    const present     = atts.filter(r=>r.status==='PRESENT').length;
+
+    document.getElementById('stTotalEmp').textContent = S.employees.length;
+    document.getElementById('stPresent').textContent  = present;
+    document.getElementById('stAbsent').textContent   = Math.max(0,S.employees.length-present);
+    document.getElementById('stSites').textContent    = activeSites.length;
+    document.getElementById('stDate').textContent     = fmtDate(today());
+    document.getElementById('dashSiteDate').textContent = fmtDate(today());
+
+    const grid = document.getElementById('dashSiteCards');
+    if(!activeSites.length){
+      grid.innerHTML='<div class="empty"><p>No active sites found</p></div>';
+    } else {
+      grid.innerHTML = activeSites.map(s=>{
+        const sAtts    = atts.filter(r=>r.site===s.siteName||r.site===s.siteId);
+        const sEmps    = S.employees.filter(e=>(e.site||e.siteId)===s.siteId);
+        const sPresent = sAtts.filter(r=>r.status==='PRESENT').length;
+        const sTotal   = sEmps.length||sAtts.length;
+        const sAbsent  = Math.max(0,sTotal-sPresent);
+        const pct      = sTotal>0?Math.round((sPresent/sTotal)*100):0;
+        const bar      = pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+        const nm       = (s.siteName||'').replace(/'/g,"\\'");
+        return `
+          <div class="site-card" onclick="openSiteReport('${s.siteId}','${nm}')">
+            <div class="site-card-bar" style="background:${bar};"></div>
+            <div class="site-card-name" title="${s.siteName}">${s.siteName}</div>
+            <div class="site-card-nums">
+              <div class="site-num">
+                <div class="site-num-val" style="color:var(--green);">${sPresent}</div>
+                <div class="site-num-lbl">Present</div>
+              </div>
+              <div class="site-num">
+                <div class="site-num-val" style="color:var(--red);">${sAbsent}</div>
+                <div class="site-num-lbl">Absent</div>
+              </div>
+              <div class="site-num">
+                <div class="site-num-val" style="color:var(--teal);">${sTotal}</div>
+                <div class="site-num-lbl">Total</div>
+              </div>
+            </div>
+            <div class="site-card-foot">${pct}% &nbsp;·&nbsp; <span style="color:var(--teal);">View report →</span></div>
+          </div>`;
+      }).join('');
+    }
+
+    const al=document.getElementById('dashAttendList');
+    al.innerHTML = atts.length
+      ? atts.slice(0,10).map(r=>`
+          <div class="mini-row">
+            <div><div class="mname">${r.name||r.empCode}</div><div class="msub">${r.site||'—'}</div></div>
+            <div class="mright">
+              <span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span>
+              <div class="mtime">${r.inTime?'IN '+r.inTime:''} ${r.outTime?'· OUT '+r.outTime:''}</div>
+            </div>
+          </div>`).join('')
+      : '<div class="empty"><p>No attendance records yet today</p></div>';
+
+    populateSiteSelects();
+  } catch(e){ toast('Failed to load dashboard','error'); }
+}
+
+/* ── EMPLOYEES ─────────────────────────────────────── */
+async function loadEmployees() {
+  if (!SESSION) return;
+  try {
+    const res=await api({ action:'getEmployees', companySheetId:SESSION.companySheetId });
+    S.employees=res.success?res.data.employees||[]:[];
+    renderEmployees(S.employees); populateSiteSelects();
+  } catch(e){ toast('Failed to load employees','error'); }
+}
+
+function renderEmployees(list) {
+  const tb=document.getElementById('empTableBody');
+  if(!list.length){ tb.innerHTML='<tr><td colspan="8"><div class="empty"><p>No employees found</p></div></td></tr>'; return; }
+  tb.innerHTML=list.map(e=>`
+     <tr>
+      <td class="mono">${e.empCode||'—'}</td>
+      <td><strong>${e.name||'—'}</strong></td>
+      <td style="color:var(--muted);font-size:.79rem;">${e.email||'—'}</td>
+      <td>${e.siteName||e.site||'—'}</td>
+      <td style="color:var(--muted);font-size:.79rem;">${fmtDate(e.joinDate)}</td>
+      <td><span class="badge ${e.role==='ADMIN'?'badge-blue':'badge-gray'}">${e.role||'EMPLOYEE'}</span></td>
+      <td><span class="badge ${e.status==='ACTIVE'?'badge-green':'badge-gray'}">${e.status||'ACTIVE'}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick='editEmployee(${JSON.stringify(e)})'>Edit</button></td>
+     </tr>`).join('');
+}
+
+function filterEmployees() {
+  const q=document.getElementById('empSearch').value.toLowerCase();
+  const st=document.getElementById('empStatusFilter').value;
+  const si=document.getElementById('empSiteFilter').value;
+  renderEmployees(S.employees.filter(e=>{
+    const mq=!q||[e.name,e.empCode,e.email].some(v=>(v||'').toLowerCase().includes(q));
+    return mq&&(!st||e.status===st)&&(!si||(e.site||e.siteId||'')===si);
+  }));
+}
+
+function openEmpModal() {
+  S.editingEmpCode=null;
+  document.getElementById('empModalTitle').textContent='Add Employee';
+  ['eCode','eName','eEmail','ePhone','ePass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('eCode').disabled=false;
+  document.getElementById('eJoin').value=today();
+  document.getElementById('eStatus').value='ACTIVE';
+  document.getElementById('eRole').value='EMPLOYEE';
+  showFieldErr('empModalErr',''); openModal('empModal');
+}
+
+function editEmployee(e) {
+  S.editingEmpCode=e.empCode;
+  document.getElementById('empModalTitle').textContent='Edit Employee';
+  document.getElementById('eCode').value=e.empCode||''; document.getElementById('eCode').disabled=true;
+  document.getElementById('eName').value=e.name||'';
+  document.getElementById('eEmail').value=e.email||'';
+  document.getElementById('ePhone').value=e.phone||'';
+  document.getElementById('ePass').value='';
+  document.getElementById('eSite').value=e.siteId||e.site||'';
+  document.getElementById('eJoin').value=e.joinDate||today();
+  document.getElementById('eStatus').value=e.status||'ACTIVE';
+  document.getElementById('eRole').value=e.role||'EMPLOYEE';
+  showFieldErr('empModalErr',''); openModal('empModal');
+}
+
+async function saveEmployee() {
+  const empCode=document.getElementById('eCode').value.trim().toUpperCase();
+  const name=document.getElementById('eName').value.trim().toUpperCase();
+  const email=document.getElementById('eEmail').value.trim().toLowerCase();
+  const phone=document.getElementById('ePhone').value.trim();
+  const pw=document.getElementById('ePass').value.trim();
+  const siteId=document.getElementById('eSite').value;
+  const joinDate=document.getElementById('eJoin').value;
+  const status=document.getElementById('eStatus').value;
+  const role=document.getElementById('eRole').value;
+  if(!empCode||!name||!email){ showFieldErr('empModalErr','Code, Name and Email are required.'); return; }
+  if(!S.editingEmpCode&&!pw){ showFieldErr('empModalErr','Password is required for new employees.'); return; }
+  const btn=document.getElementById('btnSaveEmp');
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    const payload={ action:S.editingEmpCode?'updateEmployee':'registerEmployee', companySheetId:SESSION.companySheetId, empCode, name, email, phone, siteId, joinDate, status, role };
+    if(pw) payload.password=await sha256(pw);
+    const res=await api(payload);
+    if(res.success){
+      toast(S.editingEmpCode?'Employee updated!':'Employee registered!');
+      closeModal('empModal'); document.getElementById('eCode').disabled=false; loadEmployees();
+    } else showFieldErr('empModalErr',res.message||'Failed to save.');
+  } catch(e){ showFieldErr('empModalErr','Connection error.'); }
+  btn.disabled=false; btn.textContent='Save';
+}
+
+/* ── ATTENDANCE ────────────────────────────────────── */
+async function loadAttendance() {
+  if (!SESSION) return;
+  const date=document.getElementById('attDate').value||today();
+  const siteId=document.getElementById('attSite').value;
+  try {
+    const res=await api({ action:'getAttendance', companySheetId:SESSION.companySheetId, date, siteId });
+    S.attRecords=res.success?res.data.records||[]:[];
+    renderAttTable(S.attRecords); updateAttSummary(S.attRecords);
+  } catch(e){ toast('Failed to load attendance','error'); }
+}
+
+function filterAttTable() {
+  const st=document.getElementById('attStatus').value;
+  renderAttTable(st?S.attRecords.filter(r=>r.status===st):S.attRecords);
+}
+
+function renderAttTable(list) {
+  const tb=document.getElementById('attTableBody');
+  if(!list.length){ tb.innerHTML='<tr><td colspan="9"><div class="empty"><p>No records for this date</p></div></td></tr>'; return; }
+  tb.innerHTML=list.map(r=>`
+     <tr>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td class="mono">${r.empCode||'—'}</td>
+      <td>${r.site||'—'}</td>
+      <td class="mono" style="color:var(--green);">${r.inTime||'—'}</td>
+      <td class="mono" style="color:var(--red);">${r.outTime||'—'}</td>
+      <td class="mono">${calcHours(r.inTime,r.outTime)}</td>
+      <td><span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span></td>
+      <td><span class="badge ${r.locationStatus==='INSIDE'?'badge-blue':'badge-amber'}">${r.locationStatus||'—'}</span></td>
+      <td style="font-size:.75rem;color:var(--muted);">${r.markedBy||'—'}</td>
+     </tr>`).join('');
+}
+
+function updateAttSummary(list) {
+  const present=list.filter(r=>r.status==='PRESENT').length;
+  const inside=list.filter(r=>r.locationStatus==='INSIDE').length;
+  document.getElementById('attSummary').innerHTML=`
+    <div class="chip">Total <span>${list.length}</span></div>
+    <div class="chip" style="color:var(--green);">Present <span>${present}</span></div>
+    <div class="chip" style="color:var(--red);">Absent <span>${list.length-present}</span></div>
+    <div class="chip" style="color:#1565C0;">Inside Geofence <span>${inside}</span></div>`;
+}
+
+/* ── SITE REPORT ───────────────────────────────────── */
+function openSiteReport(siteId, siteName) {
+  SR.siteId=siteId; SR.siteName=siteName; SR.records=[];
+  document.getElementById('siteReportTitle').textContent=siteName+' — Report';
+  document.getElementById('siteRptDate').value=today();
+  document.getElementById('siteRptStatus').value='';
+  openModal('siteReportModal'); loadSiteReport();
+}
+
+async function loadSiteReport() {
+  if (!SESSION) return;
+  const date=document.getElementById('siteRptDate').value||today();
+  const tb=document.getElementById('siteReportBody');
+  tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>';
+  try {
+    const res=await api({ action:'getAttendance', companySheetId:SESSION.companySheetId, date, siteId:SR.siteId });
+    SR.records=(res.success?res.data.records||[]:[]). filter(r=>r.site===SR.siteName||r.site===SR.siteId);
+    renderSiteReport(SR.records); updateSiteChips(SR.records);
+  } catch(e){
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--red);padding:18px;">Failed to load.</td></tr>';
+  }
+}
+
+function filterSiteReport() {
+  const st=document.getElementById('siteRptStatus').value;
+  renderSiteReport(st?SR.records.filter(r=>r.status===st):SR.records);
+}
+
+function renderSiteReport(list) {
+  const tb=document.getElementById('siteReportBody');
+  if(!list.length){ tb.innerHTML='<tr><td colspan="8"><div class="empty"><p>No records for this date</p></div>NonNull</td></tr>'; return; }
+  tb.innerHTML=list.map(r=>`
+      <tr>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td class="mono">${r.empCode||'—'}</td>
+      <td class="mono" style="color:var(--green);">${r.inTime||'—'}</td>
+      <td class="mono" style="color:var(--red);">${r.outTime||'—'}</td>
+      <td class="mono">${calcHours(r.inTime,r.outTime)}</td>
+      <td><span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span></td>
+      <td><span class="badge ${r.locationStatus==='INSIDE'?'badge-blue':'badge-amber'}">${r.locationStatus||'—'}</span></td>
+      <td style="font-size:.75rem;color:var(--muted);">${r.markedBy||'—'}</td>
+      </tr>`).join('');
+}
+
+function updateSiteChips(list) {
+  const present=list.filter(r=>r.status==='PRESENT').length;
+  document.getElementById('siteReportChips').innerHTML=`
+    <div class="chip">Total <span>${list.length}</span></div>
+    <div class="chip" style="color:var(--green);">Present <span>${present}</span></div>
+    <div class="chip" style="color:var(--red);">Absent <span>${list.length-present}</span></div>`;
+}
+
+function exportSiteCSV() {
+  if(!SR.records.length){ toast('No records to export','error'); return; }
+  const cols=['name','empCode','inTime','outTime','status','locationStatus','markedBy'];
+  const csv=[cols.join(','),...SR.records.map(r=>cols.map(c=>`"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`${SR.siteName}_${document.getElementById('siteRptDate').value}.csv`;
+  a.click(); toast('CSV exported!');
+}
+
+/* ── REPORTS ───────────────────────────────────────── */
+function setReportDefaults() {
+  const f=document.getElementById('rptFrom'),t=document.getElementById('rptTo');
+  if(!f.value){ const d=new Date(); d.setDate(1); f.value=d.toISOString().slice(0,10); }
+  if(!t.value) t.value=today();
+}
+
+async function generateReport() {
+  if (!SESSION) return;
+  const from=document.getElementById('rptFrom').value;
+  const to=document.getElementById('rptTo').value;
+  const site=document.getElementById('rptSite').value;
+  const emp=document.getElementById('rptEmp').value;
+  if(!from||!to){ toast('Please select a date range','error'); return; }
+  try {
+    const res=await api({ action:'getAttendanceRange', companySheetId:SESSION.companySheetId, fromDate:from, toDate:to, siteId:site, empCode:emp });
+    S.rptRecords=res.success?res.data.records||[]:[];
+    renderRptTable(S.rptRecords);
+    const present=S.rptRecords.filter(r=>r.status==='PRESENT').length;
+    document.getElementById('rptCount').textContent=`${S.rptRecords.length} records`;
+    document.getElementById('rptSummary').innerHTML=`
+      <div class="chip">Total <span>${S.rptRecords.length}</span></div>
+      <div class="chip" style="color:var(--green);">Present <span>${present}</span></div>
+      <div class="chip" style="color:var(--red);">Absent <span>${S.rptRecords.length-present}</span></div>`;
+  } catch(e){ toast('Failed to generate report','error'); }
+}
+
+function renderRptTable(list) {
+  const tb=document.getElementById('rptTableBody');
+  if(!list.length){ tb.innerHTML='<tr><td colspan="9"><div class="empty"><p>No records in this range</p></div></td></tr>'; return; }
+  tb.innerHTML=list.map(r=>`
+      <tr>
+      <td class="mono">${fmtDate(r.date)}</td>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td class="mono">${r.empCode||'—'}</td>
+      <td>${r.site||'—'}</td>
+      <td class="mono" style="color:var(--green);">${r.inTime||'—'}</td>
+      <td class="mono" style="color:var(--red);">${r.outTime||'—'}</td>
+      <td class="mono">${calcHours(r.inTime,r.outTime)}</td>
+      <td><span class="badge ${r.status==='PRESENT'?'badge-green':'badge-red'}">${r.status||'—'}</span></td>
+      <td style="font-size:.75rem;color:var(--muted);">${r.markedBy||'—'}</td>
+      </tr>`).join('');
+}
+
+function exportCSV() {
+  if(!S.rptRecords.length){ toast('Generate a report first','error'); return; }
+  const cols=['date','name','empCode','site','inTime','outTime','status','locationStatus','markedBy'];
+  const csv=[cols.join(','),...S.rptRecords.map(r=>cols.map(c=>`"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`AttendEase_${document.getElementById('rptFrom').value}_to_${document.getElementById('rptTo').value}.csv`;
+  a.click(); toast('CSV exported!');
+}
+
+/* ── MANUAL ENTRY ──────────────────────────────────── */
+async function submitManual() {
+  if (!SESSION) return;
+  const empId=document.getElementById('mEmpId').value.trim().toUpperCase();
+  const date=document.getElementById('mDate').value;
+  const checkIn=document.getElementById('mCheckIn').value;
+  const checkOut=document.getElementById('mCheckOut').value;
+  const reason=document.getElementById('mReason').value.trim();
+  const resEl=document.getElementById('manualResult');
+  resEl.className=''; resEl.textContent='';
+  if(!empId||!date||!checkIn){ toast('Employee ID, Date and Check-In are required','error'); return; }
+  try {
+    const res=await api({ action:'markAttendance', companySheetId:SESSION.companySheetId, empCode:empId, date, inTime:checkIn, outTime:checkOut, markedBy:SESSION.empEmail || 'MANUAL_ADMIN', manualRemark:reason, locationStatus:'MANUAL', status:'PRESENT' });
+    if(res.success){
+      resEl.className='result-ok';
+      resEl.textContent=`✓ Attendance saved for ${empId} on ${fmtDate(date)}`;
+      clearManual();
+    } else {
+      resEl.className='result-err';
+      resEl.textContent=res.message||'Failed to save.';
+    }
+  } catch(e){ resEl.className='result-err'; resEl.textContent='Connection error.'; }
+}
+
+function clearManual() {
+  ['mEmpId','mCheckIn','mCheckOut','mReason'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mDate').value=today();
+}
+
+/* ── POPULATE SELECTS ──────────────────────────────── */
+function populateSiteSelects() {
+  ['empSiteFilter','eSite','attSite','rptSite'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    const kept=el.querySelector('option[value=""]');
+    while(el.options.length>(kept?1:0)) el.remove(kept?1:0);
+    S.sites.forEach(s=>{ const o=document.createElement('option'); o.value=s.siteId||s.siteName; o.textContent=s.siteName; el.appendChild(o); });
+  });
+  const re=document.getElementById('rptEmp');
+  if(re){
+    while(re.options.length>1) re.remove(1);
+    S.employees.forEach(e=>{ const o=document.createElement('option'); o.value=e.empCode; o.textContent=`${e.empCode} — ${e.name}`; re.appendChild(o); });
+  }
+}
+
+/* ── INIT ──────────────────────────────────────────── */
+document.getElementById('mDate').value = today();
+checkSession(); // Check if already logged in
+</script>
+</body>
+</html>
