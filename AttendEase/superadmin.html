@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendEase — Super Admin</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<style>
+/* ─── TOKENS ─────────────────────────────────────── */
+:root {
+  --teal:#00838F; --teal-d:#00606B; --teal-dd:#004E57;
+  --teal-l:#B2EBF2; --teal-s:#E0F7FA;
+  --ink:#0D1F22; --ink2:#2E4A4F;
+  --muted:#6B8A8F; --hint:#9EB8BC;
+  --bg:#F0F5F6; --card:#FFFFFF; --border:#D8E8EA;
+  --green:#2E7D32; --red:#C62828; --amber:#E65100;
+  --r:12px; --r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+  --sh-lg:0 8px 32px rgba(0,131,143,.16);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;text-decoration:none;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+
+/* ─── LAYOUT ─────────────────────────────────────── */
+.shell{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:220px;flex-shrink:0;background:var(--teal-dd);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-row{display:flex;align-items:center;gap:10px;}
+.sb-logo{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.2);padding:4px;object-fit:contain;}
+.sb-name{font-size:1rem;font-weight:600;color:#fff;}
+.sb-sub{font-size:.68rem;color:rgba(255,255,255,.4);margin-top:1px;}
+.sb-badge{
+  margin-top:10px;display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;background:rgba(255,165,0,.15);border:1px solid rgba(255,165,0,.3);
+  border-radius:20px;font-size:.68rem;color:#FFB74D;font-weight:500;
+}
+.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;
+  border-radius:var(--r-sm);color:rgba(255,255,255,.5);
+  font-size:.83rem;cursor:pointer;transition:background .14s,color .14s;
+  border:none;background:none;width:100%;text-align:left;
+}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.55;transition:opacity .14s;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.nav-item:hover svg{opacity:.85;}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;font-weight:500;}
+.nav-item.active svg{opacity:1;}
+.nav-sep{height:1px;background:rgba(255,255,255,.06);margin:5px 0;}
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-footer span{font-size:.68rem;color:rgba(255,255,255,.28);display:block;margin-bottom:6px;}
+.btn-signout{
+  width:100%;padding:7px 10px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);border-radius:6px;
+  color:rgba(255,255,255,.5);font-size:.78rem;
+  display:flex;align-items:center;gap:7px;transition:all .14s;
+}
+.btn-signout:hover{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4);color:#FCA5A5;}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{
+  height:54px;background:#fff;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:12px;
+  position:sticky;top:0;z-index:10;
+}
+.topbar-title{font-size:.94rem;font-weight:600;color:var(--ink);flex:1;}
+.topbar-right{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);}
+.avatar{
+  width:30px;height:30px;border-radius:50%;background:var(--amber);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:700;
+}
+
+.body{flex:1;padding:24px 28px;overflow-y:auto;}
+
+/* PAGE SECTIONS */
+.page{display:none;}
+.page.active{display:block;animation:fadeUp .2s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ─── CARDS ──────────────────────────────────────── */
+.card{
+  background:var(--card);border-radius:var(--r);
+  border:1px solid var(--border);padding:22px 24px;
+  box-shadow:var(--sh);margin-bottom:20px;
+}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.card-hdr h3{font-size:.94rem;font-weight:600;color:var(--ink);}
+.card-hdr p{font-size:.78rem;color:var(--muted);margin-top:2px;}
+
+/* ─── FORM GRID ──────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr;}
+.form-grid.cols1{grid-template-columns:1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg.span2{grid-column:span 2;}
+.fg label{
+  font-size:.74rem;font-weight:500;color:var(--ink2);
+  letter-spacing:.01em;
+}
+.fg label span{color:var(--red);margin-left:2px;}
+.fg input,.fg select,.fg textarea{
+  padding:9px 12px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.87rem;color:var(--ink);
+  background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.08);
+}
+.fg textarea{resize:vertical;min-height:68px;}
+.fg .hint{font-size:.7rem;color:var(--hint);}
+
+/* ─── BUTTONS ────────────────────────────────────── */
+.btn{
+  padding:9px 18px;border-radius:var(--r-sm);font-size:.85rem;
+  font-weight:500;border:1.5px solid transparent;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal);}
+.btn-teal:hover{background:var(--teal-d);}
+.btn-teal:disabled{opacity:.55;cursor:not-allowed;}
+.btn-outline{background:#fff;color:var(--ink2);border-color:var(--border);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-red{background:#fff;color:var(--red);border-color:#FFCDD2;}
+.btn-red:hover{background:#FFEBEE;}
+.btn-sm{padding:5px 12px;font-size:.78rem;}
+.btn svg{width:13px;height:13px;}
+.form-actions{display:flex;gap:8px;margin-top:6px;align-items:center;}
+
+/* ─── TABLE ──────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r-sm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.835rem;}
+thead th{
+  background:var(--teal-s);color:var(--teal-dd);
+  font-weight:600;font-size:.67rem;letter-spacing:.05em;text-transform:uppercase;
+  padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F0FAFB;}
+tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
+.mono{font-family:'DM Mono',monospace;font-size:.78rem;}
+.empty-row td{text-align:center;padding:32px;color:var(--muted);font-size:.84rem;}
+
+/* ─── BADGES ─────────────────────────────────────── */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.67rem;font-weight:600;}
+.badge-green{background:#E8F5E9;color:#1B5E20;}
+.badge-red{background:#FFEBEE;color:#B71C1C;}
+.badge-amber{background:#FFF3E0;color:#E65100;}
+.badge-blue{background:#E3F2FD;color:#0D47A1;}
+.badge-gray{background:#ECEFF1;color:#455A64;}
+
+/* ─── STAT CARDS ─────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);
+  position:relative;overflow:hidden;
+}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat-card.teal::before{background:var(--teal);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-label{font-size:.68rem;color:var(--muted);font-weight:500;letter-spacing:.04em;margin-bottom:8px;text-transform:uppercase;}
+.stat-val{font-size:2rem;font-weight:600;color:var(--ink);font-family:'DM Mono',monospace;line-height:1;}
+.stat-sub{font-size:.69rem;color:var(--hint);margin-top:5px;}
+
+/* ─── RESULT BOX ─────────────────────────────────── */
+.result-ok{background:#E8F5E9;color:var(--green);border:1px solid #A5D6A7;padding:11px 14px;border-radius:var(--r-sm);font-size:.84rem;display:none;}
+.result-err{background:#FFEBEE;color:var(--red);border:1px solid #FFCDD2;padding:11px 14px;border-radius:var(--r-sm);font-size:.84rem;display:none;}
+
+/* ─── TOAST ──────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:22px;right:22px;z-index:999;
+  background:var(--ink);color:#fff;padding:10px 18px;
+  border-radius:var(--r-sm);font-size:.84rem;box-shadow:var(--sh-lg);
+  transform:translateY(70px);opacity:0;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;max-width:320px;
+}
+#toast.show{transform:none;opacity:1;}
+#toast.success{background:var(--green);}
+#toast.error{background:var(--red);}
+#toast.warn{background:var(--amber);}
+
+/* ─── MODAL ──────────────────────────────────────── */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(13,31,34,.45);z-index:100;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(3px);
+}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:#fff;border-radius:var(--r);box-shadow:var(--sh-lg);
+  width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;
+  animation:slideUp .2s ease both;
+}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0;}to{transform:none;opacity:1;}}
+.modal-hdr{
+  padding:15px 20px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:#fff;z-index:1;
+}
+.modal-hdr h3{font-size:.92rem;font-weight:600;}
+.modal-close{
+  width:26px;height:26px;border-radius:6px;border:none;
+  background:none;color:var(--muted);font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.modal-close:hover{background:var(--bg);}
+.modal-body{padding:18px 20px;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ─── LOGIN GATE ─────────────────────────────────── */
+#loginGate{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(140deg,var(--teal-dd) 0%,var(--teal) 60%,#00ACC1 100%);
+}
+.login-box{
+  background:#fff;border-radius:var(--r);padding:36px 40px;
+  width:380px;max-width:96vw;box-shadow:var(--sh-lg);
+}
+.login-box h2{font-size:1.3rem;font-weight:600;margin-bottom:4px;}
+.login-box .sub{font-size:.82rem;color:var(--muted);margin-bottom:24px;}
+.login-box .fg{margin-bottom:14px;}
+.login-box .fg input{width:100%;}
+.btn-login{
+  width:100%;padding:12px;background:var(--teal);color:#fff;
+  border:none;border-radius:var(--r-sm);font-size:.92rem;font-weight:500;
+  cursor:pointer;transition:background .18s;margin-top:4px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-login:hover{background:var(--teal-d);}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;}
+#loginErr{
+  margin-top:12px;padding:9px 13px;border-radius:var(--r-sm);
+  background:#FFEBEE;color:var(--red);font-size:.82rem;
+  display:none;border:1px solid #FFCDD2;
+}
+.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ─── FILTER BAR ─────────────────────────────────── */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.filter-bar input,.filter-bar select{
+  padding:7px 11px;border:1.5px solid var(--border);
+  border-radius:var(--r-sm);font-size:.82rem;outline:none;
+  background:#fff;color:var(--ink);transition:border-color .15s;
+}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--teal);}
+.filter-bar input{flex:1;min-width:180px;}
+
+/* ─── RESPONSIVE ─────────────────────────────────── */
+@media(max-width:900px){.sidebar{width:52px;}.sb-name,.sb-sub,.sb-badge,.nav-item span,.sb-footer span{display:none;}.nav-item{justify-content:center;padding:10px;}.stat-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}.fg.span2{grid-column:span 1;}.body{padding:14px;}.stat-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN GATE ═══════════════ -->
+<div id="loginGate">
+  <div class="login-box">
+    <h2>🔐 Super Admin</h2>
+    <p class="sub">AttendEase master control panel</p>
+    <div class="fg">
+      <label>Super Admin Email</label>
+      <input id="saEmail" type="email" placeholder="superadmin@drushyasinchana.in"/>
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input id="saPassword" type="password" placeholder="••••••••"/>
+    </div>
+    <button class="btn-login" id="btnSaLogin" onclick="saLogin()">Sign In</button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP SHELL ═══════════════ -->
+<div id="appShell" class="shell" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" class="sb-logo" onerror="this.style.display='none'"/>
+        <div>
+          <div class="sb-name">AttendEase</div>
+          <div class="sb-sub">Super Admin</div>
+        </div>
+      </div>
+      <div class="sb-badge">⚡ MASTER</div>
+    </div>
+
+    <div class="sb-nav">
+      <button class="nav-item active" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" onclick="nav('companies',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Companies</span>
+      </button>
+      <button class="nav-item" onclick="nav('addCompany',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span>Add Company</span>
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="nav('admins',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>Admins</span>
+      </button>
+      <button class="nav-item" onclick="nav('addAdmin',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        <span>Add Admin</span>
+      </button>
+    </div>
+
+    <div class="sb-footer">
+      <span>Drushyasinchana Tech</span>
+      <button class="btn-signout" onclick="saLogout()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Sign out</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-right">
+        <span id="saUserEmail" style="font-size:.78rem;"></span>
+        <div class="avatar" id="saAvatar">SA</div>
+      </div>
+    </div>
+
+    <div class="body">
+
+      <!-- ── DASHBOARD ── -->
+      <div id="pgDashboard" class="page active">
+        <div class="stat-grid">
+          <div class="stat-card teal">
+            <div class="stat-label">Total Companies</div>
+            <div class="stat-val" id="stCompanies">—</div>
+            <div class="stat-sub">Registered in Firestore</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Active Companies</div>
+            <div class="stat-val" id="stActive">—</div>
+            <div class="stat-sub">isActive = true</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Total Admins</div>
+            <div class="stat-val" id="stAdmins">—</div>
+            <div class="stat-sub">Registered admin users</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr">
+            <div>
+              <h3>Recent Companies</h3>
+              <p>Last added companies</p>
+            </div>
+            <button class="btn btn-teal btn-sm" onclick="nav('addCompany', document.querySelectorAll('.nav-item')[2])">
+              + Add Company
+            </button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Company ID</th>
+                  <th>Company Name</th>
+                  <th>Admin Email</th>
+                  <th>Plan</th>
+                  <th>Status</th>
+                  <th>City</th>
+                </tr>
+              </thead>
+              <tbody id="dashCompanyList">
+                <tr class="empty-row"><td colspan="6">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── COMPANIES LIST ── -->
+      <div id="pgCompanies" class="page">
+        <div class="card">
+          <div class="card-hdr">
+            <div><h3>All Companies</h3><p>Manage registered companies</p></div>
+            <button class="btn btn-teal btn-sm" onclick="nav('addCompany', document.querySelectorAll('.nav-item')[2])">+ Add Company</button>
+          </div>
+          <div class="filter-bar">
+            <input id="companySearch" type="text" placeholder="Search by name or ID…" oninput="filterCompanies()"/>
+            <select id="companyStatusFilter" onchange="filterCompanies()">
+              <option value="">All Status</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Company ID</th>
+                  <th>Company Name</th>
+                  <th>Admin Email</th>
+                  <th>Plan</th>
+                  <th>Max Emp</th>
+                  <th>Status</th>
+                  <th>End Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="companyTableBody">
+                <tr class="empty-row"><td colspan="8">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADD / EDIT COMPANY ── -->
+      <div id="pgAddCompany" class="page">
+        <div class="card">
+          <div class="card-hdr">
+            <div>
+              <h3 id="compFormTitle">Add New Company</h3>
+              <p>All fields marked * are required</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="fg">
+              <label>Company ID <span>*</span></label>
+              <input id="cId" type="text" placeholder="e.g. COMP002" style="text-transform:uppercase;"/>
+              <span class="hint">Unique identifier — cannot be changed later</span>
+            </div>
+            <div class="fg">
+              <label>Company Name <span>*</span></label>
+              <input id="cName" type="text" placeholder="e.g. ABC Constructions Pvt Ltd"/>
+            </div>
+            <div class="fg">
+              <label>Admin Email <span>*</span></label>
+              <input id="cAdminEmail" type="email" placeholder="admin@company.com"/>
+            </div>
+            <div class="fg">
+              <label>Contact Phone</label>
+              <input id="cPhone" type="tel" placeholder="+91 9876543210"/>
+            </div>
+            <div class="fg">
+              <label>Plan <span>*</span></label>
+              <select id="cPlan">
+                <option value="basic">Basic</option>
+                <option value="standard">Standard</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Max Employees</label>
+              <input id="cMaxEmp" type="number" placeholder="50" value="50" min="1"/>
+            </div>
+            <div class="fg">
+              <label>Start Date <span>*</span></label>
+              <input id="cStartDate" type="date"/>
+            </div>
+            <div class="fg">
+              <label>End Date <span>*</span></label>
+              <input id="cEndDate" type="date"/>
+            </div>
+            <div class="fg">
+              <label>City</label>
+              <input id="cCity" type="text" placeholder="Bengaluru"/>
+            </div>
+            <div class="fg">
+              <label>Status</label>
+              <select id="cIsActive">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+            <div class="fg span2">
+              <label>Google Sheet ID <span>*</span></label>
+              <input id="cSheetId" type="text" placeholder="Paste the Google Sheet ID here"/>
+              <span class="hint">From the sheet URL: docs.google.com/spreadsheets/d/<strong>SHEET_ID</strong>/edit</span>
+            </div>
+            <div class="fg span2">
+              <label>Apps Script URL <span>*</span></label>
+              <input id="cScriptUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec"/>
+            </div>
+            <div class="fg span2">
+              <label>Notes</label>
+              <textarea id="cNotes" placeholder="Any notes about this company…"></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-teal" id="btnSaveCompany" onclick="saveCompany()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Save Company
+            </button>
+            <button class="btn btn-outline" onclick="clearCompanyForm()">Clear</button>
+            <div id="companyResult" class="result-ok" style="margin-left:auto;"></div>
+            <div id="companyErr"    class="result-err" style="margin-left:auto;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADMINS LIST ── -->
+      <div id="pgAdmins" class="page">
+        <div class="card">
+          <div class="card-hdr">
+            <div><h3>All Admins</h3><p>Manage admin users</p></div>
+            <button class="btn btn-teal btn-sm" onclick="nav('addAdmin', document.querySelectorAll('.nav-item')[5])">+ Add Admin</button>
+          </div>
+          <div class="filter-bar">
+            <input id="adminSearch" type="text" placeholder="Search by name, email or company…" oninput="filterAdmins()"/>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Emp Code</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Company ID</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody">
+                <tr class="empty-row"><td colspan="6">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADD / EDIT ADMIN ── -->
+      <div id="pgAddAdmin" class="page">
+        <div class="card">
+          <div class="card-hdr">
+            <div>
+              <h3 id="adminFormTitle">Add New Admin</h3>
+              <p>Creates Firestore record + Firebase Auth user</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="fg">
+              <label>Full Name <span>*</span></label>
+              <input id="aName" type="text" placeholder="e.g. Ravi Kumar"/>
+            </div>
+            <div class="fg">
+              <label>Employee Code <span>*</span></label>
+              <input id="aEmpCode" type="text" placeholder="e.g. EMP002" style="text-transform:uppercase;"/>
+            </div>
+            <div class="fg">
+              <label>Email <span>*</span></label>
+              <input id="aEmail" type="email" placeholder="admin@company.com"/>
+            </div>
+            <div class="fg">
+              <label>Password <span>*</span></label>
+              <input id="aPassword" type="password" placeholder="Min 6 characters"/>
+              <span class="hint">Sets Firebase Auth password for this user</span>
+            </div>
+            <div class="fg">
+              <label>Company ID <span>*</span></label>
+              <select id="aCompanyId">
+                <option value="">— Select Company —</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Role</label>
+              <select id="aRole">
+                <option value="ADMIN">ADMIN</option>
+                <option value="SUPERADMIN">SUPERADMIN</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-teal" id="btnSaveAdmin" onclick="saveAdmin()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Save Admin
+            </button>
+            <button class="btn btn-outline" onclick="clearAdminForm()">Clear</button>
+            <div id="adminResult" class="result-ok" style="margin-left:auto;"></div>
+            <div id="adminErr"    class="result-err" style="margin-left:auto;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /body -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- DELETE CONFIRM MODAL -->
+<div id="deleteModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>Confirm Delete</h3>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.88rem;color:var(--ink2);" id="deleteModalMsg">Are you sure you want to delete this record?</p>
+      <p style="font-size:.78rem;color:var(--red);margin-top:8px;">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-red" id="btnConfirmDelete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ══════════════ FIREBASE SDK ══════════════ -->
+<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   FIREBASE CONFIG — same project as index.html
+══════════════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCvAyr-4CUAYPXLMBwZ-L9hBlmDcrOjWpA",
+  authDomain:        "attendease-963df.firebaseapp.com",
+  projectId:         "attendease-963df",
+  storageBucket:     "attendease-963df.firebasestorage.app",
+  messagingSenderId: "107756709284",
+  appId:             "1:107756709284:web:fd8765b97a73f2ce7d8d31",
+};
+
+/* ── SUPER ADMIN email — only this account can access ── */
+const SUPER_ADMIN_EMAIL = "drushyasinchana@gmail.com";
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const fbAuth = firebase.auth();
+const fbDB   = firebase.firestore();
+
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+let SA = { companies: [], admins: [], editingCompanyId: null, editingAdminEmail: null };
+
+/* ══════════════════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════════════════ */
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  clearTimeout(t._tid); t._tid = setTimeout(() => t.className = '', 3200);
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(el =>
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); })
+);
+function showRes(okId, errId, msg, isErr=false) {
+  const ok  = document.getElementById(okId);
+  const err = document.getElementById(errId);
+  if (isErr) { err.textContent=msg; err.style.display='block'; ok.style.display='none'; }
+  else        { ok.textContent=msg;  ok.style.display='block'; err.style.display='none'; }
+  setTimeout(() => { ok.style.display='none'; err.style.display='none'; }, 5000);
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+}
+function today() { return new Date().toISOString().slice(0,10); }
+
+function nav(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('pg' + page.charAt(0).toUpperCase() + page.slice(1));
+  if (pg) pg.classList.add('active');
+  if (btn) btn.classList.add('active');
+  const titles = {
+    dashboard:'Dashboard', companies:'All Companies',
+    addCompany:'Add Company', admins:'All Admins', addAdmin:'Add Admin'
+  };
+  document.getElementById('topbarTitle').textContent = titles[page] || page;
+
+  if (page === 'dashboard')  loadDashboard();
+  if (page === 'companies')  loadCompanies();
+  if (page === 'admins')     loadAdmins();
+  if (page === 'addCompany' && !SA.editingCompanyId) clearCompanyForm();
+  if (page === 'addAdmin'   && !SA.editingAdminEmail) clearAdminForm();
+}
+
+/* ══════════════════════════════════════════════════════
+   LOGIN GATE
+══════════════════════════════════════════════════════ */
+async function saLogin() {
+  const btn  = document.getElementById('btnSaLogin');
+  const err  = document.getElementById('loginErr');
+  const email = document.getElementById('saEmail').value.trim();
+  const pw    = document.getElementById('saPassword').value.trim();
+
+  err.style.display = 'none';
+  if (!email || !pw) { err.textContent='Please enter email and password.'; err.style.display='block'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+  try {
+    const cred = await fbAuth.signInWithEmailAndPassword(email, pw);
+
+    // Only allow the super admin email
+    if (cred.user.email.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase()) {
+      await fbAuth.signOut();
+      err.textContent = 'Access denied. This panel is for super admins only.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+
+    // Show app
+    document.getElementById('loginGate').style.display  = 'none';
+    document.getElementById('appShell').style.display   = 'flex';
+    document.getElementById('saUserEmail').textContent  = cred.user.email;
+    document.getElementById('saAvatar').textContent     = cred.user.email.slice(0,2).toUpperCase();
+
+    // Set defaults
+    document.getElementById('cStartDate').value = today();
+    const endDate = new Date(); endDate.setFullYear(endDate.getFullYear()+1);
+    document.getElementById('cEndDate').value = endDate.toISOString().slice(0,10);
+
+    loadDashboard();
+
+  } catch(e) {
+    const msg = {
+      'auth/user-not-found':    'No account found with this email.',
+      'auth/wrong-password':    'Incorrect password.',
+      'auth/invalid-credential':'Invalid email or password.',
+      'auth/too-many-requests': 'Too many attempts. Please wait.',
+    }[e.code] || e.message;
+    err.textContent = msg; err.style.display = 'block';
+    btn.disabled = false; btn.innerHTML = 'Sign In';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginGate').style.display !== 'none') saLogin();
+});
+
+function saLogout() {
+  fbAuth.signOut().then(() => {
+    document.getElementById('loginGate').style.display  = 'flex';
+    document.getElementById('appShell').style.display   = 'none';
+    document.getElementById('saPassword').value = '';
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════════════ */
+async function loadDashboard() {
+  try {
+    const [cSnap, aSnap] = await Promise.all([
+      fbDB.collection('companies').get(),
+      fbDB.collection('admins').get(),
+    ]);
+
+    SA.companies = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    SA.admins    = aSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const active = SA.companies.filter(c => c.isActive === true).length;
+    document.getElementById('stCompanies').textContent = SA.companies.length;
+    document.getElementById('stActive').textContent    = active;
+    document.getElementById('stAdmins').textContent    = SA.admins.length;
+
+    // Recent companies table
+    const tb = document.getElementById('dashCompanyList');
+    if (!SA.companies.length) {
+      tb.innerHTML = '<tr class="empty-row"><td colspan="6">No companies yet. Add one!</td></tr>';
+    } else {
+      tb.innerHTML = SA.companies.slice(-5).reverse().map(c => `
+        <tr>
+          <td class="mono">${c.companyId||c.id}</td>
+          <td><strong>${c.companyName||'—'}</strong></td>
+          <td style="color:var(--muted);font-size:.8rem;">${c.adminEmail||'—'}</td>
+          <td><span class="badge badge-blue">${c.plan||'basic'}</span></td>
+          <td><span class="badge ${c.isActive?'badge-green':'badge-gray'}">${c.isActive?'Active':'Inactive'}</span></td>
+          <td>${c.city||'—'}</td>
+        </tr>`).join('');
+    }
+
+    populateCompanySelect();
+  } catch(e) { toast('Failed to load dashboard: ' + e.message, 'error'); }
+}
+
+/* ══════════════════════════════════════════════════════
+   COMPANIES
+══════════════════════════════════════════════════════ */
+async function loadCompanies() {
+  const tb = document.getElementById('companyTableBody');
+  tb.innerHTML = '<tr class="empty-row"><td colspan="8">Loading…</td></tr>';
+  try {
+    const snap = await fbDB.collection('companies').get();
+    SA.companies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCompanies(SA.companies);
+    populateCompanySelect();
+  } catch(e) { toast('Failed to load companies: ' + e.message, 'error'); }
+}
+
+function renderCompanies(list) {
+  const tb = document.getElementById('companyTableBody');
+  if (!list.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="8">No companies found</td></tr>'; return; }
+  tb.innerHTML = list.map(c => `
+    <tr>
+      <td class="mono">${c.companyId||c.id}</td>
+      <td><strong>${c.companyName||'—'}</strong></td>
+      <td style="font-size:.8rem;color:var(--muted);">${c.adminEmail||'—'}</td>
+      <td><span class="badge badge-blue">${c.plan||'basic'}</span></td>
+      <td class="mono">${c.maxEmployees||'—'}</td>
+      <td><span class="badge ${c.isActive?'badge-green':'badge-gray'}">${c.isActive?'Active':'Inactive'}</span></td>
+      <td style="font-size:.78rem;">${c.endDate||'—'}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick='editCompany(${JSON.stringify(c)})'>Edit</button>
+        <button class="btn btn-red btn-sm" onclick="confirmDelete('company','${c.id}','${(c.companyName||c.id).replace(/'/g,"\\'")}')">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+function filterCompanies() {
+  const q  = document.getElementById('companySearch').value.toLowerCase();
+  const st = document.getElementById('companyStatusFilter').value;
+  renderCompanies(SA.companies.filter(c => {
+    const mq = !q || [c.companyId,c.companyName,c.adminEmail,c.city].some(v=>(v||'').toLowerCase().includes(q));
+    const ms = !st || String(c.isActive) === st;
+    return mq && ms;
+  }));
+}
+
+async function saveCompany() {
+  const btn = document.getElementById('btnSaveCompany');
+  const id  = document.getElementById('cId').value.trim().toUpperCase();
+  const name= document.getElementById('cName').value.trim();
+  const email=document.getElementById('cAdminEmail').value.trim();
+  const url = document.getElementById('cScriptUrl').value.trim();
+  const sheetId = document.getElementById('cSheetId').value.trim();
+
+  if (!id || !name || !email) {
+    showRes('companyResult','companyErr','Company ID, Name and Admin Email are required.', true); return;
+  }
+
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
+
+  const data = {
+    companyId:       id,
+    companyName:     name,
+    adminEmail:      email,
+    contactPhone:    document.getElementById('cPhone').value.trim(),
+    plan:            document.getElementById('cPlan').value,
+    maxEmployees:    parseInt(document.getElementById('cMaxEmp').value)||50,
+    startDate:       document.getElementById('cStartDate').value,
+    endDate:         document.getElementById('cEndDate').value,
+    city:            document.getElementById('cCity').value.trim(),
+    isActive:        document.getElementById('cIsActive').value === 'true',
+    companySheetId:  sheetId,
+    companyScriptUrl:url,
+    notes:           document.getElementById('cNotes').value.trim(),
+    updatedAt:       new Date().toISOString(),
+  };
+  if (!SA.editingCompanyId) data.createdAt = new Date().toISOString();
+
+  try {
+    await fbDB.collection('companies').doc(id).set(data, { merge: true });
+    toast(SA.editingCompanyId ? 'Company updated!' : 'Company added!');
+    showRes('companyResult','companyErr', SA.editingCompanyId ? '✓ Company updated successfully' : '✓ Company added successfully');
+    SA.editingCompanyId = null;
+    document.getElementById('compFormTitle').textContent = 'Add New Company';
+    document.getElementById('cId').disabled = false;
+  } catch(e) {
+    showRes('companyResult','companyErr','Error: ' + e.message, true);
+  }
+
+  btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Company';
+}
+
+function editCompany(c) {
+  SA.editingCompanyId = c.id;
+  document.getElementById('compFormTitle').textContent = 'Edit Company — ' + c.companyId;
+  document.getElementById('cId').value        = c.companyId || c.id;
+  document.getElementById('cId').disabled     = true; // can't change ID
+  document.getElementById('cName').value      = c.companyName || '';
+  document.getElementById('cAdminEmail').value= c.adminEmail || '';
+  document.getElementById('cPhone').value     = c.contactPhone || '';
+  document.getElementById('cPlan').value      = c.plan || 'basic';
+  document.getElementById('cMaxEmp').value    = c.maxEmployees || 50;
+  document.getElementById('cStartDate').value = c.startDate || '';
+  document.getElementById('cEndDate').value   = c.endDate || '';
+  document.getElementById('cCity').value      = c.city || '';
+  document.getElementById('cIsActive').value  = String(c.isActive !== false);
+  document.getElementById('cSheetId').value   = c.companySheetId || '';
+  document.getElementById('cScriptUrl').value = c.companyScriptUrl || '';
+  document.getElementById('cNotes').value     = c.notes || '';
+  nav('addCompany', document.querySelectorAll('.nav-item')[2]);
+}
+
+function clearCompanyForm() {
+  SA.editingCompanyId = null;
+  document.getElementById('compFormTitle').textContent = 'Add New Company';
+  document.getElementById('cId').disabled = false;
+  ['cId','cName','cAdminEmail','cPhone','cSheetId','cScriptUrl','cNotes','cCity'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cPlan').value     = 'basic';
+  document.getElementById('cIsActive').value = 'true';
+  document.getElementById('cMaxEmp').value   = '50';
+  document.getElementById('cStartDate').value= today();
+  const endDate = new Date(); endDate.setFullYear(endDate.getFullYear()+1);
+  document.getElementById('cEndDate').value  = endDate.toISOString().slice(0,10);
+  document.getElementById('companyResult').style.display='none';
+  document.getElementById('companyErr').style.display='none';
+}
+
+/* ══════════════════════════════════════════════════════
+   ADMINS
+══════════════════════════════════════════════════════ */
+async function loadAdmins() {
+  const tb = document.getElementById('adminTableBody');
+  tb.innerHTML = '<tr class="empty-row"><td colspan="6">Loading…</td></tr>';
+  try {
+    const snap = await fbDB.collection('admins').get();
+    SA.admins  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAdmins(SA.admins);
+  } catch(e) { toast('Failed to load admins: ' + e.message, 'error'); }
+}
+
+function renderAdmins(list) {
+  const tb = document.getElementById('adminTableBody');
+  if (!list.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="6">No admins found</td></tr>'; return; }
+  tb.innerHTML = list.map(a => `
+    <tr>
+      <td class="mono">${a.empCode||'—'}</td>
+      <td><strong>${a.name||'—'}</strong></td>
+      <td style="font-size:.8rem;color:var(--muted);">${a.email||a.id}</td>
+      <td class="mono">${a.companyId||'—'}</td>
+      <td><span class="badge ${a.role==='SUPERADMIN'?'badge-amber':'badge-blue'}">${a.role||'ADMIN'}</span></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick='editAdmin(${JSON.stringify(a)})'>Edit</button>
+        <button class="btn btn-red btn-sm" onclick="confirmDelete('admin','${a.id}','${(a.name||a.id).replace(/'/g,"\\'")}')">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+function filterAdmins() {
+  const q = document.getElementById('adminSearch').value.toLowerCase();
+  renderAdmins(SA.admins.filter(a =>
+    !q || [a.name,a.email,a.empCode,a.companyId].some(v=>(v||'').toLowerCase().includes(q))
+  ));
+}
+
+async function saveAdmin() {
+  const btn     = document.getElementById('btnSaveAdmin');
+  const name    = document.getElementById('aName').value.trim();
+  const empCode = document.getElementById('aEmpCode').value.trim().toUpperCase();
+  const email   = document.getElementById('aEmail').value.trim().toLowerCase();
+  const password= document.getElementById('aPassword').value.trim();
+  const company = document.getElementById('aCompanyId').value;
+  const role    = document.getElementById('aRole').value;
+
+  if (!name || !empCode || !email || !company) {
+    showRes('adminResult','adminErr','Name, Emp Code, Email and Company are required.', true); return;
+  }
+  if (!SA.editingAdminEmail && !password) {
+    showRes('adminResult','adminErr','Password is required for new admins.', true); return;
+  }
+  if (password && password.length < 6) {
+    showRes('adminResult','adminErr','Password must be at least 6 characters.', true); return;
+  }
+
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
+
+  const data = {
+    name, empCode, email, companyId: company, role,
+    updatedAt: new Date().toISOString(),
+  };
+  if (!SA.editingAdminEmail) data.createdAt = new Date().toISOString();
+
+  try {
+    // Save to Firestore (keyed by email)
+    await fbDB.collection('admins').doc(email).set(data, { merge: true });
+
+    // Note: Creating Firebase Auth users requires Admin SDK (server-side)
+    // For now, remind super admin to create the Auth user manually
+    const isNew = !SA.editingAdminEmail;
+    toast(isNew ? 'Admin saved! Remember to add Auth user in Firebase Console.' : 'Admin updated!', isNew ? 'warn' : 'success');
+    showRes('adminResult','adminErr',
+      isNew
+        ? '✓ Admin saved in Firestore. Go to Firebase Console → Authentication → Add user: ' + email
+        : '✓ Admin updated successfully'
+    );
+    SA.editingAdminEmail = null;
+    document.getElementById('adminFormTitle').textContent = 'Add New Admin';
+    document.getElementById('aEmail').disabled = false;
+
+  } catch(e) {
+    showRes('adminResult','adminErr','Error: ' + e.message, true);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Admin';
+}
+
+function editAdmin(a) {
+  SA.editingAdminEmail = a.id;
+  document.getElementById('adminFormTitle').textContent = 'Edit Admin — ' + (a.name||a.id);
+  document.getElementById('aName').value     = a.name     || '';
+  document.getElementById('aEmpCode').value  = a.empCode  || '';
+  document.getElementById('aEmail').value    = a.email    || a.id;
+  document.getElementById('aEmail').disabled = true; // email = doc ID, can't change
+  document.getElementById('aPassword').value = '';   // never pre-fill password
+  document.getElementById('aCompanyId').value= a.companyId|| '';
+  document.getElementById('aRole').value     = a.role     || 'ADMIN';
+  nav('addAdmin', document.querySelectorAll('.nav-item')[5]);
+}
+
+function clearAdminForm() {
+  SA.editingAdminEmail = null;
+  document.getElementById('adminFormTitle').textContent = 'Add New Admin';
+  document.getElementById('aEmail').disabled = false;
+  ['aName','aEmpCode','aEmail','aPassword'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('aCompanyId').value = '';
+  document.getElementById('aRole').value      = 'ADMIN';
+  document.getElementById('adminResult').style.display='none';
+  document.getElementById('adminErr').style.display='none';
+}
+
+function populateCompanySelect() {
+  const sel = document.getElementById('aCompanyId');
+  const cur = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  SA.companies.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.companyId || c.id;
+    o.textContent = `${c.companyId||c.id} — ${c.companyName||''}`;
+    sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+}
+
+/* ══════════════════════════════════════════════════════
+   DELETE
+══════════════════════════════════════════════════════ */
+function confirmDelete(type, id, name) {
+  document.getElementById('deleteModalMsg').textContent =
+    `Delete ${type} "${name}" (${id})? This removes the Firestore record only.`;
+  const btn = document.getElementById('btnConfirmDelete');
+  btn.onclick = () => doDelete(type, id);
+  openModal('deleteModal');
+}
+
+async function doDelete(type, id) {
+  closeModal('deleteModal');
+  try {
+    await fbDB.collection(type === 'company' ? 'companies' : 'admins').doc(id).delete();
+    toast(`${type === 'company' ? 'Company' : 'Admin'} deleted.`);
+    if (type === 'company') loadCompanies(); else loadAdmins();
+  } catch(e) {
+    toast('Delete failed: ' + e.message, 'error');
+  }
+}
+</script>
+</body>
+</html>
