@@ -393,10 +393,11 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
         © 2025 Drushyasinchana Tech Solutions
       </div>
       <div style="margin-top:16px;padding:10px 13px;background:#F0F7F9;border:1px dashed var(--teal-l);border-radius:var(--r-sm);font-size:.73rem;color:var(--muted);line-height:1.7;">
-        <strong style="color:var(--teal);display:block;margin-bottom:3px;">Test Credentials</strong>
+        <strong style="color:var(--teal);display:block;margin-bottom:3px;">🧪 Test Mode — fields pre-filled</strong>
         Company ID: <code style="font-family:'DM Mono',monospace;color:var(--ink);">COMP001</code><br/>
-        Email: <code style="font-family:'DM Mono',monospace;color:var(--ink);">snvmurthy22@gmail.com</code> &nbsp;or&nbsp; <code style="font-family:'DM Mono',monospace;color:var(--ink);">EMP001</code><br/>
-        Password: <code style="font-family:'DM Mono',monospace;color:var(--ink);">12345</code>
+        Email: <code style="font-family:'DM Mono',monospace;color:var(--ink);">snvmurthy22@gmail.com</code><br/>
+        Password: <code style="font-family:'DM Mono',monospace;color:var(--ink);">password</code><br/>
+        <span style="color:var(--amber);margin-top:4px;display:block;">Works without Firebase config (mock session)</span>
       </div>
     </div>
   </div>
@@ -676,12 +677,56 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
 
 <div id="toast"></div>
 
+<!-- ── Firebase SDK v12.11.0 (compat build — no bundler needed) ── -->
+<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore-compat.js"></script>
+
 <script>
-/* ── CONFIG ────────────────────────────────────────────
-   Change COMPANY_EMAIL per client deployment.
-   Later: auto-read from Sheets config tab.
-────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   FIREBASE CONFIG — AttendEase project
+══════════════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCvAyr-4CUAYPXLMBwZ-L9hBlmDcrOjWpA",
+  authDomain:        "attendease-963df.firebaseapp.com",
+  projectId:         "attendease-963df",
+  storageBucket:     "attendease-963df.firebasestorage.app",
+  messagingSenderId: "107756709284",
+  appId:             "1:107756709284:web:fd8765b97a73f2ce7d8d31",
+};
+
+/* ── HARDCODED TEST CREDENTIALS (remove after testing) ── */
+const TEST_MODE = true;
+const TEST_COMPANY_ID = "COMP001";
+const TEST_EMAIL      = "snvmurthy22@gmail.com";
+const TEST_PASSWORD   = "password";
+
+/* ── Apps Script URL (for attendance logs only) ── */
 const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwweZhH6KFJcE5SS2XiN7QndRDlnSCDOk_wdHoY5yvopkjQdxXEgL-iLRgeuYoG-7s/exec";
+
+/* ── Init Firebase (only if SDK loaded) ── */
+let fbAuth = null;
+let fbDB   = null;
+function initFirebase() {
+  try {
+    if (typeof firebase !== 'undefined' && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY') {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      fbAuth = firebase.auth();
+      fbDB   = firebase.firestore();
+      console.log('✅ Firebase initialised');
+    } else if (typeof firebase === 'undefined') {
+      console.warn('⚠️ Firebase SDK not loaded — running in mock/test mode');
+    }
+  } catch(e) {
+    console.warn('Firebase init skipped:', e.message);
+  }
+}
+// Run after DOM + scripts ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initFirebase);
+} else {
+  initFirebase();
+}
 
 /* ── STATE ─────────────────────────────────────────── */
 const S = {
@@ -783,88 +828,146 @@ function togglePw() {
   }
 }
 
-/* ── LOGIN ─────────────────────────────────────────────
-   Step 1 → MASTER_SCRIPT_URL with action=validateCompany,
-            companyId=COMP001, adminEmail=snvmurthy22@gmail.com
-            → returns { success, data:{ companyName, companySheetId,
-              isActive, companyScriptUrl, adminEmail, password } }
-   Step 2 → companyScriptUrl with action=validateEmployee
-            → returns { success, data:{ empCode, name, email, role } }
-   On success → save session to sessionStorage, redirect to manage.html
-──────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   LOGIN — Firebase Auth + Firestore
+   ─────────────────────────────────────────────────────
+   In TEST_MODE:
+     • Fields are pre-filled with hardcoded credentials
+     • If Firebase config is not yet set up, falls back
+       to a mock session so UI can be tested immediately
+   In production:
+     • Firebase Auth signs in with email + password
+     • Firestore looks up companies/{companyId}
+     • Verifies adminEmail matches, isActive = true
+     • Saves session → redirects to manage.html
+══════════════════════════════════════════════════════ */
+
+/* Pre-fill fields in test mode on page load */
+window.addEventListener('DOMContentLoaded', () => {
+  if (TEST_MODE) {
+    document.getElementById('lCompanyId').value = TEST_COMPANY_ID;
+    document.getElementById('lEmpId').value     = TEST_EMAIL;
+    document.getElementById('lPassword').value  = TEST_PASSWORD;
+  }
+});
+
 async function doLogin() {
   const btn       = document.getElementById('btnLogin');
   const err       = document.getElementById('loginError');
   const companyId = document.getElementById('lCompanyId').value.trim().toUpperCase();
-  const empId     = document.getElementById('lEmpId').value.trim();
-  const pw        = document.getElementById('lPassword').value.trim();
+  const email     = document.getElementById('lEmpId').value.trim();
+  const password  = document.getElementById('lPassword').value.trim();
 
   err.style.display = 'none';
-  if (!companyId)    { showErr(err, 'Please enter your Company ID.'); return; }
-  if (!empId || !pw) { showErr(err, 'Please enter your Email / Employee ID and Password.'); return; }
+  if (!companyId) { showErr(err, 'Please enter your Company ID.'); return; }
+  if (!email)     { showErr(err, 'Please enter your Email.'); return; }
+  if (!password)  { showErr(err, 'Please enter your Password.'); return; }
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Signing in…';
 
+  /* ── TEST MODE MOCK (Firebase not configured yet) ──────
+     If FIREBASE_CONFIG still has placeholder values,
+     skip Firebase and use a mock session for UI testing.
+  ───────────────────────────────────────────────────── */
+  const isFirebaseReady = (typeof firebase !== 'undefined') &&
+                          (FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY') &&
+                          (fbAuth !== null) && (fbDB !== null);
+
+  if (!isFirebaseReady) {
+    // Firebase not configured yet — use mock session for UI testing
+    if (companyId === TEST_COMPANY_ID &&
+        email     === TEST_EMAIL      &&
+        password  === TEST_PASSWORD) {
+      const mockSession = {
+        empCode:          'EMP001',
+        empName:          'SNV Murthy',
+        empEmail:         TEST_EMAIL,
+        role:             'ADMIN',
+        companyId:        TEST_COMPANY_ID,
+        companyName:      'Test Company (Mock)',
+        companySheetId:   'MOCK_SHEET_ID',
+        companyScriptUrl: MASTER_SCRIPT_URL,
+      };
+      sessionStorage.setItem('attendease_session', JSON.stringify(mockSession));
+      window.location.href = 'manage.html';
+      return;
+    } else {
+      showErr(err,
+        TEST_MODE
+          ? 'Use the test credentials shown below (Firebase not configured yet).'
+          : 'Firebase is not configured. Contact your administrator.'
+      );
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+  }
+
+  /* ── FIREBASE LOGIN ─────────────────────────────────── */
   try {
-    // ── Step 1: lookup company in MASTER sheet ────────────────
-    const mRes = await gasCall(MASTER_SCRIPT_URL, {
-      action:     'validateCompany',
-      companyId:  companyId,
-      adminEmail: empId,   // send whatever the user typed as adminEmail too
-    });
-
-    if (!mRes || !mRes.success) {
-      showErr(err, (mRes && mRes.message) || 'Company ID not recognised. Please check and try again.');
+    // Step 1 — Firebase Auth sign-in
+    let userCred;
+    try {
+      userCred = await fbAuth.signInWithEmailAndPassword(email, password);
+    } catch (authErr) {
+      const msg = {
+        'auth/user-not-found':   'No account found with this email.',
+        'auth/wrong-password':   'Incorrect password. Please try again.',
+        'auth/invalid-email':    'Please enter a valid email address.',
+        'auth/too-many-requests':'Too many attempts. Please wait a moment.',
+        'auth/invalid-credential': 'Invalid email or password.',
+      }[authErr.code] || 'Sign-in failed: ' + authErr.message;
+      showErr(err, msg);
       btn.disabled = false; btn.innerHTML = 'Sign In'; return;
     }
 
-    const co = mRes.data;
-    if (!co.isActive && co.isActive !== undefined) {
+    // Step 2 — Firestore: look up company by companyId
+    const companyDoc = await fbDB.collection('companies').doc(companyId).get();
+    if (!companyDoc.exists) {
+      showErr(err, 'Company ID "' + companyId + '" not found. Please check and try again.');
+      await fbAuth.signOut();
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+
+    const co = companyDoc.data();
+
+    // Step 3 — Verify the logged-in email belongs to this company
+    if (co.adminEmail && co.adminEmail.toLowerCase() !== email.toLowerCase()) {
+      showErr(err, 'This email is not registered under Company ID ' + companyId + '.');
+      await fbAuth.signOut();
+      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
+    }
+
+    // Step 4 — Check licence is active
+    if (co.isActive === false) {
       showErr(err, 'Company account is inactive. Contact Drushyasinchana Tech Solutions.');
+      await fbAuth.signOut();
       btn.disabled = false; btn.innerHTML = 'Sign In'; return;
     }
 
-    const clientUrl = co.companyScriptUrl || MASTER_SCRIPT_URL;
+    // Step 5 — Fetch admin record for name/empCode
+    let adminData = {};
+    try {
+      const adminDoc = await fbDB.collection('admins').doc(email.toLowerCase()).get();
+      if (adminDoc.exists) adminData = adminDoc.data();
+    } catch(_) { /* non-fatal */ }
 
-    // ── Step 2: validate employee credentials ─────────────────
-    const hash = await sha256(pw);
-    const eRes = await gasCall(clientUrl, {
-      action:         'validateEmployee',
-      companySheetId: co.companySheetId || '',
-      empId:          empId,
-      password:       hash,
-      device:         'Web',
-    });
-
-    if (!eRes || !eRes.success) {
-      showErr(err, (eRes && eRes.message) || 'Invalid credentials. Please try again.');
-      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
-    }
-
-    const d = eRes.data;
-    if (d.role && d.role !== 'ADMIN') {
-      showErr(err, 'Web portal is for admin accounts only. Please use the mobile app.');
-      btn.disabled = false; btn.innerHTML = 'Sign In'; return;
-    }
-
-    // ── Success: persist session and redirect ─────────────────
+    // Step 6 — Save session + redirect
     const session = {
-      empCode:         d.empCode          || '',
-      empName:         d.name             || '',
-      empEmail:        d.email            || empId,
-      role:            d.role             || 'ADMIN',
+      empCode:         adminData.empCode        || '',
+      empName:         adminData.name           || email.split('@')[0],
+      empEmail:        email,
+      role:            adminData.role           || 'ADMIN',
       companyId:       companyId,
-      companyName:     co.companyName     || '',
-      companySheetId:  co.companySheetId  || '',
-      companyScriptUrl: clientUrl,
+      companyName:     co.companyName           || '',
+      companySheetId:  co.companySheetId        || '',
+      companyScriptUrl: co.companyScriptUrl     || MASTER_SCRIPT_URL,
     };
     sessionStorage.setItem('attendease_session', JSON.stringify(session));
     window.location.href = 'manage.html';
 
   } catch (e) {
     console.error('Login error:', e);
-    showErr(err, 'Connection error: ' + (e.message || 'Please check your internet and try again.'));
+    showErr(err, 'Connection error: ' + (e.message || 'Please check your internet.'));
     btn.disabled = false; btn.innerHTML = 'Sign In';
   }
 }
