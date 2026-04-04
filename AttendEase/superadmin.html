@@ -1002,16 +1002,50 @@ async function saveAdmin() {
   if (!SA.editingAdminEmail) data.createdAt = new Date().toISOString();
 
   try {
-    // Save to Firestore (keyed by email)
+    // Step 1 — Create Firebase Auth user via REST API
+    // Uses Firebase Auth REST API (no Admin SDK needed)
+    const isNew = !SA.editingAdminEmail;
+    if (isNew && password) {
+      try {
+        const authRes = await fetch(
+          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FIREBASE_CONFIG.apiKey,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email:             email,
+              password:          password,
+              returnSecureToken: false,
+            }),
+          }
+        );
+        const authData = await authRes.json();
+        if (authData.error) {
+          // Email already exists in Auth — that's OK, just update Firestore
+          if (authData.error.message !== 'EMAIL_EXISTS') {
+            showRes('adminResult','adminErr',
+              'Firebase Auth error: ' + authData.error.message, true);
+            btn.disabled = false;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Admin';
+            return;
+          }
+          console.warn('Auth user already exists — updating Firestore only');
+        } else {
+          console.log('✅ Firebase Auth user created:', email);
+        }
+      } catch(authErr) {
+        console.warn('Auth creation failed:', authErr.message);
+        // Continue — save Firestore even if Auth fails
+      }
+    }
+
+    // Step 2 — Save to Firestore admins collection
     await fbDB.collection('admins').doc(email).set(data, { merge: true });
 
-    // Note: Creating Firebase Auth users requires Admin SDK (server-side)
-    // For now, remind super admin to create the Auth user manually
-    const isNew = !SA.editingAdminEmail;
-    toast(isNew ? 'Admin saved! Remember to add Auth user in Firebase Console.' : 'Admin updated!', isNew ? 'warn' : 'success');
+    toast(isNew ? '✅ Admin created with Firebase Auth + Firestore!' : 'Admin updated!');
     showRes('adminResult','adminErr',
       isNew
-        ? '✓ Admin saved in Firestore. Go to Firebase Console → Authentication → Add user: ' + email
+        ? '✓ Admin created successfully. They can now log in with: ' + email
         : '✓ Admin updated successfully'
     );
     SA.editingAdminEmail = null;

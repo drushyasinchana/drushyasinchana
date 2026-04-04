@@ -339,11 +339,11 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
             <table>
               <thead>
                 <tr>
-                  <th>EMPID</th><th>Name</th><th>Email</th><th>Phone</th>
+                  <th>EMPID</th><th>Name</th><th>Email</th><th>Designation</th><th>Phone</th>
                   <th>Site</th><th>Join Date</th><th>Role</th><th>Status</th><th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="empTableBody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr></tbody>
+              <tbody id="empTableBody"><tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -479,6 +479,21 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
         </div>
         <div class="fgg"><label>Full Name *</label><input id="eName" placeholder="Full name"/></div>
         <div class="fgg"><label>Email</label><input id="eEmail" type="email" placeholder="emp@company.com"/></div>
+        <div class="fgg">
+          <label>Designation</label>
+          <select id="eDesignation">
+            <option value="">— Select —</option>
+            <option value="Manager">Manager</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Foreman">Foreman</option>
+            <option value="Engineer">Engineer</option>
+            <option value="Technician">Technician</option>
+            <option value="Worker">Worker</option>
+            <option value="Security">Security</option>
+            <option value="Driver">Driver</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
         <div class="fgg"><label>Phone</label><input id="ePhone" type="tel" placeholder="9876543210"/></div>
         <div class="fgg">
           <label>PIN / Password *</label>
@@ -506,6 +521,11 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
           </select>
+        </div>
+        <div class="fgg" style="grid-column:1/-1;">
+          <label>Photo URL</label>
+          <input id="ePhotoURL" type="text" placeholder="https://... (optional)"/>
+          <span style="font-size:.7rem;color:var(--hint);">Link to employee photo. Leave blank if not available.</span>
         </div>
       </div>
       <div class="modal-err" id="empModalErr"></div>
@@ -744,7 +764,7 @@ async function loadDashboard() {
     S.employees = empRes.success  ? empRes.data.employees||[]  : [];
     S.sites     = siteRes.success ? siteRes.data.sites||[]     : [];
     const atts  = attRes.success  ? attRes.data.records||[]    : [];
-    const activeSites = S.sites.filter(s=>!s.Status||s.Status==='ACTIVE');
+    const activeSites = S.sites.filter(s=>!s.Status||s.Status.toUpperCase()==='ACTIVE');
     const present     = atts.filter(r=>r.Status==='PRESENT').length;
 
     document.getElementById('stTotalEmp').textContent = S.employees.length;
@@ -804,7 +824,7 @@ async function loadDashboard() {
 ══════════════════════════════════════════════════════ */
 async function loadEmployees() {
   document.getElementById('empTableBody').innerHTML =
-    '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>';
+    '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>';
   try {
     const res = await api({ action:'getEmployees' });
     S.employees = res.success ? res.data.employees||[] : [];
@@ -815,19 +835,29 @@ async function loadEmployees() {
 
 function renderEmployees(list) {
   const tb = document.getElementById('empTableBody');
-  if(!list.length) { tb.innerHTML='<tr><td colspan="9"><div class="empty"><p>No employees found</p></div></td></tr>'; return; }
+  if(!list.length) { tb.innerHTML='<tr><td colspan="10"><div class="empty"><p>No employees found</p></div></td></tr>'; return; }
   tb.innerHTML = list.map(e=>`
     <tr>
       <td class="mono">${e.EMPID||'—'}</td>
-      <td><strong>${e.EmpName||'—'}</strong></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${e.PhotoURL
+            ? `<img src="${e.PhotoURL}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border);" onerror="this.style.display='none'"/>`
+            : `<div style="width:28px;height:28px;border-radius:50%;background:var(--teal-s);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--teal);font-weight:600;">${(e.EmpName||'?').slice(0,2).toUpperCase()}</div>`
+          }
+          <strong>${e.EmpName||'—'}</strong>
+        </div>
+      </td>
       <td style="color:var(--muted);font-size:.79rem;">${e.Email||'—'}</td>
+      <td style="font-size:.79rem;">${e.Designation||'—'}</td>
       <td style="color:var(--muted);font-size:.79rem;">${e.Phone||'—'}</td>
       <td>${e.Site||'—'}</td>
       <td style="font-size:.78rem;">${fmtDate(e.JoinDate)}</td>
-      <td><span class="badge ${e.Role==='ADMIN'?'badge-blue':'badge-gray'}">${e.Role||'EMPLOYEE'}</span></td>
-      <td><span class="badge ${e.Status==='ACTIVE'?'badge-green':'badge-gray'}">${e.Status||'ACTIVE'}</span></td>
+      <td><span class="badge ${(e.Role||'').toUpperCase()==='ADMIN'?'badge-blue':'badge-gray'}">${e.Role||'EMPLOYEE'}</span></td>
+      <td><span class="badge ${(e.Status||'').toUpperCase()==='ACTIVE'?'badge-green':'badge-gray'}">${e.Status||'ACTIVE'}</span></td>
       <td style="white-space:nowrap;">
         <button class="btn btn-outline btn-sm" onclick='editEmployee(${JSON.stringify(e)})'>Edit</button>
+        <button class="btn btn-outline btn-sm" title="Update Photo" onclick='updatePhoto(${JSON.stringify(e)})'>📷</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDeleteEmp('${e.EMPID}','${(e.EmpName||'').replace(/'/g,"\\'")}')">Delete</button>
       </td>
     </tr>`).join('');
@@ -848,12 +878,21 @@ function openEmpModal() {
   document.getElementById('empModalTitle').textContent = 'Add Employee';
   document.getElementById('btnSaveEmp').textContent    = 'Save';
   document.getElementById('eCode').disabled = false;
-  ['eCode','eName','eEmail','ePhone','ePass'].forEach(id=>document.getElementById(id).value='');
+  ['eCode','eName','eEmail','ePhone','ePass','ePhotoURL'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('eDesignation').value = '';
   document.getElementById('eJoin').value    = today();
   document.getElementById('eEffDate').value = today();
   document.getElementById('eStatus').value  = 'ACTIVE';
   document.getElementById('eRole').value    = 'EMPLOYEE';
-  document.getElementById('eSite').value    = '';
+  // Populate site dropdown
+  const eSite = document.getElementById('eSite');
+  while(eSite.options.length > 1) eSite.remove(1);
+  S.sites.filter(s=>(s.Status||'ACTIVE').toUpperCase()==='ACTIVE').forEach(s=>{
+    const o = document.createElement('option');
+    o.value = s.SiteID; o.textContent = s.SiteName;
+    eSite.appendChild(o);
+  });
+  document.getElementById('eSite').value = '';
   showFieldErr('empModalErr','');
   openModal('empModal');
 }
@@ -865,13 +904,23 @@ function editEmployee(e) {
   document.getElementById('eCode').value    = e.EMPID     || '';
   document.getElementById('eCode').disabled = true;
   document.getElementById('eName').value    = e.EmpName   || '';
-  document.getElementById('eEmail').value   = e.Email     || '';
+  document.getElementById('eEmail').value       = e.Email       || '';
+  document.getElementById('eDesignation').value = e.Designation || '';
   document.getElementById('ePhone').value   = e.Phone     || '';
   document.getElementById('ePass').value    = '';
   document.getElementById('eRole').value    = e.Role      || 'EMPLOYEE';
+  // Populate site dropdown before setting value
+  const eSiteEdit = document.getElementById('eSite');
+  while(eSiteEdit.options.length > 1) eSiteEdit.remove(1);
+  S.sites.filter(s=>(s.Status||'ACTIVE').toUpperCase()==='ACTIVE').forEach(s=>{
+    const o = document.createElement('option');
+    o.value = s.SiteID; o.textContent = s.SiteName;
+    eSiteEdit.appendChild(o);
+  });
   document.getElementById('eSite').value    = e.Site      || '';
   document.getElementById('eJoin').value    = e.JoinDate  || '';
-  document.getElementById('eEffDate').value = e.EffectiveDate||'';
+  document.getElementById('eEffDate').value   = e.EffectiveDate||'';
+  document.getElementById('ePhotoURL').value  = e.PhotoURL     || '';
   document.getElementById('eStatus').value  = e.Status    || 'ACTIVE';
   showFieldErr('empModalErr','');
   openModal('empModal');
@@ -895,13 +944,16 @@ async function saveEmployee() {
 
   btn.disabled=true; btn.textContent='Saving…';
 
+  const designation = document.getElementById('eDesignation').value;
+  const photoURL    = document.getElementById('ePhotoURL').value.trim();
   const payload = {
-    action:   S.editingEmpCode ? 'updateEmployee' : 'addEmployee',
-    EMPID:    empCode, EmpName:name, Email:email, Phone:phone,
+    action:      S.editingEmpCode ? 'updateEmployee' : 'addEmployee',
+    EMPID:       empCode, EmpName:name, Email:email,
+    Designation: designation, Phone:phone,
     Site:site, JoinDate:join, EffectiveDate:effDate,
-    Status:status, Role:role,
+    Status:status, Role:role, PhotoURL:photoURL,
   };
-  if(pass) payload.PasswordHash = pass; // Apps Script will hash it
+  if(pass) payload.PasswordHash = pass;
 
   try {
     const res = await api(payload);
@@ -946,7 +998,7 @@ function renderSites(list) {
   const grid = document.getElementById('sitesGrid');
   if(!list.length) { grid.innerHTML='<div class="empty"><p>No sites found. Add your first site.</p></div>'; return; }
   grid.innerHTML = list.map(s=>`
-    <div class="site-mgmt-card ${s.Status==='INACTIVE'?'inactive':''}">
+    <div class="site-mgmt-card ${(s.Status||'').toUpperCase()==='INACTIVE'?'inactive':''}">
       <div class="site-mgmt-name">${s.SiteName||'—'}</div>
       <div class="site-mgmt-meta">
         <strong>ID:</strong> ${s.SiteID||'—'}<br/>
@@ -956,7 +1008,7 @@ function renderSites(list) {
         <strong>Lat/Lng:</strong> ${s.Latitude||'—'}, ${s.Longitude||'—'}
       </div>
       <div style="margin-top:8px;">
-        <span class="badge ${s.Status==='ACTIVE'?'badge-green':'badge-gray'}">${s.Status||'ACTIVE'}</span>
+        <span class="badge ${(s.Status||'ACTIVE').toUpperCase()==='ACTIVE'?'badge-green':'badge-gray'}">${s.Status||'ACTIVE'}</span>
       </div>
       <div class="site-mgmt-actions">
         <button class="btn btn-outline btn-sm" onclick='editSite(${JSON.stringify(s)})'>Edit</button>
@@ -1286,11 +1338,13 @@ function populateSiteSelects() {
     const el=document.getElementById(id); if(!el) return;
     const kept=el.querySelector('option[value=""]');
     while(el.options.length>(kept?1:0)) el.remove(kept?1:0);
-    S.sites.forEach(s=>{
-      const o=document.createElement('option');
-      o.value=s.SiteID; o.textContent=s.SiteName;
-      el.appendChild(o);
-    });
+    S.sites
+      .filter(s=>(s.Status||'ACTIVE').toUpperCase()==='ACTIVE')
+      .forEach(s=>{
+        const o=document.createElement('option');
+        o.value=s.SiteID; o.textContent=s.SiteName;
+        el.appendChild(o);
+      });
   });
 }
 
@@ -1313,6 +1367,102 @@ function populateReportSelects() {
 if(SESSION) {
   document.getElementById('mDate').value = today();
   loadDashboard();
+}
+</script>
+
+<!-- ══ PHOTO UPDATE MODAL ══ -->
+<div class="modal-backdrop" id="photoModal">
+  <div class="modal" style="width:400px;">
+    <div class="modal-hdr">
+      <h3>Update Employee Photo</h3>
+      <button class="modal-close" onclick="closeModal('photoModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;margin-bottom:16px;">
+        <img id="photoPreviewImg" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:none;"/>
+        <div id="photoPreviewInitial" style="width:80px;height:80px;border-radius:50%;background:var(--teal-s);border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:600;color:var(--teal);"></div>
+        <div style="font-size:.82rem;font-weight:500;color:var(--ink);margin-top:8px;" id="photoModalEmpName"></div>
+        <div style="font-size:.74rem;color:var(--muted);" id="photoModalEmpId"></div>
+      </div>
+      <div class="fgg" style="margin-bottom:12px;">
+        <label>Photo URL</label>
+        <input id="photoUrlInput" type="text" placeholder="https://... paste image URL"/>
+        <span style="font-size:.7rem;color:var(--hint);">Paste a direct image link (Google Drive, Firebase Storage, etc.)</span>
+      </div>
+      <div id="photoUrlPreviewWrap" style="display:none;margin-bottom:8px;">
+        <img id="photoUrlPreview" src="" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid var(--border);" onerror="this.parentElement.style.display='none'"/>
+      </div>
+      <div class="modal-err" id="photoModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('photoModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="savePhotoUrl()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Photo
+      </button>
+    </div>
+  </div>
+</div>
+<script>
+/* ══════════════════════════════════════════════════════
+   PHOTO URL UPDATE
+══════════════════════════════════════════════════════ */
+let _photoEmp = null;
+
+function updatePhoto(e) {
+  _photoEmp = e;
+  document.getElementById('photoModalEmpName').textContent = e.EmpName || '—';
+  document.getElementById('photoModalEmpId').textContent   = e.EMPID   || '—';
+  document.getElementById('photoUrlInput').value           = e.PhotoURL || '';
+
+  // Show current photo or initials
+  const img  = document.getElementById('photoPreviewImg');
+  const init = document.getElementById('photoPreviewInitial');
+  if (e.PhotoURL) {
+    img.src = e.PhotoURL;
+    img.style.display  = 'block';
+    init.style.display = 'none';
+  } else {
+    img.style.display  = 'none';
+    init.style.display = 'inline-flex';
+    init.textContent   = (e.EmpName||'?').slice(0,2).toUpperCase();
+  }
+
+  // Preview on URL input
+  document.getElementById('photoUrlInput').oninput = function() {
+    const url  = this.value.trim();
+    const wrap = document.getElementById('photoUrlPreviewWrap');
+    const prev = document.getElementById('photoUrlPreview');
+    if (url) { prev.src = url; wrap.style.display = 'block'; }
+    else      { wrap.style.display = 'none'; }
+  };
+
+  showFieldErr('photoModalErr', '');
+  document.getElementById('photoUrlPreviewWrap').style.display = 'none';
+  openModal('photoModal');
+}
+
+async function savePhotoUrl() {
+  if (!_photoEmp) return;
+  const url = document.getElementById('photoUrlInput').value.trim();
+  showFieldErr('photoModalErr', '');
+
+  try {
+    const res = await api({
+      action:   'updateEmployee',
+      EMPID:    _photoEmp.EMPID,
+      PhotoURL: url,
+    });
+    if (res.success) {
+      toast('Photo updated for ' + _photoEmp.EmpName);
+      closeModal('photoModal');
+      loadEmployees();
+    } else {
+      showFieldErr('photoModalErr', res.message || 'Failed to update photo.');
+    }
+  } catch(e) {
+    showFieldErr('photoModalErr', 'Error: ' + e.message);
+  }
 }
 </script>
 </body>
