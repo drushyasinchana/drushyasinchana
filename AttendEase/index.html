@@ -894,14 +894,18 @@ async function doLogin() {
 
     // ── Step 5: Save session → redirect to manage.html ────
     const session = {
-      empCode:          adminData.empCode           || '',
-      empName:          adminData.name              || email.split('@')[0],
+      empCode:          adminData.empCode            || '',
+      empName:          adminData.name               || email.split('@')[0],
       empEmail:         email,
-      role:             adminData.role              || 'ADMIN',
+      role:             adminData.role               || 'ADMIN',
       companyId:        companyId,
-      companyName:      companyData.companyName     || '',
-      companySheetId:   companyData.companySheetId  || '',
-      companyScriptUrl: companyData.companyScriptUrl || MASTER_SCRIPT_URL,
+      companyName:      companyData.companyName      || '',
+      companySheetId:   companyData.companySheetId   || '',
+      companyScriptUrl: companyData.companyScriptUrl  || MASTER_SCRIPT_URL,
+      plan:             companyData.plan             || 'basic',
+      endDate:          companyData.endDate          || '',
+      maxEmployees:     companyData.maxEmployees     || '',
+      city:             companyData.city             || '',
     };
     sessionStorage.setItem('attendease_session', JSON.stringify(session));
     window.location.href = 'manage.html';
