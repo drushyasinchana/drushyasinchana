@@ -1,0 +1,137 @@
+Firestore Database Structure 
+Drushyasinchana Tech Solutions DB
+
+📂 companies
+├─ adminEmail
+├─ city
+├─ companyId
+├─ companyName
+├─ companyScriptUrl
+├─ companySheetId
+├─ contactPhone
+├─ createdAt
+├─ endDate
+├─ firebaseConfig (map)
+│  ├─ apiKey
+│  ├─ appId
+│  ├─ authDomain
+│  ├─ messagingSenderId
+│  ├─ projectId
+│  └─ storageBucket
+├─ isActive
+├─ maxEmployees
+├─ notes
+├─ plan
+├─ startDate
+└─ updatedAt
+
+📂 admins
+├─ companyId
+├─ createdAt
+├─ email
+├─ empCode
+├─ name
+├─ role
+└─ updatedAt
+
+📂 app_logs
+├─ Action
+├─ Date
+├─ Device
+├─ Email
+├─ Status
+└─ companyId
+
+Client side DB
+
+📂 attendance
+├─ companyId
+├─ Date
+├─ EMPID
+├─ HalfDay
+├─ InTime (implied)
+├─ LocationStatus
+├─ MarkedBy
+├─ Name
+├─ OutTime
+├─ SiteID
+└─ Status
+
+📂 employees
+├─ companyId
+├─ Designation
+├─ EffectiveDate
+├─ EMPID
+├─ Email
+├─ EmpName
+├─ JoinDate
+├─ PasswordHash
+├─ Phone
+├─ Role
+├─ Site
+└─ Status
+├─ Photo
+└─ photoUrl
+└─ biometricData
+
+
+📂 holidays
+├─ ApplicableSites
+├─ companyId
+├─ Date
+├─ Day
+├─ Description
+├─ HolidayID
+├─ HolidayName
+├─ State
+└─ Type
+
+📂 sites
+├─ Address
+├─ companyId
+├─ Latitude
+├─ Longitude
+├─ LunchTime
+├─ Radius
+├─ ShiftEnd
+├─ ShiftStart
+├─ SiteID
+├─ SiteName
+└─ Status
+
+📂 weekly_offs
+├─ companyId
+├─ EffectiveFrom
+├─ Remarks
+├─ SiteID
+├─ WeeklyOff1
+└─ WeeklyOff2
+
+📂 leave_balances
+  ├─ companyId          # (string) Reference to the company
+  ├─ EMPID              # (string) Reference to the employee
+  ├─ empName            # (string) Employee Name (for easy display)
+  ├─ leaveYear          # (int) The fiscal/calendar year (e.g., 2026)
+  ├─ privilege_leave    # (map) Earned/Privilege Leave
+  │   ├─ total          # (int) Annual entitlement (e.g., 15)
+  │   ├─ utilized       # (int) Days used this year
+  │   ├─ balance        # (int) Remaining days
+  │   └─ carried_fwd    # (int) Days carried from previous year
+  ├─ casual_leave       # (map) Casual Leave
+  │   ├─ total          # (int) Annual entitlement (e.g., 12)
+  │   ├─ utilized       # (int) Days used
+  │   └─ balance        # (int) Remaining days
+  ├─ sick_leave         # (map) Sick Leave
+  │   ├─ total          # (int) Annual entitlement (e.g., 10)
+  │   ├─ utilized       # (int) Days used
+  │   └─ balance        # (int) Remaining days
+  ├─ comp_off           # (map) Compensatory Off
+  │   ├─ total          # (int) Granted COs
+  │   ├─ utilized       # (int) Availed COs
+  │   └─ balance        # (int) Remaining COs
+  ├─ maternity_leave    # (map) Maternity Leave (if applicable)
+  │   ├─ total          # (int) Entitlement
+  │   └─ utilized       # (int) Availed
+  ├─ loss_of_pay        # (int) Accumulated LOP days
+  ├─ lastUpdated        # (timestamp) When this record was modified
+  └─ updatedAt          # (timestamp) Auto-updated timestamp
