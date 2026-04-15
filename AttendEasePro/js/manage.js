@@ -305,69 +305,39 @@ function renderEmployees(list) {
   }
   
   tb.innerHTML = list.map(e => {
-    // --- PHOTO HANDLING START ---
-    let photoHtml = '';
+    // ✅ DEFAULT: Show initial letter
+    const initial = (e.EmpName || '?').charAt(0).toUpperCase();
+// ✅ PHOTO DISPLAY - Correct data URL format
+let photoHtml = `<div style="width:40px;height:40px;border-radius:50%;background:var(--teal-s);border:2px solid var(--teal-l);display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:bold;font-size:0.9rem;">
+  ${(e.EmpName || '?').charAt(0).toUpperCase()}
+</div>`;
+
+if (e.Photo && typeof e.Photo === 'string') {
+  try {
+    const mimeType = e.PhotoType || 'image/jpeg';
+    const initial = (e.EmpName || '?').charAt(0).toUpperCase();
     
-    if (e.Photo) {
-      try {
-        let imgUrl = '';
-        
-        // Case 1: Firestore Blob (Standard Web SDK format)
-        // This matches the Android getBlob() method
-        if (typeof e.Photo.toBytes === 'function') {
-          console.log('✅ Detected Blob for', e.EMPID);
-          const bytes = e.Photo.toBytes(); // Extract bytes
-          const blob = new Blob([bytes], { type: 'image/jpeg' });
-          imgUrl = URL.createObjectURL(blob); // Convert to URL
-        } 
-        // Case 2: Base64 String (Fallback if somehow stored as string)
-        else if (typeof e.Photo === 'string') {
-          console.log('✅ Detected String for', e.EMPID);
-          imgUrl = e.Photo.startsWith('data:image') 
-                   ? e.Photo 
-                   : `image/jpeg;base64,${e.Photo}`;
-        }
-        // Case 3: Deep Object search (If SDK deserializes oddly)
-        else if (typeof e.Photo === 'object') {
-           // Try to find bytes in common internal keys
-           const keys = Object.keys(e.Photo);
-           for (let k of keys) {
-              if (e.Photo[k] instanceof Uint8Array) {
-                 const blob = new Blob([e.Photo[k]], { type: 'image/jpeg' });
-                 imgUrl = URL.createObjectURL(blob);
-                 console.log('✅ Found bytes in key:', k);
-                 break;
-              }
-           }
-        }
-
-        // If we successfully got a URL, render the image
-        if (imgUrl) {
-          photoHtml = `<img src="${imgUrl}" 
-                           style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--teal-l);background:#fff;"
-                           onerror="this.onerror=null;this.style.display='none';"/>`;
-        } else {
-           // If URL failed but Photo existed, fallback to Initials
-           photoHtml = `<div style="width:40px;height:40px;border-radius:50%;background:var(--teal-s);border:2px solid var(--teal-l);display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:bold;font-size:0.9rem;">
-              ${(e.EmpName || '?').charAt(0).toUpperCase()}
-           </div>`;
-        }
-      } catch (err) {
-         console.error('❌ Photo render error for', e.EMPID, err);
-         // Fallback on error
-         photoHtml = `<div style="width:40px;height:40px;border-radius:50%;background:var(--teal-s);border:2px solid var(--teal-l);display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:bold;font-size:0.9rem;">
-            ${(e.EmpName || '?').charAt(0).toUpperCase()}
-         </div>`;
-      }
-    } else {
-      // No photo: Show Initials
-      photoHtml = `<div style="width:40px;height:40px;border-radius:50%;background:var(--teal-s);border:2px solid var(--teal-l);display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:bold;font-size:0.9rem;">
-        ${(e.EmpName || '?').charAt(0).toUpperCase()}
-      </div>`;
+    // ✅ CORRECT FORMAT: data:image/jpeg;base64,/9j/4AAQ...
+    // NOT: image/jpeg;base64,data:image/jpeg;base64,...
+    let base64Data = e.Photo;
+    
+    // Remove any existing "data:..." prefix if present (cleanup)
+    if (base64Data.startsWith('data:')) {
+      base64Data = base64Data.split(',')[1];
     }
-    // --- PHOTO HANDLING END ---
-
-    // Safe Edit Data (Excludes Photo Blob to prevent JSON errors)
+    
+    // Build proper data URL
+    const imgSrc = `data:${mimeType};base64,${base64Data}`;
+    
+    photoHtml = `<img src="${imgSrc}" 
+                     style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--teal-l);background:#fff;"
+                     onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:40px;height:40px;border-radius:50%;background:var(--teal-s);border:2px solid var(--teal-l);display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:bold;font-size:0.9rem;\\'>${initial}</div>'"/>`;
+  } catch (err) {
+    console.warn('Photo error for', e.EMPID, ':', err);
+  }
+}
+    
+    // Safe edit data
     const safeEditData = {
       EMPID: e.EMPID,
       EmpName: e.EmpName,
@@ -836,7 +806,6 @@ async function deleteSite(siteId) {
 // ATTENDANCE
 // ══════════════════════════════════════════════════════
 async function loadAttendance() {
-  
   if (!S.clientDb) { 
     toast('DB not connected', 'error'); 
     return; 
@@ -869,31 +838,81 @@ async function loadAttendance() {
       dateEl.value = today();
     }
     
-    const dateStr = dateEl?.value || today();
-    const siteId = siteEl?.value;
+    const filterDateStr = dateEl?.value || today(); // e.g., "2026-04-15"
+    const filterSiteId = siteEl?.value;
     
+    console.log('🔍 Fetching attendance for date:', filterDateStr, 'site:', filterSiteId);
     
-    // Convert date string to Date object for Firestore query
-    const queryDate = new Date(dateStr);
-    
-    // Fetch attendance
-    let query = S.clientDb.collection('attendance')
+    // ✅ FIX: Fetch ALL attendance for company, then filter in JavaScript
+    // This avoids Firestore index errors and date-format mismatches
+    const snap = await S.clientDb.collection('attendance')
       .where('companyId', '==', S.prefs.companyId)
-      .where('Date', '==', queryDate);
+      .get();
     
-    if (siteId && siteId !== '') {
-      query = query.where('SiteID', '==', siteId);
+    if (snap.empty) {
+      S.attRecords = [];
+      renderAttTable([]);
+      updateAttSummary([]);
+      return;
     }
     
-    const snap = await query.get();
+    // Convert to array
+    let records = snap.docs.map(d => d.data());
     
-    S.attRecords = snap.docs.map(d => {
-      const data = d.data();
-      return data;
+    // ✅ Filter by Date in JavaScript (handles all date formats)
+    records = records.filter(r => {
+      if (!r.Date) return false;
+      
+      let recordDateStr = '';
+      
+      // Handle Firestore Timestamp
+      if (r.Date.toDate) {
+        const d = r.Date.toDate();
+        recordDateStr = d.toISOString().slice(0, 10); // "2026-04-15"
+      }
+      // Handle ISO string "2026-04-15"
+      else if (typeof r.Date === 'string' && r.Date.includes('-')) {
+        const parts = r.Date.split('-');
+        if (parts[0].length === 4) {
+          recordDateStr = r.Date; // Already YYYY-MM-DD
+        } else {
+          // Assume DD-MM-YYYY, convert to YYYY-MM-DD
+          recordDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        }
+      }
+      // Handle other string formats
+      else {
+        try {
+          const d = new Date(r.Date);
+          if (!isNaN(d)) {
+            recordDateStr = d.toISOString().slice(0, 10);
+          }
+        } catch(e) {
+          recordDateStr = String(r.Date);
+        }
+      }
+      
+      // Compare with filter date
+      return recordDateStr === filterDateStr;
     });
     
-    renderAttTable(S.attRecords);
-    updateAttSummary(S.attRecords);
+    // ✅ Filter by Site if selected
+    if (filterSiteId && filterSiteId !== '') {
+      records = records.filter(r => r.SiteID === filterSiteId || r.Site === filterSiteId);
+    }
+    
+    // Sort by InTime (newest first)
+    records.sort((a, b) => {
+      const timeA = a.InTime || '00:00:00';
+      const timeB = b.InTime || '00:00:00';
+      return timeB.localeCompare(timeA);
+    });
+    
+    S.attRecords = records;
+    renderAttTable(records);
+    updateAttSummary(records);
+    
+    console.log(`✅ Loaded ${records.length} attendance records`);
     
   } catch (e) {
     console.error('❌ Attendance error:', e);
@@ -910,22 +929,38 @@ function renderAttTable(list) {
     tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">No records for this date</td></tr>';
     return;
   }
-  tb.innerHTML = list.map(r => `
+  tb.innerHTML = list.map(r => {
+    // ✅ Handle "Marked By" with multiple possible field names
+    const markedBy = r.MarkedBy || r.markedBy || r.Marked_by || r.marked_by || r.markedby || 'SELF';
+    
+    // ✅ Handle Location Status variations
+    const locationStatus = r.LocationStatus || r.locationStatus || r.Location || r.location || 'UNKNOWN';
+    const locationClass = locationStatus === 'INSIDE' ? 'badge-blue' : 'badge-amber';
+    
+    // ✅ Handle Status badge color
+    const status = r.Status || 'UNKNOWN';
+    const statusClass = status === 'PRESENT' ? 'badge-green' : 'badge-red';
+    
+    // ✅ Handle Name variations
+    const empName = r.Name || r.empName || r.EmpName || r.name || '—';
+    const empId = r.EMPID || r.empId || r.Empid || '—';
+    const siteId = r.SiteID || r.Site || r.siteId || '—';
+    
+    return `
     <tr>
-      <td><strong>${r.Name || '—'}</strong></td>
-      <td class="mono">${r.EMPID || '—'}</td>
-      <td>${r.SiteID || '—'}</td>
-      <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>
-      <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>
-      <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>
-      <td><span class="badge ${r.Status === 'PRESENT' ? 'badge-green' : 'badge-red'}">${r.Status || '—'}</span></td>
-      <td><span class="badge ${r.LocationStatus === 'INSIDE' ? 'badge-blue' : 'badge-amber'}">${r.LocationStatus || '—'}</span></td>
-      <td>${r.HalfDay || 'NO'}</td>
-      <td style="font-size:.75rem;color:var(--muted);">${r.MarkedBy || '—'}</td>
+      <td><strong>${empName}</strong></td>                              <!-- 1. Employee -->
+      <td class="mono">${empId}</td>                                    <!-- 2. EMPID -->
+      <td>${siteId}</td>                                                <!-- 3. Site -->
+      <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>  <!-- 4. IN -->
+      <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>   <!-- 5. OUT -->
+      <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>           <!-- 6. HOURS -->
+      <td><span class="badge ${statusClass}">${status}</span></td>      <!-- 7. STATUS -->
+      <td><span class="badge ${locationClass}">${locationStatus}</span></td> <!-- 8. LOCATION -->
+      <td>${r.HalfDay || r.halfDay || 'NO'}</td>                        <!-- 9. HALF DAY -->
+      <td style="font-size:.75rem;color:var(--muted);">${markedBy}</td> <!-- 10. MARKED BY -->
     </tr>
-  `).join('');
+  `}).join('');
 }
-
 function updateAttSummary(list) {
   const present = list.filter(r => r.Status === 'PRESENT').length;
   const inside = list.filter(r => r.LocationStatus === 'INSIDE').length;
@@ -1210,31 +1245,91 @@ async function generateReport() {
 
   const fromDate = new Date(fromInput);
   const toDate = new Date(toInput);
-  // Set time to end of day for inclusive filtering
   toDate.setHours(23, 59, 59, 999);
 
   try {
-    // Fetch all attendance for the company
-    const snap = await S.clientDb.collection('attendance')
+    console.log('📊 Generating report:', fromInput, 'to', toInput);
+    
+    // 1. Fetch ALL attendance for company
+    const attSnap = await S.clientDb.collection('attendance')
       .where('companyId', '==', S.prefs.companyId)
       .get();
     
-    // Filter in memory for date range (more flexible than Firestore composite queries)
-    S.reportData = snap.docs.map(d => d.data()).filter(r => {
-      const rDate = r.Date?.toDate ? r.Date.toDate() : new Date(r.Date);
-      return rDate >= fromDate && rDate <= toDate;
+    if (attSnap.empty) {
+      toast('No attendance records found', 'error');
+      S.reportData = [];
+      renderReportTable([]);
+      return;
+    }
+    
+    // 2. Fetch employees to map EMPID → Name
+    const empSnap = await S.clientDb.collection('employees')
+      .where('companyId', '==', S.prefs.companyId)
+      .get();
+    const empMap = {};
+    empSnap.docs.forEach(d => {
+      const e = d.data();
+      empMap[e.EMPID] = e.EmpName || e.Name || e.empName || '—';
     });
     
-    // Render the table
+    // 3. Filter & enrich records
+    S.reportData = [];
+    
+    for (const doc of attSnap.docs) {
+      const r = doc.data();
+      
+      // ✅ Robust date parsing
+      let recordDate = null;
+      if (r.Date?.toDate) {
+        recordDate = r.Date.toDate(); // Firestore Timestamp
+      } else if (typeof r.Date === 'string') {
+        const parts = r.Date.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            recordDate = new Date(r.Date);
+          } else {
+            // DD-MM-YYYY or MM-DD-YYYY
+            const [p1, p2, p3] = parts;
+            if (parseInt(p1) > 12) {
+              recordDate = new Date(p3, p2 - 1, p1); // DD-MM-YYYY
+            } else {
+              recordDate = new Date(p1, p2 - 1, p3); // MM-DD-YYYY fallback
+            }
+          }
+        }
+      }
+      
+      if (!recordDate || isNaN(recordDate)) continue;
+      
+      // Check date range
+      if (recordDate < fromDate || recordDate > toDate) continue;
+      
+      // Enrich with employee name
+      S.reportData.push({
+        ...r,
+        Name: empMap[r.EMPID] || r.Name || r.EmpName || '—',
+        SiteID: r.SiteID || r.Site || '—'
+      });
+    }
+    
+    console.log(`✅ Found ${S.reportData.length} records in range`);
+    
+    // 4. Render
     renderReportTable(S.reportData);
-    toast(`Report generated: ${S.reportData.length} records found`);
+    updateReportSummary(S.reportData);
+    
+    if (S.reportData.length === 0) {
+      toast('No records found for selected dates', 'warn');
+    } else {
+      toast(`Report generated: ${S.reportData.length} records`);
+    }
     
   } catch (e) {
-    console.error('Report error:', e);
-    toast('Failed to generate report: ' + e.message, 'error');
+    console.error('❌ Report error:', e);
+    toast('Failed: ' + e.message, 'error');
   }
 }
-
 
 function exportReportCSV() {
   if (!S.reportData.length) { toast('No data to export', 'error'); return; }
@@ -1586,13 +1681,12 @@ async function savePhoto() {
   const err = document.getElementById('photoErr');
   const btn = document.getElementById('btnSavePhoto');
 
-  if (!file) { err.textContent = 'Select a JPG file'; err.style.display = 'block'; return; }
-  if (!['image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
-    err.textContent = '❌ Only JPG files allowed'; err.style.display = 'block'; return;
+  // ✅ Only check file type - NO SIZE LIMIT
+  if (!file) { err.textContent = 'Select a file'; err.style.display = 'block'; return; }
+  if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type.toLowerCase())) {
+    err.textContent = '❌ Only JPG/PNG files allowed'; err.style.display = 'block'; return;
   }
-  if (file.size > 200 * 1024) {
-    err.textContent = '❌ File too large. Please use image under 200KB'; err.style.display = 'block'; return;
-  }
+  
   if (!currentPhotoEmpId || !S.clientDb) {
     err.textContent = 'System not ready'; err.style.display = 'block'; return;
   }
@@ -1602,35 +1696,28 @@ async function savePhoto() {
   err.style.display = 'none';
 
   try {
-    console.log('📤 Starting upload for:', currentPhotoEmpId);
+    console.log('📤 Upload started for:', currentPhotoEmpId);
+    console.log('📦 Original size:', Math.round(file.size / 1024), 'KB');
 
-    // 1. Compress to JPG <50KB
-    const compressedBlob = await compressJPG(file, 300, 0.7);
+    // Auto-compress to <50KB
+    const compressedBlob = await compressJPG(file, 300, 0.8);
     const finalSizeKB = Math.round(compressedBlob.size / 1024);
     
-    if (finalSizeKB > 50) {
-      throw new Error('Image still too large (' + finalSizeKB + 'KB). Max 50KB.');
-    }
+    console.log('✅ Compressed to:', finalSizeKB, 'KB');
 
-    // 2. Convert to Uint8Array
-    const arrayBuffer = await compressedBlob.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
+    // Convert to Base64
+    const base64String = await blobToBase64(compressedBlob);
+    const cleanBase64 = base64String.replace(/^image\/jpeg;base64,/, '');
 
-    // ✅ 3. Convert to Firestore Blob (CRITICAL FIX)
-    const photoBlob = firebase.firestore.Blob.fromUint8Array(uint8Array);
-
-    console.log('📦 Converted to Firestore Blob:', uint8Array.length, 'bytes');
-
-    // 4. Save to Firestore
+    // Save to Firestore
     await S.clientDb.collection('employees').doc(currentPhotoEmpId).update({
-      Photo: photoBlob,           // ✅ Firestore Blob type
+      Photo: cleanBase64,
       PhotoType: 'image/jpeg',
-      PhotoSize: uint8Array.length,
+      PhotoSize: cleanBase64.length,
       updatedAt: new Date().toISOString()
     });
 
-    console.log('✅ Saved to Firestore');
-    toast('✅ Photo saved (' + finalSizeKB + 'KB)!');
+    toast('✅ Photo saved! (' + finalSizeKB + 'KB, compressed from ' + Math.round(file.size / 1024) + 'KB)');
     closeModal('photoModal');
     loadEmployees();
 
@@ -1642,6 +1729,87 @@ async function savePhoto() {
     btn.disabled = false;
     btn.textContent = '💾 Upload Photo';
   }
+}
+
+// Helper: Convert Blob to Base64
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Auto-compress function
+function compressJPG(file, maxSize = 300, initialQuality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Resize to max 300x300
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round(height * maxSize / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round(width * maxSize / height);
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // White background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Progressive compression to <50KB
+        let quality = initialQuality;
+        const targetSize = 50 * 1024;
+        
+        const tryCompress = (q) => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Compression failed'));
+                return;
+              }
+              
+              if (blob.size > targetSize && q > 0.3) {
+                tryCompress(q - 0.1);
+              } else {
+                resolve(blob);
+              }
+            },
+            'image/jpeg',
+            q
+          );
+        };
+        
+        tryCompress(quality);
+      };
+      
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // ══════════════════════════════════════════════════════
@@ -1954,38 +2122,62 @@ function renderRectTable(list) {
     return;
   }
   
+  // Sort by InTime (newest first)
+  list.sort((a, b) => {
+    const timeA = a.InTime || '00:00:00';
+    const timeB = b.InTime || '00:00:00';
+    return timeB.localeCompare(timeA);
+  });
+  
   tb.innerHTML = list.map(r => {
-    // Status Color Logic
-    let statusText = r.Status || '—';
+    // Status badge
+    const status = r.Status || 'UNKNOWN';
     let statusClass = 'badge-gray';
-    if (statusText === 'PRESENT') statusClass = 'badge-green';
-    else if (statusText === 'ABSENT') statusClass = 'badge-red';
-    else if (statusText === 'ON_LEAVE') { statusClass = 'badge-amber'; statusText = 'ON_LEAVE'; }
+    if (status === 'PRESENT') statusClass = 'badge-green';
+    else if (status === 'ABSENT') statusClass = 'badge-red';
+    else if (status === 'ON_LEAVE') statusClass = 'badge-amber';
     
-    // Location Badge
-    let locText = r.LocationStatus || '—';
+    // Location badge
+    const location = r.LocationStatus || r.Location || 'UNKNOWN';
     let locClass = 'badge-gray';
-    if (locText === 'INSIDE') locClass = 'badge-green';
-    else if (locText === 'MANUAL') locClass = 'badge-amber';
-
+    if (location === 'INSIDE') locClass = 'badge-green';
+    else if (location === 'MANUAL' || location === 'OUTSIDE') locClass = 'badge-amber';
+    
+    // Safe stringify for modal
+    const safeData = {
+      id: r.id,
+      EMPID: r.EMPID,
+      Name: r.Name,
+      SiteID: r.SiteID,
+      InTime: r.InTime,
+      OutTime: r.OutTime,
+      Status: r.Status,
+      LocationStatus: r.LocationStatus,
+      HalfDay: r.HalfDay,
+      Remarks: r.Remarks
+    };
+    const modalData = JSON.stringify(safeData).replace(/'/g, "\\'");
+    
     return `
       <tr>
-        <td><strong>${r.Name || '—'}</strong></td>
-        <td class="mono">${r.EMPID || '—'}</td>
-        <td>${r.SiteID || '—'}</td>
-        <td class="mono">${r.InTime || '—'}</td>
-        <td class="mono">${r.OutTime || '—'}</td>
-        <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>
-        <td><span class="badge ${statusClass}">${statusText}</span></td>
-        <td><span class="badge ${locClass}">${locText}</span></td>
-        <td>${r.HalfDay || 'NO'}</td>
+        <td><strong>${r.Name || '—'}</strong></td>                    <!-- Employee -->
+        <td class="mono">${r.EMPID || '—'}</td>                       <!-- EMPID -->
+        <td>${r.SiteID || '—'}</td>                                   <!-- Site -->
+        <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>  <!-- In -->
+        <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>   <!-- Out -->
+        <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>       <!-- Hours -->
+        <td><span class="badge ${statusClass}">${status}</span></td>  <!-- Status -->
+        <td><span class="badge ${locClass}">${location}</span></td>   <!-- Location -->
+        <td>${r.HalfDay || 'NO'}</td>                                 <!-- Half Day -->
         <td>
-          <button class="btn btn-outline btn-sm" onclick='openRectifyModal(${JSON.stringify(r).replace(/"/g, '&quot;')})'>✏️ Edit</button>
+          <button class="btn btn-outline btn-sm" onclick='openRectifyModal(\`${modalData}\`)'>✏️ Edit</button>
         </td>
       </tr>
     `;
   }).join('');
 }
+
+
 
 function updateRectSummary(list) {
   document.getElementById('rectTotal').textContent = list.length;
@@ -1995,23 +2187,35 @@ function updateRectSummary(list) {
 }
 
 // Modal for Editing
-function openRectifyModal(r) {
-  document.getElementById('rectDocId').value = r.id || '';
-  document.getElementById('rectEmpName').value = r.Name || r.EMPID;
+
+function openRectifyModal(dataStr) {
+  // Parse the data (handle both JSON string and object)
+  let r;
+  try {
+    r = typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr;
+  } catch (e) {
+    console.error('Modal parse error:', e);
+    return;
+  }
   
-  // ✅ FIX: Manually convert Timestamp to "DD/MM/YYYY" string
+  document.getElementById('rectDocId').value = r.id || '';
+  document.getElementById('rectEmpName').value = r.Name || r.EMPID || '—';
+  
+  // ✅ Robust date display
   let displayDate = '—';
   if (r.Date) {
-    const dt = r.Date.toDate ? r.Date.toDate() : new Date(r.Date);
-    if (!isNaN(dt)) {
-      displayDate = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
-    }
+    try {
+      const dt = r.Date.toDate ? r.Date.toDate() : new Date(r.Date);
+      if (!isNaN(dt)) {
+        displayDate = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+      }
+    } catch(e) {}
   }
   document.getElementById('rectDateDisp').value = displayDate;
 
   // Set other fields
   document.getElementById('rectStatus').value = r.Status || 'PRESENT';
-  document.getElementById('rectLocation').value = r.LocationStatus || 'MANUAL';
+  document.getElementById('rectLocation').value = r.LocationStatus || r.Location || 'MANUAL';
   document.getElementById('rectIn').value = r.InTime || '';
   document.getElementById('rectOut').value = r.OutTime || '';
   document.getElementById('rectHalfDay').value = r.HalfDay || 'NO';
@@ -2020,6 +2224,7 @@ function openRectifyModal(r) {
   showFieldErr('rectErr', '');
   openModal('attRectModal');
 }
+
 
 async function saveRectification() {
   const docId = document.getElementById('rectDocId').value;
