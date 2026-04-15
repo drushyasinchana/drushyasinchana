@@ -2070,64 +2070,130 @@ async function saveLeaveBalance() {
 S.rectRecords = []; // Initialize storage
 
 async function loadRectifications() {
-  if (!S.clientDb) { toast('DB not connected', 'error'); return; }
+  console.log('🔍 loadRectifications() called');
+  
+  // 1. Safety checks
+  if (!S.clientDb) { 
+    console.error('❌ S.clientDb not ready');
+    toast('Database not connected', 'error'); 
+    return; 
+  }
   
   const dateEl = document.getElementById('rectDate');
   const siteEl = document.getElementById('rectSite');
+  const tb = document.getElementById('rectTableBody');
   
+  if (!dateEl || !siteEl || !tb) {
+    console.error('❌ Missing HTML elements');
+    return;
+  }
+  
+  // 2. Get filter values
   if (!dateEl.value) dateEl.value = today();
-  const filterDateStr = dateEl.value; // YYYY-MM-DD
+  const filterDateStr = dateEl.value; // "YYYY-MM-DD"
+  const filterSiteId = siteEl.value || '';
   
-  // Parse Filter Date to Object for comparison
-  const filterParts = filterDateStr.split('-');
-  const filterDate = new Date(filterParts[0], filterParts[1] - 1, filterParts[2]);
-
+  console.log(`📅 Filtering → Date: ${filterDateStr} | Site: ${filterSiteId || 'ALL'}`);
+  
   try {
-    // Fetch all records for company
+    // 3. Fetch ALL attendance for company (no query filters to avoid index errors)
+    console.log('📥 Fetching attendance from Firestore...');
     const snap = await S.clientDb.collection('attendance')
       .where('companyId', '==', S.prefs.companyId)
       .get();
     
-    let records = [];
+    console.log(`✅ Fetched ${snap.size} total records`);
     
-    // Filter in JavaScript (Robust)
-    snap.docs.forEach(doc => {
+    if (snap.empty) {
+      tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
+      return;
+    }
+    
+    // 4. Parse filter date for comparison (midnight local time)
+    const [fy, fm, fd] = filterDateStr.split('-').map(Number);
+    const filterDate = new Date(fy, fm - 1, fd); // Month is 0-indexed
+    
+    // 5. Filter in JavaScript (handles Timestamp, string, or Date object)
+    const filtered = [];
+    
+    for (const doc of snap.docs) {
       const r = doc.data();
+      
+      // Parse record date robustly
       let recDate = null;
       
-      // Handle Date from App (Timestamp) or Web (Date Object)
-      if (r.Date && r.Date.toDate) {
+      if (r.Date?.toDate) {
+        // Firestore Timestamp
         recDate = r.Date.toDate();
-      } else if (r.Date) {
-        recDate = new Date(r.Date);
+      } else if (typeof r.Date === 'string') {
+        // String: "YYYY-MM-DD" or "DD-MM-YYYY"
+        const parts = r.Date.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            recDate = new Date(parts[0], parts[1] - 1, parts[2]);
+          } else {
+            // DD-MM-YYYY or MM-DD-YYYY
+            const [p1, p2, p3] = parts;
+            if (parseInt(p1) > 12) {
+              recDate = new Date(p3, p2 - 1, p1); // DD-MM-YYYY
+            } else {
+              recDate = new Date(p1, p2 - 1, p3); // MM-DD-YYYY fallback
+            }
+          }
+        }
+      } else if (r.Date instanceof Date) {
+        recDate = r.Date;
       }
       
-      if (!recDate || isNaN(recDate)) return;
+      // Skip if date couldn't be parsed
+      if (!recDate || isNaN(recDate)) {
+        console.warn('⚠️ Skipping record with invalid date:', r.EMPID, r.Date);
+        continue;
+      }
       
-      // Compare ONLY Year, Month, Day
+      // Compare ONLY Year, Month, Day (ignore time/timezone)
       const sameDay = 
         recDate.getFullYear() === filterDate.getFullYear() &&
         recDate.getMonth() === filterDate.getMonth() &&
         recDate.getDate() === filterDate.getDate();
-        
-      // Site Filter
-      const siteMatch = !siteEl.value || (r.SiteID === siteEl.value || r.Site === siteEl.value);
       
-      if (sameDay && siteMatch) {
-        records.push({ id: doc.id, ...r });
-      }
+      if (!sameDay) continue;
+      
+      // Site filter
+      if (filterSiteId && r.SiteID !== filterSiteId && r.Site !== filterSiteId) continue;
+      
+      // Add to results
+      filtered.push({ id: doc.id, ...r });
+    }
+    
+    console.log(`✅ Filtered to ${filtered.length} records for display`);
+    
+    // 6. Sort by InTime (newest first)
+    filtered.sort((a, b) => {
+      const timeA = a.InTime || '00:00:00';
+      const timeB = b.InTime || '00:00:00';
+      return timeB.localeCompare(timeA);
     });
     
-    S.rectRecords = records;
-    renderRectTable(records);
-    updateRectSummary(records);
+    // 7. Render
+    renderRectTable(filtered);
+    updateRectSummary(filtered);
+    
+    if (filtered.length === 0) {
+      toast('No records found for selected date', 'warn');
+    }
     
   } catch (e) {
-    console.error('Rect load error:', e);
+    console.error('❌ Rect load error:', e);
     toast('Failed to load: ' + e.message, 'error');
+    
+    // Show error in table
+    if (tb) {
+      tb.innerHTML = `<tr><td colspan="10" style="color:var(--red);text-align:center;padding:20px;">Error: ${e.message}</td></tr>`;
+    }
   }
 }
-
 
 
 function renderRectTable(list) {
@@ -2142,49 +2208,52 @@ function renderRectTable(list) {
   tb.innerHTML = list.map(r => {
     // Status badge
     const status = r.Status || 'UNKNOWN';
-    const statusClass = status === 'PRESENT' ? 'badge-green' : 
-                       status === 'ABSENT' ? 'badge-red' : 
-                       status === 'ON_LEAVE' ? 'badge-amber' : 'badge-gray';
+    let statusClass = 'badge-gray';
+    if (status === 'PRESENT') statusClass = 'badge-green';
+    else if (status === 'ABSENT') statusClass = 'badge-red';
+    else if (status === 'ON_LEAVE') statusClass = 'badge-amber';
     
-    // Location badge  
+    // Location badge
     const location = r.LocationStatus || r.Location || 'UNKNOWN';
-    const locClass = location === 'INSIDE' ? 'badge-green' : 'badge-amber';
+    let locClass = 'badge-gray';
+    if (location === 'INSIDE') locClass = 'badge-green';
+    else if (location === 'MANUAL' || location === 'OUTSIDE') locClass = 'badge-amber';
     
-    // ✅ Safe modal data - use data attributes instead of JSON in onclick
+    // ✅ Safe modal data - use encodeURIComponent to avoid JSON injection
     const modalData = encodeURIComponent(JSON.stringify({
-      docId: r.docId || r.id,
+      id: r.id,
       EMPID: r.EMPID,
       Name: r.Name,
-      SiteID: r.SiteID,
+      SiteID: r.SiteID || r.Site,
       InTime: r.InTime,
       OutTime: r.OutTime,
       Status: r.Status,
-      LocationStatus: r.LocationStatus,
-      HalfDay: r.HalfDay,
-      Remarks: r.Remarks,
-      Date: r.Date
+      LocationStatus: location,
+      HalfDay: r.HalfDay || 'NO',
+      Remarks: r.Remarks || '',
+      Date: r.Date // Pass raw Date for modal display
     }));
     
     return `
       <tr>
-        <td><strong>${r.Name || '—'}</strong></td>
-        <td class="mono">${r.EMPID || '—'}</td>
-        <td>${r.SiteID || '—'}</td>
-        <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>
-        <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>
-        <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>
-        <td><span class="badge ${statusClass}">${status}</span></td>
-        <td><span class="badge ${locClass}">${location}</span></td>
-        <td>${r.HalfDay || 'NO'}</td>
+        <td><strong>${r.Name || '—'}</strong></td>                    <!-- Employee -->
+        <td class="mono">${r.EMPID || '—'}</td>                       <!-- EMPID -->
+        <td>${r.SiteID || r.Site || '—'}</td>                         <!-- Site -->
+        <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>  <!-- In -->
+        <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>   <!-- Out -->
+        <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>       <!-- Hours -->
+        <td><span class="badge ${statusClass}">${status}</span></td>  <!-- Status -->
+        <td><span class="badge ${locClass}">${location}</span></td>   <!-- Location -->
+        <td>${r.HalfDay || 'NO'}</td>                                 <!-- Half Day -->
         <td>
           <button class="btn btn-outline btn-sm" 
-                  onclick="openRectifyModal('${modalData}')"
-                  data-empid="${r.EMPID}">✏️ Edit</button>
+                  onclick="openRectifyModal('${modalData}')">✏️ Edit</button>
         </td>
       </tr>
     `;
   }).join('');
 }
+
 
 function updateRectSummary(list) {
   document.getElementById('rectTotal').textContent = list.length;
