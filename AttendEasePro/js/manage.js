@@ -806,119 +806,92 @@ async function deleteSite(siteId) {
 // ATTENDANCE
 // ══════════════════════════════════════════════════════
 async function loadAttendance() {
-  if (!S.clientDb) { 
-    toast('DB not connected', 'error'); 
-    return; 
-  }
+  console.log('🔍 loadAttendance() triggered');
   
+  // 1. Safety Checks
+  if (!S.clientDb) { console.error('❌ S.clientDb not ready'); toast('DB not connected', 'error'); return; }
+  const companyId = S.prefs?.companyId || S.prefs?.companyID;
+  if (!companyId) { console.error('❌ Company ID missing in S.prefs'); toast('Company context not loaded', 'error'); return; }
+  
+  const tb = document.getElementById('attTableBody');
+  if (!tb) { console.error('❌ HTML element #attTableBody not found'); return; }
+
+  // 2. Get Filter Values (default to today)
+  const dateEl = document.getElementById('attDate');
+  const siteEl = document.getElementById('attSite');
+  const filterDateStr = dateEl?.value || today();
+  const filterSiteId = siteEl?.value || '';
+
+  console.log(`📅 Filtering → Date: ${filterDateStr} | Site: ${filterSiteId || 'ALL'} | Company: ${companyId}`);
+
   try {
-    // Load sites first if not loaded
-    if (S.sites.length === 0) {
-      const siteSnap = await S.clientDb.collection('sites')
-        .where('companyId', '==', S.prefs.companyId)
-        .get();
-      S.sites = siteSnap.docs.map(d => ({id:d.id,...d.data()}));
-    }
-    
-    // Populate site dropdown
-    const siteEl = document.getElementById('attSite');
-    if (siteEl) {
-      while (siteEl.options.length > 1) siteEl.remove(1);
-      S.sites.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.SiteID;
-        opt.textContent = s.SiteName || s.SiteID;
-        siteEl.appendChild(opt);
-      });
-    }
-    
-    // Set current date if not set
-    const dateEl = document.getElementById('attDate');
-    if (dateEl && !dateEl.value) {
-      dateEl.value = today();
-    }
-    
-    const filterDateStr = dateEl?.value || today(); // e.g., "2026-04-15"
-    const filterSiteId = siteEl?.value;
-    
-    console.log('🔍 Fetching attendance for date:', filterDateStr, 'site:', filterSiteId);
-    
-    // ✅ FIX: Fetch ALL attendance for company, then filter in JavaScript
-    // This avoids Firestore index errors and date-format mismatches
+    // 3. Fetch ALL records for this company (avoids Firestore index errors)
+    console.log('📥 Fetching from Firestore...');
     const snap = await S.clientDb.collection('attendance')
-      .where('companyId', '==', S.prefs.companyId)
+      .where('companyId', '==', companyId)
       .get();
-    
+
+    console.log(`✅ Fetched ${snap.size} total records`);
+
     if (snap.empty) {
-      S.attRecords = [];
-      renderAttTable([]);
-      updateAttSummary([]);
+      tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
       return;
     }
-    
-    // Convert to array
-    let records = snap.docs.map(d => d.data());
-    
-    // ✅ Filter by Date in JavaScript (handles all date formats)
-    records = records.filter(r => {
-      if (!r.Date) return false;
-      
-      let recordDateStr = '';
-      
-      // Handle Firestore Timestamp
-      if (r.Date.toDate) {
-        const d = r.Date.toDate();
-        recordDateStr = d.toISOString().slice(0, 10); // "2026-04-15"
+
+    // 4. Parse Filter Date for Comparison
+    const fParts = filterDateStr.split('-');
+    const fDate = new Date(fParts[0], fParts[1] - 1, fParts[2]); // YYYY-MM-DD → JS Date
+
+    // 5. Client-Side Filtering (Robust & Index-Free)
+    const filtered = [];
+    for (const doc of snap.docs) {
+      const r = doc.data();
+
+      // Handle Date: Timestamp, String, or JS Date
+      let recDate = null;
+      if (r.Date?.toDate) recDate = r.Date.toDate();
+      else if (typeof r.Date === 'string') {
+        const dParts = r.Date.split(/[-/]/);
+        if (dParts[0].length === 4) recDate = new Date(r.Date); // YYYY-MM-DD
+        else recDate = new Date(dParts[2], dParts[1] - 1, dParts[0]); // DD-MM-YYYY
+      } else if (r.Date) recDate = new Date(r.Date);
+
+      if (!recDate || isNaN(recDate)) continue;
+
+      // Match ONLY Year, Month, Day (ignore time/timezone)
+      const sameDay = recDate.getFullYear() === fDate.getFullYear() &&
+                      recDate.getMonth() === fDate.getMonth() &&
+                      recDate.getDate() === fDate.getDate();
+      if (!sameDay) continue;
+
+      // Site Filter
+      if (filterSiteId && r.SiteID !== filterSiteId && r.Site !== filterSiteId) continue;
+
+      // Auto-fill Name if missing
+      if (!r.Name && r.EMPID) {
+        const emp = S.employees?.find(e => e.EMPID === r.EMPID);
+        if (emp) r.Name = emp.EmpName || emp.Name || r.EMPID;
       }
-      // Handle ISO string "2026-04-15"
-      else if (typeof r.Date === 'string' && r.Date.includes('-')) {
-        const parts = r.Date.split('-');
-        if (parts[0].length === 4) {
-          recordDateStr = r.Date; // Already YYYY-MM-DD
-        } else {
-          // Assume DD-MM-YYYY, convert to YYYY-MM-DD
-          recordDateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-        }
-      }
-      // Handle other string formats
-      else {
-        try {
-          const d = new Date(r.Date);
-          if (!isNaN(d)) {
-            recordDateStr = d.toISOString().slice(0, 10);
-          }
-        } catch(e) {
-          recordDateStr = String(r.Date);
-        }
-      }
-      
-      // Compare with filter date
-      return recordDateStr === filterDateStr;
-    });
-    
-    // ✅ Filter by Site if selected
-    if (filterSiteId && filterSiteId !== '') {
-      records = records.filter(r => r.SiteID === filterSiteId || r.Site === filterSiteId);
+
+      filtered.push({ id: doc.id, ...r });
     }
-    
-    // Sort by InTime (newest first)
-    records.sort((a, b) => {
-      const timeA = a.InTime || '00:00:00';
-      const timeB = b.InTime || '00:00:00';
-      return timeB.localeCompare(timeA);
-    });
-    
-    S.attRecords = records;
-    renderAttTable(records);
-    updateAttSummary(records);
-    
-    console.log(`✅ Loaded ${records.length} attendance records`);
-    
+
+    console.log(`✅ Filtered to ${filtered.length} records for display`);
+
+    // 6. Sort by InTime (Newest First)
+    filtered.sort((a, b) => (b.InTime || '00:00:00').localeCompare(a.InTime || '00:00:00'));
+
+    // 7. Render
+    renderAttTable(filtered);
+    updateAttSummary(filtered);
+
   } catch (e) {
-    console.error('❌ Attendance error:', e);
-    toast('Failed to load: ' + e.message, 'error');
+    console.error('❌ Attendance Load Error:', e);
+    tb.innerHTML = `<tr><td colspan="10" style="color:var(--red);text-align:center;padding:20px;">Error: ${e.message}</td></tr>`;
+    toast('Failed to load attendance', 'error');
   }
 }
+
 
 //--------------------------------------End Load Attendance--------------------
 
@@ -1009,8 +982,10 @@ function onManualSiteChange() {
   const siteId = document.getElementById('mSite')?.value;
   const mEmpId = document.getElementById('mEmpId');
   if (!siteId || !mEmpId) return;
+  
   const siteEmps = S.employees.filter(e => e.Site === siteId);
   while (mEmpId.options.length > 1) mEmpId.remove(1);
+  
   siteEmps.forEach(e => {
     const opt = document.createElement('option');
     opt.value = e.EMPID;
@@ -1024,9 +999,12 @@ function toggleManualDefaults() {
   const mCheckIn = document.getElementById('mCheckIn');
   const mCheckOut = document.getElementById('mCheckOut');
   const mEmpId = document.getElementById('mEmpId');
+  
   if (!useDefaults || !mCheckIn || !mCheckOut) return;
+  
   const emp = S.employees.find(e => e.EMPID === mEmpId?.value);
   if (!emp || !emp.Site) return;
+  
   const site = S.sites.find(s => s.SiteID === emp.Site);
   if (site) {
     if (mCheckIn) mCheckIn.value = site.ShiftStart || '09:00';
@@ -1035,74 +1013,94 @@ function toggleManualDefaults() {
 }
 
 async function submitManual() {
-  const empId = document.getElementById('mEmpId')?.value;
-  const date = document.getElementById('mDate')?.value;
-  const checkIn = document.getElementById('mCheckIn')?.value;
-  const checkOut = document.getElementById('mCheckOut')?.value;
-  const halfDay = document.getElementById('mHalfDay')?.value;
-  const status = document.getElementById('mStatus')?.value;
-  const reason = document.getElementById('mReason')?.value.trim();
+  const empId   = document.getElementById('mEmpId')?.value;
+  const dateStr = document.getElementById('mDate')?.value; // Input gives "YYYY-MM-DD"
+  let checkIn   = document.getElementById('mCheckIn')?.value || null;
+  let checkOut  = document.getElementById('mCheckOut')?.value || null;
+  const halfDay = (document.getElementById('mHalfDay')?.value || 'NO').toUpperCase();
+  const status  = document.getElementById('mStatus')?.value || 'PRESENT';
   
-  if (!empId || !date) {
+  if (!empId || !dateStr) {
     toast('Employee and Date are required', 'error');
     return;
   }
   
   const emp = S.employees.find(e => e.EMPID === empId);
-  if (!emp) {
-    toast('Employee not found', 'error');
-    return;
-  }
+  if (!emp) { toast('Employee not found', 'error'); return; }
+  
+  const empName = emp.EmpName || emp.Name || empId;
+  const siteId  = emp.Site || emp.SiteID || 'SITE001';
   
   try {
-    const dateObj = new Date(date);
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const year = dateObj.getFullYear();
-    const docId = `${empId}_${day}-${month}-${year}`;
+    // 1. Format date parts for Doc ID (DD-MM-YYYY) to MATCH APP
+    const [y, m, d] = dateStr.split('-');
+    const formattedDate = `${d}-${m}-${y}`; // e.g., "15-04-2026"
     
+    // 2. Document ID exactly like App: EMPID_DD-MM-YYYY
+    const docId = `${empId}_${formattedDate}`;
+    
+    // 3. Date Timestamp: Midnight 00:00:00 local time
+    const dateTimestamp = new Date(y, m - 1, d);
+    
+    // 4. Normalize Times to HH:MM:SS (App uses seconds, Web form may omit)
+    if (checkIn && checkIn.length === 5) checkIn += ':00';
+    if (checkOut && checkOut.length === 5) checkOut += ':00';
+    
+    // 5. STRICT 11-FIELD PAYLOAD (Zero extras, exact casing)
     const payload = {
-      companyId: S.prefs.companyId,
-      EMPID: empId,
-      Name: emp.EmpName,
-      SiteID: emp.Site,
-      Date: dateObj,
-      InTime: checkIn,
-      OutTime: checkOut,
-      Status: status,
+      companyId:      S.prefs.companyId,
+      Date:           dateTimestamp,
+      EMPID:          empId,
+      HalfDay:        halfDay,
+      InTime:         checkIn,
       LocationStatus: 'MANUAL',
-      HalfDay: halfDay,
-      MarkedBy: 'ADMIN',
-      ManualRemark: reason,
-      CreatedAt: new Date()
+      MarkedBy:       'ADMIN',
+      Name:           empName,
+      OutTime:        checkOut,
+      SiteID:         siteId,
+      Status:         status
     };
     
     if (!S.clientDb) throw new Error('Database not connected');
-    await S.clientDb.collection('attendance').doc(docId).set(payload);
     
-    toast('Manual entry saved successfully!');
-    document.getElementById('manualResult').innerHTML = '<div class="result-ok">✓ Attendance saved for ' + empId + ' on ' + fmtDate(date) + '</div>';
+    // Save with merge:true to prevent overwriting if app clocks in later
+    await S.clientDb.collection('attendance').doc(docId).set(payload, { merge: true });
+    
+    toast('✅ Manual attendance saved successfully!');
     clearManual();
+    loadRectifications(); // Refresh views
+    loadAttendance();
+    
   } catch (e) {
     console.error('Manual entry error:', e);
-    document.getElementById('manualResult').innerHTML = '<div class="result-err">Error: ' + e.message + '</div>';
+    toast('Failed to save: ' + e.message, 'error');
   }
 }
 
+
 function clearManual() {
-  ['mCheckIn','mCheckOut','mReason'].forEach(id => {
+  ['mCheckIn','mCheckOut'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  
   const mHalfDay = document.getElementById('mHalfDay');
-  const mStatus = document.getElementById('mStatus');
   if (mHalfDay) mHalfDay.value = 'NO';
+  
+  const mStatus = document.getElementById('mStatus');
   if (mStatus) mStatus.value = 'PRESENT';
+  
   const mDate = document.getElementById('mDate');
   if (mDate) mDate.value = today();
+  
   const mUseDefaults = document.getElementById('mUseDefaults');
   if (mUseDefaults) mUseDefaults.checked = false;
+  
+  // Clear result message if exists
+  const resEl = document.getElementById('manualResult');
+  if (resEl) resEl.innerHTML = '';
 }
+
 
 // ══════════════════════════════════════════════════════
 // LEAVE ENTRY → Creates records in attendance collection
@@ -2072,112 +2070,65 @@ async function saveLeaveBalance() {
 S.rectRecords = []; // Initialize storage
 
 async function loadRectifications() {
-  console.log('🔍 loadRectifications() called');
-  
-  if (!S.clientDb) { 
-    console.error('❌ S.clientDb not available');
-    toast('DB not connected', 'error'); 
-    return; 
-  }
+  if (!S.clientDb) { toast('DB not connected', 'error'); return; }
   
   const dateEl = document.getElementById('rectDate');
   const siteEl = document.getElementById('rectSite');
-  const tb = document.getElementById('rectTableBody');
   
-  if (!dateEl || !siteEl || !tb) {
-    console.error('❌ Missing HTML elements');
-    return;
-  }
-  
-  // Default date
   if (!dateEl.value) dateEl.value = today();
-  const filterDateStr = dateEl.value; // "2026-04-15"
-  const filterSiteId = siteEl.value || '';
+  const filterDateStr = dateEl.value; // YYYY-MM-DD
   
-  console.log('📅 Filter date:', filterDateStr, 'Site:', filterSiteId);
-  
+  // Parse Filter Date to Object for comparison
+  const filterParts = filterDateStr.split('-');
+  const filterDate = new Date(filterParts[0], filterParts[1] - 1, filterParts[2]);
+
   try {
-    // Fetch ALL attendance (no query filters to avoid index issues)
-    console.log('📥 Fetching attendance from Firestore...');
+    // Fetch all records for company
     const snap = await S.clientDb.collection('attendance')
       .where('companyId', '==', S.prefs.companyId)
       .get();
     
-    console.log(`✅ Fetched ${snap.size} total records`);
+    let records = [];
     
-    if (snap.empty) {
-      tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;">No records found</td></tr>';
-      return;
-    }
-    
-    // Fetch employees for names
-    const empSnap = await S.clientDb.collection('employees')
-      .where('companyId', '==', S.prefs.companyId)
-      .get();
-    const empMap = {};
-    empSnap.docs.forEach(d => {
-      const e = d.data();
-      empMap[e.EMPID] = e.EmpName || e.Name || '—';
-    });
-    
-    // Filter in JavaScript
-    const filtered = [];
-    const filterDate = new Date(filterDateStr + 'T00:00:00'); // Force midnight
-    
-    for (const doc of snap.docs) {
+    // Filter in JavaScript (Robust)
+    snap.docs.forEach(doc => {
       const r = doc.data();
-      
-      // Parse record date
       let recDate = null;
-      if (r.Date?.toDate) {
+      
+      // Handle Date from App (Timestamp) or Web (Date Object)
+      if (r.Date && r.Date.toDate) {
         recDate = r.Date.toDate();
-      } else if (typeof r.Date === 'string') {
-        // Handle "YYYY-MM-DD" or "DD-MM-YYYY"
-        const parts = r.Date.split('-');
-        if (parts[0].length === 4) {
-          recDate = new Date(r.Date + 'T00:00:00');
-        } else {
-          recDate = new Date(parts[2], parts[1]-1, parts[0]);
-        }
+      } else if (r.Date) {
+        recDate = new Date(r.Date);
       }
       
-      if (!recDate || isNaN(recDate)) continue;
+      if (!recDate || isNaN(recDate)) return;
       
-      // Compare dates (same day)
+      // Compare ONLY Year, Month, Day
       const sameDay = 
         recDate.getFullYear() === filterDate.getFullYear() &&
         recDate.getMonth() === filterDate.getMonth() &&
         recDate.getDate() === filterDate.getDate();
+        
+      // Site Filter
+      const siteMatch = !siteEl.value || (r.SiteID === siteEl.value || r.Site === siteEl.value);
       
-      if (!sameDay) continue;
-      
-      // Site filter
-      if (filterSiteId && r.SiteID !== filterSiteId && r.Site !== filterSiteId) continue;
-      
-      // Add to results
-      filtered.push({
-        docId: doc.id,
-        ...r,
-        Name: empMap[r.EMPID] || r.Name || '—'
-      });
-    }
+      if (sameDay && siteMatch) {
+        records.push({ id: doc.id, ...r });
+      }
+    });
     
-    console.log(`✅ Filtered to ${filtered.length} records`);
-    S.rectRecords = filtered;
-    
-    // Render
-    renderRectTable(filtered);
-    updateRectSummary(filtered);
-    
-    if (filtered.length === 0) {
-      toast('No records for this date', 'warn');
-    }
+    S.rectRecords = records;
+    renderRectTable(records);
+    updateRectSummary(records);
     
   } catch (e) {
-    console.error('❌ Error:', e);
-    toast('Failed: ' + e.message, 'error');
+    console.error('Rect load error:', e);
+    toast('Failed to load: ' + e.message, 'error');
   }
 }
+
+
 
 function renderRectTable(list) {
   const tb = document.getElementById('rectTableBody');
@@ -2289,30 +2240,37 @@ function openRectifyModal(encodedData) {
 async function saveRectification() {
   const docId = document.getElementById('rectDocId').value;
   if (!docId) { toast('Error: No record ID', 'error'); return; }
-  
+
   try {
+    // Get raw time values
+    let inTime  = document.getElementById('rectIn').value;
+    let outTime = document.getElementById('rectOut').value;
+    
+    // ✅ Normalize to HH:MM:SS (matches App format)
+    if (inTime && inTime.length === 5) inTime += ':00';
+    if (outTime && outTime.length === 5) outTime += ':00';
+
+    // ✅ STRICT PAYLOAD: Only updates mutable attendance fields
+    // Removes Remarks, RectifiedAt, RectifiedBy to maintain your 11-field schema
     const payload = {
-      Status: document.getElementById('rectStatus').value,
+      Status:         document.getElementById('rectStatus').value,
       LocationStatus: document.getElementById('rectLocation').value,
-      InTime: document.getElementById('rectIn').value || null,
-      OutTime: document.getElementById('rectOut').value || null,
-      HalfDay: document.getElementById('rectHalfDay').value,
-      Remarks: document.getElementById('rectRemarks').value.trim(),
-      RectifiedAt: new Date(),
-      RectifiedBy: 'ADMIN'
+      InTime:         inTime || null,
+      OutTime:        outTime || null,
+      HalfDay:        document.getElementById('rectHalfDay').value
     };
-    
+
+    // Use .update() so it ONLY touches these 5 fields
     await S.clientDb.collection('attendance').doc(docId).update(payload);
-    
+
     toast('✅ Record updated successfully!');
     closeModal('attRectModal');
-    loadRectifications(); // Refresh table
+    loadRectifications(); // Refresh table immediately
   } catch (e) {
-    console.error(e);
+    console.error('Rectification error:', e);
     showFieldErr('rectErr', 'Failed: ' + e.message);
   }
 }
-
 
 // ══════════════════════════════════════════════════════
 // WEEKLY OFF - COMPLETE FUNCTIONS
