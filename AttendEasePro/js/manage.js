@@ -2072,44 +2072,110 @@ async function saveLeaveBalance() {
 S.rectRecords = []; // Initialize storage
 
 async function loadRectifications() {
-  if (!S.clientDb) { toast('DB not connected', 'error'); return; }
+  console.log('🔍 loadRectifications() called');
+  
+  if (!S.clientDb) { 
+    console.error('❌ S.clientDb not available');
+    toast('DB not connected', 'error'); 
+    return; 
+  }
   
   const dateEl = document.getElementById('rectDate');
   const siteEl = document.getElementById('rectSite');
+  const tb = document.getElementById('rectTableBody');
   
-  // Default to today
-  if (!dateEl.value) dateEl.value = today();
-  
-  // Populate Sites
-  if (siteEl.options.length <= 1 && S.sites.length > 0) {
-    while (siteEl.options.length > 1) siteEl.remove(1);
-    S.sites.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.SiteID; opt.textContent = s.SiteName || s.SiteID;
-      siteEl.appendChild(opt);
-    });
+  if (!dateEl || !siteEl || !tb) {
+    console.error('❌ Missing HTML elements');
+    return;
   }
   
-  const dateStr = dateEl.value;
-  const siteId = siteEl.value;
+  // Default date
+  if (!dateEl.value) dateEl.value = today();
+  const filterDateStr = dateEl.value; // "2026-04-15"
+  const filterSiteId = siteEl.value || '';
+  
+  console.log('📅 Filter date:', filterDateStr, 'Site:', filterSiteId);
   
   try {
-    // Query Attendance for the selected date
-    let query = S.clientDb.collection('attendance')
+    // Fetch ALL attendance (no query filters to avoid index issues)
+    console.log('📥 Fetching attendance from Firestore...');
+    const snap = await S.clientDb.collection('attendance')
       .where('companyId', '==', S.prefs.companyId)
-      .where('Date', '==', new Date(dateStr));
+      .get();
     
-    if (siteId) query = query.where('SiteID', '==', siteId);
+    console.log(`✅ Fetched ${snap.size} total records`);
     
-    const snap = await query.get();
-    S.rectRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (snap.empty) {
+      tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;">No records found</td></tr>';
+      return;
+    }
     
-    renderRectTable(S.rectRecords);
-    updateRectSummary(S.rectRecords);
+    // Fetch employees for names
+    const empSnap = await S.clientDb.collection('employees')
+      .where('companyId', '==', S.prefs.companyId)
+      .get();
+    const empMap = {};
+    empSnap.docs.forEach(d => {
+      const e = d.data();
+      empMap[e.EMPID] = e.EmpName || e.Name || '—';
+    });
+    
+    // Filter in JavaScript
+    const filtered = [];
+    const filterDate = new Date(filterDateStr + 'T00:00:00'); // Force midnight
+    
+    for (const doc of snap.docs) {
+      const r = doc.data();
+      
+      // Parse record date
+      let recDate = null;
+      if (r.Date?.toDate) {
+        recDate = r.Date.toDate();
+      } else if (typeof r.Date === 'string') {
+        // Handle "YYYY-MM-DD" or "DD-MM-YYYY"
+        const parts = r.Date.split('-');
+        if (parts[0].length === 4) {
+          recDate = new Date(r.Date + 'T00:00:00');
+        } else {
+          recDate = new Date(parts[2], parts[1]-1, parts[0]);
+        }
+      }
+      
+      if (!recDate || isNaN(recDate)) continue;
+      
+      // Compare dates (same day)
+      const sameDay = 
+        recDate.getFullYear() === filterDate.getFullYear() &&
+        recDate.getMonth() === filterDate.getMonth() &&
+        recDate.getDate() === filterDate.getDate();
+      
+      if (!sameDay) continue;
+      
+      // Site filter
+      if (filterSiteId && r.SiteID !== filterSiteId && r.Site !== filterSiteId) continue;
+      
+      // Add to results
+      filtered.push({
+        docId: doc.id,
+        ...r,
+        Name: empMap[r.EMPID] || r.Name || '—'
+      });
+    }
+    
+    console.log(`✅ Filtered to ${filtered.length} records`);
+    S.rectRecords = filtered;
+    
+    // Render
+    renderRectTable(filtered);
+    updateRectSummary(filtered);
+    
+    if (filtered.length === 0) {
+      toast('No records for this date', 'warn');
+    }
     
   } catch (e) {
-    console.error('Rect load error:', e);
-    toast('Failed to load: ' + e.message, 'error');
+    console.error('❌ Error:', e);
+    toast('Failed: ' + e.message, 'error');
   }
 }
 
@@ -2122,30 +2188,20 @@ function renderRectTable(list) {
     return;
   }
   
-  // Sort by InTime (newest first)
-  list.sort((a, b) => {
-    const timeA = a.InTime || '00:00:00';
-    const timeB = b.InTime || '00:00:00';
-    return timeB.localeCompare(timeA);
-  });
-  
   tb.innerHTML = list.map(r => {
     // Status badge
     const status = r.Status || 'UNKNOWN';
-    let statusClass = 'badge-gray';
-    if (status === 'PRESENT') statusClass = 'badge-green';
-    else if (status === 'ABSENT') statusClass = 'badge-red';
-    else if (status === 'ON_LEAVE') statusClass = 'badge-amber';
+    const statusClass = status === 'PRESENT' ? 'badge-green' : 
+                       status === 'ABSENT' ? 'badge-red' : 
+                       status === 'ON_LEAVE' ? 'badge-amber' : 'badge-gray';
     
-    // Location badge
+    // Location badge  
     const location = r.LocationStatus || r.Location || 'UNKNOWN';
-    let locClass = 'badge-gray';
-    if (location === 'INSIDE') locClass = 'badge-green';
-    else if (location === 'MANUAL' || location === 'OUTSIDE') locClass = 'badge-amber';
+    const locClass = location === 'INSIDE' ? 'badge-green' : 'badge-amber';
     
-    // Safe stringify for modal
-    const safeData = {
-      id: r.id,
+    // ✅ Safe modal data - use data attributes instead of JSON in onclick
+    const modalData = encodeURIComponent(JSON.stringify({
+      docId: r.docId || r.id,
       EMPID: r.EMPID,
       Name: r.Name,
       SiteID: r.SiteID,
@@ -2154,30 +2210,30 @@ function renderRectTable(list) {
       Status: r.Status,
       LocationStatus: r.LocationStatus,
       HalfDay: r.HalfDay,
-      Remarks: r.Remarks
-    };
-    const modalData = JSON.stringify(safeData).replace(/'/g, "\\'");
+      Remarks: r.Remarks,
+      Date: r.Date
+    }));
     
     return `
       <tr>
-        <td><strong>${r.Name || '—'}</strong></td>                    <!-- Employee -->
-        <td class="mono">${r.EMPID || '—'}</td>                       <!-- EMPID -->
-        <td>${r.SiteID || '—'}</td>                                   <!-- Site -->
-        <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>  <!-- In -->
-        <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>   <!-- Out -->
-        <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>       <!-- Hours -->
-        <td><span class="badge ${statusClass}">${status}</span></td>  <!-- Status -->
-        <td><span class="badge ${locClass}">${location}</span></td>   <!-- Location -->
-        <td>${r.HalfDay || 'NO'}</td>                                 <!-- Half Day -->
+        <td><strong>${r.Name || '—'}</strong></td>
+        <td class="mono">${r.EMPID || '—'}</td>
+        <td>${r.SiteID || '—'}</td>
+        <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>
+        <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>
+        <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>
+        <td><span class="badge ${statusClass}">${status}</span></td>
+        <td><span class="badge ${locClass}">${location}</span></td>
+        <td>${r.HalfDay || 'NO'}</td>
         <td>
-          <button class="btn btn-outline btn-sm" onclick='openRectifyModal(\`${modalData}\`)'>✏️ Edit</button>
+          <button class="btn btn-outline btn-sm" 
+                  onclick="openRectifyModal('${modalData}')"
+                  data-empid="${r.EMPID}">✏️ Edit</button>
         </td>
       </tr>
     `;
   }).join('');
 }
-
-
 
 function updateRectSummary(list) {
   document.getElementById('rectTotal').textContent = list.length;
@@ -2188,20 +2244,25 @@ function updateRectSummary(list) {
 
 // Modal for Editing
 
-function openRectifyModal(dataStr) {
-  // Parse the data (handle both JSON string and object)
+function openRectifyModal(encodedData) {
+  console.log('🔓 Opening modal with data:', encodedData.substring(0, 50) + '...');
+  
   let r;
   try {
-    r = typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr;
+    // Decode and parse
+    r = JSON.parse(decodeURIComponent(encodedData));
+    console.log('✅ Parsed modal data:', r);
   } catch (e) {
-    console.error('Modal parse error:', e);
+    console.error('❌ Modal parse error:', e);
+    toast('Error loading record', 'error');
     return;
   }
   
-  document.getElementById('rectDocId').value = r.id || '';
+  // Populate fields
+  document.getElementById('rectDocId').value = r.docId || '';
   document.getElementById('rectEmpName').value = r.Name || r.EMPID || '—';
   
-  // ✅ Robust date display
+  // Date display
   let displayDate = '—';
   if (r.Date) {
     try {
@@ -2212,8 +2273,8 @@ function openRectifyModal(dataStr) {
     } catch(e) {}
   }
   document.getElementById('rectDateDisp').value = displayDate;
-
-  // Set other fields
+  
+  // Other fields
   document.getElementById('rectStatus').value = r.Status || 'PRESENT';
   document.getElementById('rectLocation').value = r.LocationStatus || r.Location || 'MANUAL';
   document.getElementById('rectIn').value = r.InTime || '';
@@ -2224,7 +2285,6 @@ function openRectifyModal(dataStr) {
   showFieldErr('rectErr', '');
   openModal('attRectModal');
 }
-
 
 async function saveRectification() {
   const docId = document.getElementById('rectDocId').value;
