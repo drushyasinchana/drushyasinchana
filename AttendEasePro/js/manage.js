@@ -1012,9 +1012,12 @@ function toggleManualDefaults() {
   }
 }
 
+//════════════════════════════════════════════════════
+// MANUAL ENTRY - With postLunch Field Support
+//════════════════════════════════════════════════════
 async function submitManual() {
   const empId   = document.getElementById('mEmpId')?.value;
-  const dateStr = document.getElementById('mDate')?.value; // Input gives "YYYY-MM-DD"
+  const dateStr = document.getElementById('mDate')?.value; // "YYYY-MM-DD"
   let checkIn   = document.getElementById('mCheckIn')?.value || null;
   let checkOut  = document.getElementById('mCheckOut')?.value || null;
   const halfDay = (document.getElementById('mHalfDay')?.value || 'NO').toUpperCase();
@@ -1032,21 +1035,19 @@ async function submitManual() {
   const siteId  = emp.Site || emp.SiteID || 'SITE001';
   
   try {
-    // 1. Format date parts for Doc ID (DD-MM-YYYY) to MATCH APP
+    // 1. Format date parts for Doc ID: EMPID_DD-MM-YYYY (matches Android)
     const [y, m, d] = dateStr.split('-');
-    const formattedDate = `${d}-${m}-${y}`; // e.g., "15-04-2026"
-    
-    // 2. Document ID exactly like App: EMPID_DD-MM-YYYY
+    const formattedDate = `${d}-${m}-${y}`; // "15-04-2026"
     const docId = `${empId}_${formattedDate}`;
     
-    // 3. Date Timestamp: Midnight 00:00:00 local time
+    // 2. Date Timestamp: Midnight 00:00:00 local time
     const dateTimestamp = new Date(y, m - 1, d);
     
-    // 4. Normalize Times to HH:MM:SS (App uses seconds, Web form may omit)
+    // 3. Normalize Times to HH:MM:SS (App format)
     if (checkIn && checkIn.length === 5) checkIn += ':00';
     if (checkOut && checkOut.length === 5) checkOut += ':00';
     
-    // 5. STRICT 11-FIELD PAYLOAD (Zero extras, exact casing)
+    // 4. STRICT PAYLOAD with postLunch nested map (all nulls for manual entry)
     const payload = {
       companyId:      S.prefs.companyId,
       Date:           dateTimestamp,
@@ -1058,17 +1059,26 @@ async function submitManual() {
       Name:           empName,
       OutTime:        checkOut,
       SiteID:         siteId,
-      Status:         status
+      Status:         status,
+      
+      // ✅ NEW: postLunch nested map with typed nulls
+      postLunch: {
+        time: null,           // String or null
+        latitude: null,       // Number or null
+        longitude: null,      // Number or null
+        inside: null,         // Boolean or null
+        accuracy: null        // Number or null
+      }
     };
     
     if (!S.clientDb) throw new Error('Database not connected');
     
-    // Save with merge:true to prevent overwriting if app clocks in later
+    // Save with merge:true to allow app to add postLunch later
     await S.clientDb.collection('attendance').doc(docId).set(payload, { merge: true });
     
     toast('✅ Manual attendance saved successfully!');
     clearManual();
-    loadRectifications(); // Refresh views
+    loadRectifications();
     loadAttendance();
     
   } catch (e) {
@@ -1076,7 +1086,6 @@ async function submitManual() {
     toast('Failed to save: ' + e.message, 'error');
   }
 }
-
 
 function clearManual() {
   ['mCheckIn','mCheckOut'].forEach(id => {
@@ -2196,12 +2205,15 @@ async function loadRectifications() {
 }
 
 
+//════════════════════════════════════════════════════
+// RECTIFICATIONS - Render Table with postLunch Column
+//════════════════════════════════════════════════════
 function renderRectTable(list) {
   const tb = document.getElementById('rectTableBody');
   if (!tb) return;
   
   if (!list.length) {
-    tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
+    tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
     return;
   }
   
@@ -2219,7 +2231,19 @@ function renderRectTable(list) {
     if (location === 'INSIDE') locClass = 'badge-green';
     else if (location === 'MANUAL' || location === 'OUTSIDE') locClass = 'badge-amber';
     
-    // ✅ Safe modal data - use encodeURIComponent to avoid JSON injection
+    // ✅ Post-Lunch Status Badge
+    const pl = r.postLunch || {};
+    let plStatus = '—';
+    let plClass = 'badge-gray';
+    if (pl.time) {
+      plStatus = pl.inside === true ? '✅ INSIDE' : '❌ OUTSIDE';
+      plClass = pl.inside ? 'badge-green' : 'badge-red';
+    } else {
+      plStatus = '⏳ PENDING';
+      plClass = 'badge-amber';
+    }
+    
+    // ✅ Safe modal data with postLunch
     const modalData = encodeURIComponent(JSON.stringify({
       id: r.id,
       EMPID: r.EMPID,
@@ -2231,7 +2255,8 @@ function renderRectTable(list) {
       LocationStatus: location,
       HalfDay: r.HalfDay || 'NO',
       Remarks: r.Remarks || '',
-      Date: r.Date // Pass raw Date for modal display
+      Date: r.Date,
+      postLunch: pl // Pass nested map
     }));
     
     return `
@@ -2245,6 +2270,7 @@ function renderRectTable(list) {
         <td><span class="badge ${statusClass}">${status}</span></td>  <!-- Status -->
         <td><span class="badge ${locClass}">${location}</span></td>   <!-- Location -->
         <td>${r.HalfDay || 'NO'}</td>                                 <!-- Half Day -->
+        <td><span class="badge ${plClass}">${plStatus}</span></td>    <!-- Post-Lunch -->
         <td>
           <button class="btn btn-outline btn-sm" 
                   onclick="openRectifyModal('${modalData}')">✏️ Edit</button>
@@ -2253,8 +2279,6 @@ function renderRectTable(list) {
     `;
   }).join('');
 }
-
-
 function updateRectSummary(list) {
   document.getElementById('rectTotal').textContent = list.length;
   document.getElementById('rectPresent').textContent = list.filter(x => x.Status === 'PRESENT').length;
@@ -2264,12 +2288,14 @@ function updateRectSummary(list) {
 
 // Modal for Editing
 
+//════════════════════════════════════════════════════
+// RECTIFICATIONS - Modal with postLunch Display
+//════════════════════════════════════════════════════
 function openRectifyModal(encodedData) {
-  console.log('🔓 Opening modal with data:', encodedData.substring(0, 50) + '...');
+  console.log('🔓 Opening modal with data');
   
   let r;
   try {
-    // Decode and parse
     r = JSON.parse(decodeURIComponent(encodedData));
     console.log('✅ Parsed modal data:', r);
   } catch (e) {
@@ -2278,8 +2304,8 @@ function openRectifyModal(encodedData) {
     return;
   }
   
-  // Populate fields
-  document.getElementById('rectDocId').value = r.docId || '';
+  // Populate standard fields
+  document.getElementById('rectDocId').value = r.id || '';
   document.getElementById('rectEmpName').value = r.Name || r.EMPID || '—';
   
   // Date display
@@ -2302,44 +2328,61 @@ function openRectifyModal(encodedData) {
   document.getElementById('rectHalfDay').value = r.HalfDay || 'NO';
   document.getElementById('rectRemarks').value = r.Remarks || '';
   
+  // ✅ Display postLunch status (read-only in modal)
+  const pl = r.postLunch || {};
+  const plStatusEl = document.getElementById('rectPostLunchStatus');
+  if (plStatusEl) {
+    if (pl.time) {
+      plStatusEl.textContent = `${pl.inside ? '✅ Inside' : '❌ Outside'} at ${pl.time}`;
+      plStatusEl.style.color = pl.inside ? 'var(--green)' : 'var(--red)';
+    } else {
+      plStatusEl.textContent = '⏳ Not marked';
+      plStatusEl.style.color = 'var(--muted)';
+    }
+  }
+  
   showFieldErr('rectErr', '');
   openModal('attRectModal');
 }
 
+//════════════════════════════════════════════════════
+// RECTIFICATIONS - Save with postLunch Support
+//════════════════════════════════════════════════════
 async function saveRectification() {
   const docId = document.getElementById('rectDocId').value;
   if (!docId) { toast('Error: No record ID', 'error'); return; }
 
   try {
-    // Get raw time values
+    // Normalize times
     let inTime  = document.getElementById('rectIn').value;
     let outTime = document.getElementById('rectOut').value;
-    
-    // ✅ Normalize to HH:MM:SS (matches App format)
     if (inTime && inTime.length === 5) inTime += ':00';
     if (outTime && outTime.length === 5) outTime += ':00';
 
-    // ✅ STRICT PAYLOAD: Only updates mutable attendance fields
-    // Removes Remarks, RectifiedAt, RectifiedBy to maintain your 11-field schema
+    // ✅ PAYLOAD: Core fields + preserve existing postLunch
     const payload = {
       Status:         document.getElementById('rectStatus').value,
       LocationStatus: document.getElementById('rectLocation').value,
       InTime:         inTime || null,
       OutTime:        outTime || null,
-      HalfDay:        document.getElementById('rectHalfDay').value
+      HalfDay:        document.getElementById('rectHalfDay').value,
+      // ✅ Do NOT overwrite postLunch - let Android app manage it
+      // If admin needs to clear postLunch, add: 'postLunch': null
     };
 
-    // Use .update() so it ONLY touches these 5 fields
+    // Use .update() to touch only specified fields
     await S.clientDb.collection('attendance').doc(docId).update(payload);
 
     toast('✅ Record updated successfully!');
     closeModal('attRectModal');
-    loadRectifications(); // Refresh table immediately
+    loadRectifications();
+    
   } catch (e) {
     console.error('Rectification error:', e);
     showFieldErr('rectErr', 'Failed: ' + e.message);
   }
 }
+
 
 // ══════════════════════════════════════════════════════
 // WEEKLY OFF - COMPLETE FUNCTIONS
@@ -2695,9 +2738,235 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
     // Don't throw - let app continue even if init fails
   }
 }
+
+// ══════════════════════════════════════════════════════
+// POST-LUNCH TRACKING - Matches Your HTML Structure
+// ══════════════════════════════════════════════════════
+
+// Initialize Post-Lunch Tracking page on load
+function initLunchTracking() {
+  console.log('🚀 Initializing lunch tracking page...');
+  
+  // 1. Set default date to today
+  const dateEl = document.getElementById('lunchDate');
+  if (dateEl && !dateEl.value) {
+    dateEl.value = today();
+    console.log('✅ Date set to:', dateEl.value);
+  }
+  
+  // 2. Populate site dropdown if empty
+  const siteEl = document.getElementById('lunchSite');
+  if (siteEl && siteEl.options.length <= 1 && S.sites && S.sites.length > 0) {
+    while (siteEl.options.length > 1) siteEl.remove(1);
+    S.sites.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.SiteID;
+      opt.textContent = s.SiteName || s.SiteID;
+      siteEl.appendChild(opt);
+    });
+    console.log('✅ Sites populated:', S.sites.length);
+  }
+  
+  // 3. Auto-load data
+  loadLunchTracking();
+}
+
+
+async function loadLunchTracking() {
+  console.log('🔍 loadLunchTracking() called');
+  
+  if (!S.clientDb) { toast('DB not connected', 'error'); return; }
+  
+  const dateEl = document.getElementById('lunchDate');
+  const siteEl = document.getElementById('lunchSite');
+  const filterEl = document.getElementById('lunchFilter'); // ✅ Your ID
+  const tb = document.getElementById('lunchTableBody');
+  
+  if (!dateEl || !siteEl || !tb) {
+    console.error('❌ Missing HTML elements');
+    return;
+  }
+  
+  // Get filter values
+  if (!dateEl.value) dateEl.value = today();
+  const filterDateStr = dateEl.value;
+  const filterSiteId = siteEl.value || '';
+  const filterType = filterEl?.value || ''; // ✅ Your filter: "", "INSIDE", "OUTSIDE", "PENDING"
+  
+  console.log(`📅 Filters → Date: ${filterDateStr} | Site: ${filterSiteId || 'ALL'} | Type: ${filterType || 'ALL'}`);
+  
+  try {
+    // Fetch ALL attendance for company
+    const snap = await S.clientDb.collection('attendance')
+      .where('companyId', '==', S.prefs.companyId)
+      .get();
+    
+    console.log(`✅ Fetched ${snap.size} total records`);
+    
+    if (snap.empty) {
+      tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
+      return;
+    }
+    
+    // Parse filter date
+    const [fy, fm, fd] = filterDateStr.split('-').map(Number);
+    const filterDate = new Date(fy, fm - 1, fd);
+    
+    // Filter in JavaScript
+    const records = [];
+    
+    for (const doc of snap.docs) {
+      const r = doc.data();
+      const pl = r.postLunch || {};
+      
+      // ✅ Filter by postLunch status (matches your dropdown options)
+      const hasPostLunch = pl.time; // Marked if time exists
+      const isInside = pl.inside === true;
+      const isOutside = pl.inside === false;
+      
+      if (filterType === 'INSIDE' && !isInside) continue;
+      if (filterType === 'OUTSIDE' && !isOutside) continue;
+      if (filterType === 'PENDING' && hasPostLunch) continue; // Pending = NOT marked
+      // If filterType is "" (All), include everything
+      
+      // Parse record date
+      let recDate = null;
+      if (r.Date?.toDate) {
+        recDate = r.Date.toDate();
+      } else if (typeof r.Date === 'string') {
+        const parts = r.Date.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            recDate = new Date(r.Date);
+          } else {
+            const [p1, p2, p3] = parts;
+            if (parseInt(p1) > 12) {
+              recDate = new Date(p3, p2 - 1, p1);
+            } else {
+              recDate = new Date(p1, p2 - 1, p3);
+            }
+          }
+        }
+      }
+      
+      if (!recDate || isNaN(recDate)) continue;
+      
+      // Compare dates
+      const sameDay = 
+        recDate.getFullYear() === filterDate.getFullYear() &&
+        recDate.getMonth() === filterDate.getMonth() &&
+        recDate.getDate() === filterDate.getDate();
+      
+      if (!sameDay) continue;
+      
+      // Site filter
+      if (filterSiteId && r.SiteID !== filterSiteId && r.Site !== filterSiteId) continue;
+      
+      records.push({ id: doc.id, ...r });
+    }
+    
+    console.log(`✅ Filtered to ${records.length} records`);
+    
+    // Sort: Marked first, then by EMPID
+    records.sort((a, b) => {
+      const aMarked = a.postLunch?.time ? 1 : 0;
+      const bMarked = b.postLunch?.time ? 1 : 0;
+      if (aMarked !== bMarked) return bMarked - aMarked;
+      return (a.EMPID || '').localeCompare(b.EMPID || '');
+    });
+    
+    // Render
+    renderLunchTable(records);
+    
+    if (records.length === 0) {
+      toast('No records match selected filters', 'warn');
+    }
+    
+  } catch (e) {
+    console.error('❌ Lunch tracking error:', e);
+    toast('Failed: ' + e.message, 'error');
+    if (tb) {
+      tb.innerHTML = `<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px;">Error: ${e.message}</td></tr>`;
+    }
+  }
+}
+
+function renderLunchTable(list) {
+  const tb = document.getElementById('lunchTableBody');
+  if (!tb) return;
+  
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">No records match filters</td></tr>';
+    return;
+  }
+  
+  tb.innerHTML = list.map(r => {
+    const pl = r.postLunch || {};
+    
+    // Time display
+    const time = pl.time || '—';
+    
+    // Status badge logic
+    let statusText = 'PENDING';
+    let statusClass = 'badge-gray';
+    if (pl.time) {
+      if (pl.inside === true) {
+        statusText = '✅ INSIDE';
+        statusClass = 'badge-green';
+      } else if (pl.inside === false) {
+        statusText = '❌ OUTSIDE';
+        statusClass = 'badge-red';
+      } else {
+        statusText = '⚠️ UNKNOWN';
+        statusClass = 'badge-amber';
+      }
+    }
+    
+    // Coordinates display
+    const coords = (pl.latitude && pl.longitude) 
+      ? `${pl.latitude.toFixed(5)}, ${pl.longitude.toFixed(5)}` 
+      : '—';
+    
+    // Accuracy display
+    const accuracy = pl.accuracy ? `${pl.accuracy}m` : '—';
+    
+    return `
+    <tr>
+      <td class="mono"><strong>${r.EMPID || '—'}</strong></td>  <!-- 1. EMPID -->
+      <td>${r.Name || '—'}</td>                                   <!-- 2. Name -->
+      <td>${r.SiteID || r.Site || '—'}</td>                       <!-- 3. Site -->
+      <td class="mono">${time}</td>                               <!-- 4. Time -->
+      <td><span class="badge ${statusClass}">${statusText}</span></td> <!-- 5. Status -->
+      <td class="mono" style="font-size:.75rem;">${coords}</td>   <!-- 6. Coordinates -->
+      <td class="mono">${accuracy}</td>                           <!-- 7. Accuracy -->
+    </tr>`;
+  }).join('');
+}
+
+function updateLunchSummary(list) {
+  const marked = list.filter(r => r.postLunch?.time).length;
+  const pending = list.length - marked;
+  const inside = list.filter(r => r.postLunch?.inside === true).length;
+  const outside = list.filter(r => r.postLunch?.inside === false).length;
+  
+  const summary = document.getElementById('lunchSummary');
+  if (summary) {
+    summary.innerHTML = `
+      <div class="chip">Total <span>${list.length}</span></div>
+      <div class="chip" style="color:var(--green);">Marked <span>${marked}</span></div>
+      <div class="chip" style="color:var(--muted);">Pending <span>${pending}</span></div>
+      <div class="chip" style="color:#1565C0;">Inside <span>${inside}</span></div>
+      <div class="chip" style="color:var(--red);">Outside <span>${outside}</span></div>
+    `;
+  }
+}
+
 // ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
+
+
+
 // ══════════════════════════════════════════════════════
 // MULTI-TENANT INITIALIZATION
 // ══════════════════════════════════════════════════════
