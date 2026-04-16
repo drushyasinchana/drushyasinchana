@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendEase — Admin Portal</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+<!-- Image compression for Bytes upload -->
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+
+
+<style>
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;--amber:#E65100;
+  --r:12px;--r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+/* SCREENS */
+.screen{display:none !important;}
+.screen.active{display:flex !important;}
+
+/* LOGIN FALLBACK */
+#loginFallback{min-height:100vh;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);text-align:center;}
+#loginFallback h2{margin-bottom:8px;color:var(--ink);}
+#loginFallback p{color:var(--muted);margin-bottom:24px;}
+#loginFallback a{display:inline-block;padding:10px 24px;background:var(--teal);color:#fff;border-radius:var(--r-sm);font-size:.95rem;font-weight:500;text-decoration:none;}
+
+/* APP LAYOUT */
+#appScreen{flex-direction:row;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:218px;flex-shrink:0;background:var(--teal-dd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+.sb-brand{padding:16px 14px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-row{display:flex;align-items:center;gap:10px;}
+.sb-logo-img{width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.1);padding:3px;object-fit:contain;}
+.sb-app-name{font-size:.96rem;font-weight:600;color:#fff;}
+.sb-app-sub{font-size:.66rem;color:rgba(255,255,255,.38);margin-top:1px;}
+.sb-company{margin-top:10px;padding:7px 9px;background:rgba(255,255,255,.06);border-radius:6px;font-size:.72rem;color:rgba(255,255,255,.45);}
+.sb-company strong{display:block;color:rgba(255,255,255,.75);font-size:.76rem;margin-bottom:2px;}
+.sb-nav{flex:1;padding:10px 7px;display:flex;flex-direction:column;gap:2px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-sm);color:rgba(255,255,255,.5);font-size:.83rem;cursor:pointer;transition:background .14s;border:none;background:none;width:100%;text-align:left;}
+.nav-item svg{width:14px;height:14px;flex-shrink:0;opacity:.55;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;font-weight:500;}
+.nav-sep{height:1px;background:rgba(255,255,255,.06);margin:5px 0;}
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-footer span{font-size:.68rem;color:rgba(255,255,255,.28);}
+
+/* TOPBAR */
+.topbar{height:54px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:14px;position:sticky;top:0;z-index:10;}
+.topbar-title{font-size:.94rem;font-weight:600;color:var(--ink);flex:1;}
+.topbar-right{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);}
+.avatar-wrap{position:relative;}
+.avatar{width:29px;height:29px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;cursor:pointer;}
+.avatar-dropdown{position:absolute;right:0;top:calc(100% + 10px);background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);min-width:230px;z-index:200;display:none;}
+.avatar-dropdown.open{display:block;}
+.avatar-dd-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.avatar-dd-name{font-weight:600;font-size:.97rem;color:var(--ink);}
+.avatar-dd-email{font-size:.84rem;color:var(--muted);margin-top:2px;}
+.avatar-dd-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:.94rem;color:var(--ink2);cursor:pointer;transition:background .12s;border:none;background:none;width:100%;text-align:left;}
+.avatar-dd-item:hover{background:var(--bg);}
+.avatar-dd-item.danger{color:var(--red);}
+.avatar-dd-sep{height:1px;background:var(--border);margin:4px 0;}
+
+/* MAIN CONTENT */
+.main-content{flex:1;display:flex;flex-direction:column;min-width:0;}
+.page-body{flex:1;padding:22px 26px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.red::before{background:var(--red);}
+.stat-label{font-size:.68rem;color:var(--muted);font-weight:500;letter-spacing:.04em;margin-bottom:8px;text-transform:uppercase;}
+.stat-val{font-size:1.9rem;font-weight:600;color:var(--ink);font-family:'DM Mono',monospace;line-height:1;}
+.stat-sub{font-size:.69rem;color:var(--hint);margin-top:5px;}
+
+/* CARD */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px;box-shadow:var(--sh);margin-bottom:18px;}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-hdr h3{font-size:.92rem;font-weight:600;color:var(--ink);}
+
+/* SITE CARDS */
+.site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px;}
+.site-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;position:relative;overflow:hidden;transition:box-shadow .15s,transform .12s;}
+.site-card:hover{box-shadow:var(--sh);transform:translateY(-2px);}
+.site-card-bar{position:absolute;top:0;left:0;right:0;height:3px;}
+.site-card-name{font-weight:600;font-size:.85rem;color:var(--ink);margin-bottom:10px;}
+.site-card-nums{display:flex;gap:14px;}
+.site-num{text-align:center;}
+.site-num-val{font-size:1.45rem;font-weight:600;font-family:'DM Mono',monospace;line-height:1;}
+.site-num-lbl{font-size:.63rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r-sm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.835rem;}
+thead th{background:var(--teal-s);color:var(--teal-dd);font-weight:600;font-size:.67rem;letter-spacing:.05em;text-transform:uppercase;padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);}
+tbody tr:hover{background:#F0FAFB;}
+tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
+.mono{font-family:'DM Mono',monospace;font-size:.78rem;}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.67rem;font-weight:600;}
+.badge-green{background:#E8F5E9;color:#1B5E20;}
+.badge-red{background:#FFEBEE;color:#B71C1C;}
+.badge-amber{background:#FFF3E0;color:#E65100;}
+.badge-blue{background:#E3F2FD;color:#0D47A1;}
+.badge-gray{background:#ECEFF1;color:#455A64;}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:var(--r-sm);font-size:.83rem;font-weight:500;border:1.5px solid transparent;transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal);}
+.btn-teal:hover{background:var(--teal-d);}
+.btn-outline{background:#fff;color:var(--ink2);border-color:var(--border);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-sm{padding:5px 11px;font-size:.76rem;}
+.btn svg{width:13px;height:13px;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.filter-bar input,.filter-bar select{padding:7px 11px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:.82rem;outline:none;background:#fff;color:var(--ink);}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--teal);}
+
+/* CHIPS */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.chip{padding:5px 13px;border-radius:20px;font-size:.76rem;font-weight:500;background:var(--card);border:1px solid var(--border);color:var(--ink2);}
+.chip span{font-weight:700;margin-left:4px;}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgg{display:flex;flex-direction:column;gap:5px;}
+.fgg label{font-size:.74rem;font-weight:500;color:var(--ink2);letter-spacing:.01em;}
+.fgg input,.fgg select,.fgg textarea{padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:.85rem;color:var(--ink);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;}
+.fgg input:focus,.fgg select:focus,.fgg textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.08);}
+.fgg textarea{resize:vertical;min-height:70px;}
+.form-actions{display:flex;gap:8px;margin-top:4px;}
+
+/* MISC */
+.empty{text-align:center;padding:36px 20px;color:var(--muted);}
+.empty p{font-size:.84rem;}
+.mini-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.mini-row:last-child{border-bottom:none;}
+.mini-row .mname{font-weight:500;font-size:.84rem;}
+.mini-row .msub{font-size:.69rem;color:var(--muted);margin-top:1px;}
+.mini-row .mright{text-align:right;}
+.mini-row .mtime{font-size:.69rem;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace;}
+.result-ok{background:#E8F5E9;color:var(--green);border:1px solid #A5D6A7;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+.result-err{background:#FFEBEE;color:var(--red);border:1px solid #FFCDD2;padding:11px;border-radius:var(--r-sm);font-size:.84rem;margin-top:12px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;z-index:200;background:var(--ink);color:#fff;padding:10px 16px;border-radius:var(--r-sm);font-size:.84rem;box-shadow:var(--sh);transform:translateY(70px);opacity:0;transition:all .25s;pointer-events:none;max-width:300px;}
+#toast.show{transform:none;opacity:1;}
+#toast.success{background:var(--green);}
+#toast.error{background:var(--red);}
+
+/* MODALS */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(13,31,34,.45);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease;}
+.modal{background:#fff;border-radius:var(--r);box-shadow:var(--sh);width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease both;}
+.modal-wide{width:700px;}
+.modal-hdr{padding:15px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.modal-hdr h3{font-size:.92rem;font-weight:600;color:var(--ink);margin:0;}
+.modal-close{width:26px;height:26px;border-radius:6px;border:none;background:none;color:var(--muted);font-size:1.1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .14s;}
+.modal-close:hover{background:var(--bg);}
+.modal-body{padding:16px 20px;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.modal-err{color:var(--red);font-size:.8rem;display:none;padding:7px 0;background:#FFEBEE;border-radius:6px;padding:10px;margin-top:10px;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0;}to{transform:none;opacity:1;}}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:900px){.sidebar{width:190px;}}
+@media(max-width:660px){.sidebar{display:none;}.stat-grid{grid-template-columns:1fr 1fr;}.page-body{padding:14px;}}
+
+
+/* Photo upload preview */
+#photoPreview {
+  text-align: center;
+}
+#photoImg {
+  transition: transform 0.2s;
+}
+#photoImg:hover {
+  transform: scale(1.02);
+}
+
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN FALLBACK -->
+<div id="loginFallback" class="screen">
+  <div style="text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">🔒</div>
+    <h2 style="font-size:1.1rem;color:var(--ink);margin-bottom:8px;">Session not found</h2>
+    <p style="color:var(--muted);margin-bottom:24px;">Please log in first to access the admin portal.</p>
+    <a href="index.html" style="display:inline-block;padding:10px 24px;background:var(--teal);color:#fff;border-radius:var(--r-sm);font-size:.95rem;font-weight:500;text-decoration:none;">Go to Login</a>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="appScreen" class="screen">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="" class="sb-logo-img" onerror="this.style.display='none'"/>
+        <div>
+          <div class="sb-app-name">AttendEase</div>
+          <div class="sb-app-sub">Admin Portal</div>
+        </div>
+      </div>
+      <div class="sb-company">
+        <div style="font-size:.70rem;color:rgba(255,255,255,.38);letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px;">Company</div>
+        <strong id="sbCompanyName">—</strong>
+      </div>
+    </div>
+
+    <div class="sb-nav">
+      <button class="nav-item active" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="nav('employees',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Employees
+      </button>
+      <button class="nav-item" onclick="nav('sites',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Sites
+
+      </button>
+      <button class="nav-item" onclick="nav('attendance',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M8 18h.01M12 18h.01"/></svg>
+        Attendance
+      </button>
+
+<button class="nav-item" onclick="nav('lunchTracking', this)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  Post-Lunch Tracking
+</button>
+
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="nav('reports',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reports
+      </button>
+      <button class="nav-item" onclick="nav('manual',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Manual Entry
+      </button>
+
+<button class="nav-item" onclick="nav('rectifications',this)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+  Rectifications
+</button>
+
+<button class="nav-item" onclick="nav('leave',this)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><path d="M9 17h6"/></svg>
+  Leave Entry
+</button>
+      <button class="nav-item" onclick="nav('holidays',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Holidays
+      </button>
+      <button class="nav-item" onclick="nav('weeklyoff',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Weekly Off
+      </button>
+
+
+<!-- DISABLED TEMPORARILY -->	
+<!--
+<button class="nav-item" onclick="nav('leavebalances',this)">
+	  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M8 18h.01M12 18h.01"/></svg>
+	  Leave Balances
+	</button>
+-->
+
+
+      <button class="nav-item" onclick="nav('support',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Support
+      </button>
+    </div>
+
+    <div class="sb-footer" style="padding:14px;">
+      <div style="font-size:.80rem;font-weight:600;color:rgba(255,255,255,.55);text-align:center;line-height:1.5;">
+        Drushyasinchana<br/>
+        <span style="font-size:.72rem;font-weight:400;color:rgba(255,255,255,.32);">Tech Solutions</span>
+      </div>
+      <div style="font-size:.68rem;color:rgba(255,255,255,.22);text-align:center;margin-top:4px;">© 2025 All rights reserved</div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-right">
+        <div class="avatar-wrap">
+          <div class="avatar" id="topbarAvatar" onclick="toggleAvatarMenu()">TE</div>
+          <div class="avatar-dropdown" id="avatarDropdown">
+            <div class="avatar-dd-header">
+              <div class="avatar-dd-name" id="ddName">Admin User</div>
+              <div class="avatar-dd-email" id="ddEmail">admin@test001.com</div>
+            </div>
+            <div style="padding:6px 0;">
+              <button class="avatar-dd-item danger" onclick="doLogout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;opacity:.6;flex-shrink:0;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pgDashboard">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-val" id="stTotalEmp">0</div>
+            <div class="stat-sub">Registered</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Present Today</div>
+            <div class="stat-val" id="stPresent">0</div>
+            <div class="stat-sub" id="stDate">—</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Absent Today</div>
+            <div class="stat-val" id="stAbsent">0</div>
+            <div class="stat-sub">Not checked in</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Sites</div>
+            <div class="stat-val" id="stSites">0</div>
+            <div class="stat-sub">Geofenced</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-hdr">
+            <h3>Sites — Today's Overview</h3>
+            <span id="dashSiteDate" style="font-size:.74rem;color:var(--muted);"></span>
+          </div>
+          <div id="dashSiteCards" class="site-grid">
+            <div class="empty"><p>No active sites</p></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Today's Check-ins</h3>
+            <button class="btn btn-outline btn-sm" onclick="nav('attendance',document.querySelectorAll('.nav-item')[3])">View all</button>
+          </div>
+          <div id="dashAttendList"><div class="empty"><p>No attendance records today</p></div></div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEES -->
+      <div class="page" id="pgEmployees">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Employee Directory</h3>
+            <button class="btn btn-teal btn-sm" onclick="openEmpModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Employee
+            </button>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="empSearch" placeholder="Search name, code, email…" oninput="filterEmployees()" style="flex:1;min-width:160px;"/>
+            <select id="empStatusFilter" onchange="filterEmployees()">
+              <option value="">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+            </select>
+            <select id="empSiteFilter" onchange="filterEmployees()"><option value="">All Sites</option></select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+<thead><tr><th>PHOTO</th><th>EMPID</th><th>Name</th><th>Email</th><th>Designation</th><th>Phone</th><th>Site</th><th>Join Date</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="empTableBody"><tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SITES -->
+      <div class="page" id="pgSites">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Site Management</h3>
+            <button class="btn btn-teal btn-sm" onclick="openSiteModal()">+ Add Site</button>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="siteSearch" placeholder="Search sites…" oninput="filterSites()" style="flex:1;min-width:160px;"/>
+            <select id="siteStatusFilter" onchange="filterSites()">
+              <option value="">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadSites()">↻ Refresh</button>
+          </div>
+          <div id="sitesList" class="site-grid">
+            <div class="empty"><p>Loading sites...</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div class="page" id="pgAttendance">
+        <div class="card">
+          <div class="card-hdr"><h3>Attendance Records</h3></div>
+          <div class="filter-bar">
+            <input type="date" id="attDate" onchange="loadAttendance()"/>
+            <select id="attSite" onchange="loadAttendance()"><option value="">All Sites</option></select>
+            <select id="attStatus" onchange="filterAttTable()">
+              <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAttendance()">↻ Refresh</button>
+          </div>
+          <div class="chips" id="attSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Employee</th><th>EMPID</th><th>Site</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Location</th><th>Half Day</th><th>Marked By</th></tr></thead>
+              <tbody id="attTableBody"><tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Select a date to load records</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+<!-- POST LUNCH TRACKING-->
+
+<div class="page" id="pgLunchTracking">
+  <div class="card">
+    <div class="card-hdr"><h3>Post-Lunch Geo-Tracking</h3></div>
+    <div class="filter-bar">
+      <input type="date" id="lunchDate" onchange="loadLunchTracking()"/>
+      <select id="lunchSite" onchange="loadLunchTracking()"><option value="">All Sites</option></select>
+      <select id="lunchFilter" onchange="filterLunchTable()">
+        <option value="">All</option>
+        <option value="INSIDE">✅ Inside Geofence</option>
+        <option value="OUTSIDE">❌ Outside Geofence</option>
+        <option value="PENDING">⏳ Not Marked</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="loadLunchTracking()">↻ Refresh</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>EMPID</th><th>Name</th><th>Site</th><th>Time</th>
+          <th>Status</th><th>Coordinates</th><th>Accuracy</th>
+        </tr></thead>
+        <tbody id="lunchTableBody"><tr><td colspan="7" style="text-align:center;padding:20px;">Select a date</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+      <!-- REPORTS -->
+      <div class="page" id="pgReports">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-hdr"><h3>Generate Report</h3></div>
+<div class="filter-bar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+  <input type="date" id="rptFrom" style="flex:1;min-width:140px;"/>
+  <input type="date" id="rptTo" style="flex:1;min-width:140px;"/>
+            <div class="fgg"><label>Site</label><select id="rptSite"><option value="">All Sites</option></select></div>
+            <div class="fgg"><label>Employee</label><select id="rptEmp"><option value="">All Employees</option></select></div>
+          </div>
+          <div class="form-actions">
+ 			<button class="btn btn-teal btn-sm" onclick="generateReport()">📊 Generate</button>
+  			<!-- NEW EXPORT BUTTONS -->
+ 			 <button class="btn btn-outline btn-sm" onclick="exportReportCSV()">📥 CSV</button>
+ 			 <button class="btn btn-outline btn-sm" onclick="exportReportPDF()">📄 PDF</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Results</h3>
+            <span id="rptCount" style="font-size:.78rem;color:var(--muted);"></span>
+          </div>
+          <div class="chips" id="rptSummary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Employee</th><th>EMPID</th><th>Site</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Half Day</th><th>Marked By</th></tr></thead>
+              <tbody id="rptTableBody"><tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Generate a report to see results</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+<!-- MANUAL ENTRY -->
+<div class="page" id="pgManual">
+  <div class="card" style="max-width:640px;">
+    <div class="card-hdr"><h3>Manual Attendance Entry</h3></div>
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:18px;">Correct or record missed attendance. All entries are logged with your admin ID.</p>
+    
+    <div class="form-grid" style="margin-bottom:12px;">
+      <div class="fgg">
+        <label>Site</label>
+        <select id="mSite" onchange="onManualSiteChange()">
+          <option value="">— Select Site —</option>
+        </select>
+      </div>
+      <div class="fgg">
+        <label>Employee *</label>
+        <select id="mEmpId">
+          <option value="">— Select Employee —</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="fgg" style="margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="mUseDefaults" onchange="toggleManualDefaults()" style="width:18px;height:18px;accent-color:var(--teal);"/>
+        <span style="font-size:.85rem;">Use default shift timings from assigned site</span>
+      </label>
+    </div>
+    
+    <div class="form-grid" style="margin-bottom:12px;">
+      <div class="fgg">
+        <label>Date *</label>
+        <input type="date" id="mDate"/>
+      </div>
+      <div class="fgg">
+        <label>Check-In Time</label>
+        <input type="time" id="mCheckIn"/>
+      </div>
+      <div class="fgg">
+        <label>Check-Out Time</label>
+        <input type="time" id="mCheckOut"/>
+      </div>
+      <div class="fgg">
+        <label>Half Day</label>
+        <select id="mHalfDay"><option value="NO">No</option><option value="YES">Yes</option></select>
+      </div>
+      <div class="fgg">
+        <label>Status</label>
+        <select id="mStatus">
+          <option value="PRESENT">Present</option>
+          <option value="ABSENT">Absent</option>
+          <option value="ON_LEAVE">On Leave</option>
+          <option value="HALF_DAY">Half Day</option>
+          <option value="HOLIDAY">Holiday</option>
+        </select>
+      </div>
+      <div class="fgg" style="grid-column:1/-1;">
+        <label>Reason / Remark</label>
+        <textarea id="mReason" placeholder="Reason for manual entry…"></textarea>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button class="btn btn-teal" onclick="submitManual()">Save Entry</button>
+      <button class="btn btn-outline" onclick="clearManual()">Clear</button>
+    </div>
+    <div id="manualResult"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     RECTIFICATIONS PAGE (Matches Attendance Layout)
+══════════════════════════════════════════════════════ -->
+<div class="page" id="pgRectifications">
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Attendance Rectifications</h3>
+      <span style="font-size:0.8rem;color:var(--muted);">View & edit daily records</span>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filter-bar">
+      <input type="date" id="rectDate" onchange="loadRectifications()"/>
+      <select id="rectSite" onchange="loadRectifications()"><option value="">All Sites</option></select>
+      <button class="btn btn-outline btn-sm" onclick="loadRectifications()">↻ Refresh</button>
+    </div>
+    
+    <!-- Summary Badges -->
+    <div class="filter-bar" style="gap:8px;margin-top:10px;margin-bottom:10px;">
+      <span class="badge badge-gray">Total <span id="rectTotal">0</span></span>
+      <span class="badge badge-green">Present <span id="rectPresent">0</span></span>
+      <span class="badge badge-red">Absent <span id="rectAbsent">0</span></span>
+      <span class="badge badge-amber">Leave <span id="rectLeave">0</span></span>
+    </div>
+    
+    <!-- Table -->
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>EMPLOYEE</th>
+            <th>EMPID</th>
+            <th>SITE</th>
+            <th>IN</th>
+            <th>OUT</th>
+            <th>HOURS</th>
+            <th>STATUS</th>
+            <th>LOCATION</th>
+            <th>HALF DAY</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="rectTableBody">
+          <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Select a date to load records</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- LEAVE ENTRY -->
+<div class="page" id="pgLeave">
+  <div class="card" style="max-width:640px;">
+    <div class="card-hdr"><h3>Leave Application Entry</h3></div>
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:18px;">Record leave applications for employees. All entries are logged with your admin ID.</p>
+    <div class="form-grid" style="margin-bottom:12px;">
+      <div class="fgg">
+        <label>Site</label>
+        <select id="leaveSite" onchange="onLeaveSiteChange()">
+          <option value="">— Select Site —</option>
+        </select>
+      </div>
+      <div class="fgg">
+        <label>Employee *</label>
+        <select id="leaveEmpId">
+          <option value="">— Select Employee —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-bottom:12px;">
+      <div class="fgg">
+        <label>From Date *</label>
+        <input type="date" id="leaveFrom"/>
+      </div>
+      <div class="fgg">
+        <label>To Date *</label>
+        <input type="date" id="leaveTo"/>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-bottom:12px;">
+      <div class="fgg">
+        <label>Leave Type *</label>
+        <select id="leaveType">
+          <option value="">— Select Leave Type —</option>
+          <option value="PL">Privilege Leave (PL)</option>
+          <option value="CL">Casual Leave (CL)</option>
+          <option value="SL">Sick Leave (SL)</option>
+          <option value="ML">Maternity Leave (ML)</option>
+          <option value="PTL">Paternity Leave (PTL)</option>
+          <option value="CO">Comp Off (CO)</option>
+          <option value="BL">Bereavement Leave (BL)</option>
+          <option value="SBB">Sabbatical (SBB)</option>
+          <option value="LOP">Loss of Pay (LOP)</option>
+        </select>
+      </div>
+      <div class="fgg" style="grid-column:1/-1;">
+        <label>Reason / Remark</label>
+        <textarea id="leaveReason" placeholder="Reason for leave..." rows="3"></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-teal" onclick="submitLeave()">Save Leave Application</button>
+      <button class="btn btn-outline" onclick="clearLeave()">Clear</button>
+    </div>
+    <div id="leaveResult"></div>
+  </div>
+</div>
+      <!-- HOLIDAYS -->
+      <div class="page" id="pgHolidays">
+        <div class="card">
+          <div class="card-hdr">
+            <h3>Holiday Master</h3>
+            <button class="btn btn-teal btn-sm" onclick="openHolidayModal()">+ Add Holiday</button>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="holidaySearch" placeholder="Search holidays…" oninput="filterHolidays()" style="flex:1;min-width:160px;"/>
+            <select id="holidayTypeFilter" onchange="filterHolidays()">
+              <option value="">All Types</option>
+              <option value="National Holiday">National Holiday</option>
+              <option value="Regional Holiday">Regional Holiday</option>
+              <option value="Company Holiday">Company Holiday</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadHolidays()">↻ Refresh</button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Date</th><th>Holiday Name</th><th>Type</th><th>Day</th><th>Sites</th><th>State</th><th>Actions</th></tr></thead>
+              <tbody id="holidaysTableBody"><tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted);">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+<!-- ══════════════════════════════════════════════════════
+     WEEKLY OFF PAGE
+     ⚠️ ID MUST BE EXACTLY: pgWeeklyoff
+══════════════════════════════════════════════════════ -->
+<div class="page" id="pgWeeklyoff">
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Weekly Off Configuration</h3>
+      <button class="btn btn-teal btn-sm" onclick="openWeeklyOffModal()">+ Add Weekly Off</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>SITE ID</th>
+            <th>SITE NAME</th>
+            <th>WEEKLY OFF 1</th>
+            <th>WEEKLY OFF 2</th>
+            <th>EFFECTIVE FROM</th>
+            <th>REMARKS</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="weeklyOffTableBody">
+          <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     LEAVE BALANCES PAGE
+══════════════════════════════════════════════════════ -->
+<div class="page" id="pgLeavebalances">
+  <div class="card">
+<div class="card-hdr">
+  <h3>Employee Leave Balances</h3>
+  <button class="btn btn-teal btn-sm" onclick="addLeaveBalance()">+ Add Balance</button>
+</div>
+    <div class="filter-bar">
+      <input type="text" id="leaveSearch" placeholder="Search EMPID or Name…" oninput="filterLeaveBalances()" style="flex:1;min-width:160px;"/>
+      <select id="leaveYearFilter" onchange="loadLeaveBalances()">
+        <option value="">All Years</option>
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="loadLeaveBalances()">↻ Refresh</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>EMPID</th>
+            <th>Name</th>
+            <th>PL</th>
+            <th>CL</th>
+            <th>SL</th>
+            <th>Comp Off</th>
+            <th>LOP</th>
+            <th>Year</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leaveBalTableBody">
+          <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted);">Loading leave balances…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+      <!-- SUPPORT -->
+<div class="page" id="pgSupport">
+  <div class="card">
+    <div class="card-hdr"><h3>Support & Help</h3></div>
+    <div style="max-width:600px;">
+      <h4 style="margin-bottom:10px;">📧 Contact Support</h4>
+      <p style="color:var(--muted);margin-bottom:20px;">
+        For any issues, queries or feature requests, reach out to us:
+      </p>
+      <div style="background:#E0F7FA;padding:15px;border-radius:8px;margin-bottom:15px;">
+        <strong>Email:</strong> <a href="mailto:drushyasinchana@gmail.com" style="color:#00838F;">drushyasinchana@gmail.com</a><br>
+        <strong>Phone:</strong> +91 1234567890<br>
+        <strong>Hours:</strong> Mon-Sat, 9:00 AM - 6:00 PM
+      </div>
+      <h4 style="margin-bottom:10px;">ℹ️ Your Plan Details</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:#f8f9fa;padding:12px;border-radius:6px;">
+          <div style="font-size:.75rem;color:var(--muted);">Plan</div>
+          <div style="font-weight:600;" id="supportPlan">—</div>
+        </div>
+        <div style="background:#f8f9fa;padding:12px;border-radius:6px;">
+          <div style="font-size:.75rem;color:var(--muted);">Valid Until</div>
+          <div style="font-weight:600;" id="supportValidUntil">—</div>
+        </div>
+        <div style="background:#f8f9fa;padding:12px;border-radius:6px;">
+          <div style="font-size:.75rem;color:var(--muted);">Company</div>
+          <div style="font-weight:600;" id="supportCompany">—</div>
+        </div>
+        <div style="background:#f8f9fa;padding:12px;border-radius:6px;">
+          <div style="font-size:.75rem;color:var(--muted);">Admin</div>
+          <div style="font-weight:600;" id="supportAdmin">—</div>
+        </div>
+      </div>
+      <h4 style="margin-bottom:10px;">📱 Quick Help</h4>
+      <ul style="color:var(--muted);line-height:1.8;">
+        <li>GPS not working? Verify Latitude/Longitude in the SITES tab.</li>
+        <li>App not activating? Confirm Company Code in Firebase console.</li>
+      </ul>
+      <div style="margin-top:30px;padding-top:20px;border-top:1px solid var(--border);font-size:.8rem;color:var(--hint);">
+        AttendEase v3.0 &nbsp;·&nbsp; © 2025 Drushyasinchana Tech Solutions
+      </div>
+    </div>
+  </div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════ -->
+
+<!-- Employee Modal -->
+<div class="modal-backdrop" id="empModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="empModalTitle">Add Employee</h3>
+      <button class="modal-close" onclick="closeModal('empModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fgg"><label>Employee ID *</label><input id="eCode" placeholder="EMP001" style="text-transform:uppercase;"/></div>
+        <div class="fgg"><label>Full Name *</label><input id="eName" placeholder="Full name"/></div>
+        <div class="fgg"><label>Email</label><input id="eEmail" type="email" placeholder="emp@company.com"/></div>
+        <div class="fgg"><label>Designation</label><select id="eDesignation"><option value="">— Select —</option><option value="Manager">Manager</option><option value="Supervisor">Supervisor</option><option value="Foreman">Foreman</option><option value="Engineer">Engineer</option><option value="Technician">Technician</option><option value="Worker">Worker</option><option value="Security">Security</option><option value="Driver">Driver</option><option value="Admin">Admin</option></select></div>
+        <div class="fgg"><label>Phone</label><input id="ePhone" type="tel" placeholder="9876543210"/></div>
+        <div class="fgg"><label>PIN / Password *</label><input id="ePass" type="password" placeholder="Leave blank to keep existing"/></div>
+        <div class="fgg"><label>Role</label>
+<select id="eRole">
+<option value="EMPLOYEE">Employee</option>
+<option value="ADMIN">Admin</option>
+<option value="SUPER_ADMIN">SUPER_ADMIN</option>
+<option value="SUPERVISOR">SUPERVISOR</option>
+
+</select></div>
+        <div class="fgg"><label>Assign Site</label><select id="eSite"><option value="">— Select —</option></select></div>
+        <div class="fgg"><label>Joining Date</label><input id="eJoin" type="date"/></div>
+        <div class="fgg"><label>Effective Date</label><input id="eEffDate" type="date"/></div>
+        <div class="fgg"><label>Status</label><select id="eStatus"><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></div>
+        <div class="fgg" style="grid-column:1/-1;"><label>Photo URL</label><input id="ePhotoURL" type="text" placeholder="https://... (optional)"/></div>
+      </div>
+      <div class="modal-err" id="empModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('empModal')">Cancel</button>
+      <button class="btn btn-teal" id="btnSaveEmp" onclick="saveEmployee()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Site Modal -->
+<div class="modal-backdrop" id="siteModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="siteModalTitle">Add Site</h3>
+      <button class="modal-close" onclick="closeModal('siteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fgg"><label>Site ID *</label><input id="sCode" placeholder="SITE001" style="text-transform:uppercase;"/></div>
+        <div class="fgg"><label>Site Name *</label><input id="sName" placeholder="Head Office"/></div>
+        <div class="fgg"><label>Latitude *</label><input id="sLat" type="number" step="any" placeholder="12.9716"/></div>
+        <div class="fgg"><label>Longitude *</label><input id="sLng" type="number" step="any" placeholder="77.5946"/></div>
+        <div class="fgg"><label>Radius (meters) *</label><input id="sRadius" type="number" placeholder="100"/></div>
+        <div class="fgg"><label>Shift Start</label><input id="sShiftStart" type="time" value="09:00"/></div>
+        <div class="fgg"><label>Shift End</label><input id="sShiftEnd" type="time" value="18:00"/></div>
+        <div class="fgg"><label>Lunch Time</label><input id="sLunch" type="time" value="13:00"/></div>
+        <div class="fgg" style="grid-column:1/-1;"><label>Address</label><input id="sAddress" placeholder="Full address"/></div>
+        <div class="fgg"><label>Status</label><select id="sStatus"><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></div>
+      </div>
+      <div class="modal-err" id="siteModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('siteModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveSite()">Save Site</button>
+    </div>
+  </div>
+</div>
+
+<!-- Holiday Modal -->
+<div class="modal-backdrop" id="holidayModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="holidayModalTitle">Add Holiday</h3>
+      <button class="modal-close" onclick="closeModal('holidayModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fgg"><label>Holiday ID *</label><input id="hCode" placeholder="HOL001" style="text-transform:uppercase;"/></div>
+        <div class="fgg"><label>Date *</label><input id="hDate" type="date"/></div>
+        <div class="fgg"><label>Holiday Name *</label><input id="hName" placeholder="Republic Day"/></div>
+        <div class="fgg"><label>Type *</label><select id="hType"><option value="National Holiday">National Holiday</option><option value="Regional Holiday">Regional Holiday</option><option value="Company Holiday">Company Holiday</option></select></div>
+        <div class="fgg"><label>Day</label><select id="hDay"><option value="">Select...</option><option value="Monday">Monday</option><option value="Tuesday">Tuesday</option><option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option><option value="Friday">Friday</option><option value="Saturday">Saturday</option><option value="Sunday">Sunday</option></select></div>
+        <div class="fgg"><label>Applicable Sites</label><select id="hSites"><option value="ALL">All Sites</option></select></div>
+        <div class="fgg"><label>State</label><input id="hState" placeholder="All / Karnataka / etc."/></div>
+        <div class="fgg" style="grid-column:1/-1;"><label>Description</label><textarea id="hDesc" placeholder="Gazetted Holiday" rows="2"></textarea></div>
+      </div>
+      <div class="modal-err" id="holidayModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('holidayModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveHoliday()">Save Holiday</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- Weekly Off Modal -->
+
+
+<div class="modal-backdrop" id="weeklyOffModal" style="display:none;">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-hdr">
+      <h3 id="weeklyOffModalTitle">Add Weekly Off Config</h3>
+      <button class="modal-close" onclick="closeModal('weeklyOffModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fgg">
+          <label>Site *</label>
+          <select id="woSite">
+            <option value="">Select Site</option>
+          </select>
+        </div>
+        <div class="fgg">
+          <label>Weekly Off Day 1 *</label>
+          <select id="woDay1">
+            <option value="Sunday">Sunday</option>
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+          </select>
+        </div>
+        <div class="fgg">
+          <label>Weekly Off Day 2</label>
+          <select id="woDay2">
+            <option value="None">None</option>
+            <option value="Sunday">Sunday</option>
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+          </select>
+        </div>
+        <div class="fgg">
+          <label>Effective From *</label>
+          <input type="date" id="woEffDate"/>
+        </div>
+        <div class="fgg" style="grid-column:1/-1;">
+          <label>Remarks</label>
+          <textarea id="woRemarks" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-err" id="weeklyOffModalErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('weeklyOffModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveWeeklyOff()">💾 Save Configuration</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Site Report Modal -->
+<div class="modal-backdrop" id="siteReportModal">
+  <div class="modal modal-wide">
+    <div class="modal-hdr">
+      <h3 id="siteReportTitle">Site Report</h3>
+      <button class="modal-close" onclick="closeModal('siteReportModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="chips" id="siteReportChips"></div>
+      <div class="filter-bar" style="margin-bottom:12px;">
+        <input type="date" id="siteRptDate" onchange="loadSiteReport()"/>
+        <select id="siteRptStatus" onchange="filterSiteReport()">
+          <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadSiteReport()">↻ Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="exportSiteCSV()">Export CSV</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Employee</th><th>EMPID</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Location</th><th>Marked By</th></tr></thead>
+          <tbody id="siteReportBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('siteReportModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-backdrop" id="deleteModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-hdr">
+      <h3>Confirm Delete</h3>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:20px;">Are you sure? This action cannot be undone.</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closeModal('deleteModal')">Cancel</button>
+        <button class="btn btn-teal" id="btnConfirmDelete" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="toast"></div>
+
+<!-- External JS -->
+<script src="js/manage.js"></script>
+
+
+<!-- Rectify Attendance Modal -->
+<div class="modal-backdrop" id="attRectModal" style="display:none;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hdr">
+      <h3>✏️ Rectify Attendance Record</h3>
+      <button class="modal-close" onclick="closeModal('attRectModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rectDocId"/>
+      <div class="form-grid">
+        <div class="fgg"><label>Employee</label><input id="rectEmpName" readonly style="background:#f5f5f5;"/></div>
+        <div class="fgg"><label>Date</label><input id="rectDateDisp" readonly style="background:#f5f5f5;"/></div>
+        <div class="fgg">
+          <label>Status</label>
+          <select id="rectStatus">
+            <option value="PRESENT">PRESENT</option>
+            <option value="ABSENT">ABSENT</option>
+            <option value="ON_LEAVE">ON_LEAVE</option>
+            <option value="HALF_DAY">HALF_DAY</option>
+          </select>
+        </div>
+        <div class="fgg">
+          <label>Location Source</label>
+          <select id="rectLocation">
+            <option value="INSIDE">INSIDE (GPS)</option>
+            <option value="OUTSIDE">OUTSIDE (GPS)</option>
+            <option value="MANUAL">MANUAL ENTRY</option>
+            <option value="LEAVE">LEAVE MARKED</option>
+          </select>
+        </div>
+        <div class="fgg"><label>In Time</label><input type="time" id="rectIn"/></div>
+        <div class="fgg"><label>Out Time</label><input type="time" id="rectOut"/></div>
+        <div class="fgg">
+          <label>Half Day</label>
+          <select id="rectHalfDay">
+            <option value="NO">NO</option>
+            <option value="FN">FIRST HALF</option>
+            <option value="AN">SECOND HALF</option>
+          </select>
+        </div>
+        <div class="fgg" style="grid-column:1/-1;"><label>Remarks</label><input id="rectRemarks" placeholder="Optional reason..."/></div>
+      </div>
+      <div class="modal-err" id="rectErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('attRectModal')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveRectification()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PHOTO UPLOAD MODAL
+══════════════════════════════════════════════════════ -->
+<!-- Update Employee Photo Modal -->
+<div class="modal-backdrop" id="photoModal" style="display:none;">
+  <div class="modal" style="max-width:450px;">
+    <div class="modal-hdr">
+      <h3>📷 Upload Employee Photo</h3>
+      <button class="modal-close" onclick="closeModal('photoModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:12px;font-size:0.9rem;">
+        <strong id="photoEmpName"></strong><br>
+        <span style="color:var(--muted);font-size:0.85rem;">EMPID: <span id="photoEmpId"></span></span>
+      </p>
+      
+      <!-- File Input -->
+      <div class="fgg" style="margin-bottom:16px;">
+        <label>Choose Photo from Computer *</label>
+	  <!-- ✅ Only accept JPG/JPEG files -->
+		  <input type="file" id="photoFile" accept="image/jpeg,image/jpg" style="padding:8px;border:1.5px dashed var(--border);border-radius:6px;background:#fff;cursor:pointer;"/>
+		  <p style="font-size:0.75rem;color:var(--muted);margin-top:4px;">
+		    ✅ JPG only • Max size: 50KB • Recommended: 150x150px
+      </div>
+      
+      <div id="photoPreview" style="margin-bottom:16px;display:none;">
+        <p style="font-size:0.85rem;margin-bottom:8px;">Preview:</p>
+        <img id="photoImg" src="" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid var(--border);"/>
+      </div>
+      
+      <div class="modal-err" id="photoErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('photoModal')">Cancel</button>
+      <button class="btn btn-teal" id="btnSavePhoto" onclick="savePhoto()">💾 Upload Photo</button>
+    </div>
+  </div>
+</div>
+
+
+
+</body>
+</html>
