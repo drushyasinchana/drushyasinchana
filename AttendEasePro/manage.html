@@ -266,7 +266,7 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
         Attendance
       </button>
 
-<button class="nav-item" onclick="nav('lunchTracking', this)">
+<button class="nav-item" onclick="nav('postlunch', this)">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
   </svg>
@@ -463,15 +463,13 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
         </div>
       </div>
 
-<!-- POST LUNCH TRACKING-->
-
-<div class="page" id="pgLunchTracking">
-  <div class="card">
+<!-- POST LUNCH TRACKING -->
+<div class="page" id="pgPostlunch">  <!-- ✅ Must match nav() -->  <div class="card">
     <div class="card-hdr"><h3>Post-Lunch Geo-Tracking</h3></div>
     <div class="filter-bar">
-      <input type="date" id="lunchDate" onchange="loadLunchTracking()"/>
-      <select id="lunchSite" onchange="loadLunchTracking()"><option value="">All Sites</option></select>
-      <select id="lunchFilter" onchange="filterLunchTable()">
+      <input type="date" id="lunchDate"/>
+      <select id="lunchSite"><option value="">🌐 All Sites</option></select>
+      <select id="lunchFilter">
         <option value="">All</option>
         <option value="INSIDE">✅ Inside Geofence</option>
         <option value="OUTSIDE">❌ Outside Geofence</option>
@@ -479,18 +477,20 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
       </select>
       <button class="btn btn-outline btn-sm" onclick="loadLunchTracking()">↻ Refresh</button>
     </div>
+    <div class="chips" id="lunchSummary"></div>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
           <th>EMPID</th><th>Name</th><th>Site</th><th>Time</th>
           <th>Status</th><th>Coordinates</th><th>Accuracy</th>
         </tr></thead>
-        <tbody id="lunchTableBody"><tr><td colspan="7" style="text-align:center;padding:20px;">Select a date</td></tr></tbody>
+        <tbody id="lunchTableBody">
+          <tr><td colspan="7" style="text-align:center;padding:20px;">Loading...</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
 </div>
-
 
 
       <!-- REPORTS -->
@@ -867,17 +867,35 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
         <div class="fgg"><label>Employee ID *</label><input id="eCode" placeholder="EMP001" style="text-transform:uppercase;"/></div>
         <div class="fgg"><label>Full Name *</label><input id="eName" placeholder="Full name"/></div>
         <div class="fgg"><label>Email</label><input id="eEmail" type="email" placeholder="emp@company.com"/></div>
-        <div class="fgg"><label>Designation</label><select id="eDesignation"><option value="">— Select —</option><option value="Manager">Manager</option><option value="Supervisor">Supervisor</option><option value="Foreman">Foreman</option><option value="Engineer">Engineer</option><option value="Technician">Technician</option><option value="Worker">Worker</option><option value="Security">Security</option><option value="Driver">Driver</option><option value="Admin">Admin</option></select></div>
+        
+        <!-- ✅ NEW: Category Dropdown -->
+        <div class="fgg">
+          <label>Category *</label>
+          <select id="eCategory" onchange="onCategoryChange()">
+            <option value="">— Select Category —</option>
+            <option value="Office/Corporate">Office/Corporate</option>
+            <option value="Field/Operations">Field/Operations</option>
+          </select>
+        </div>
+        
+        <!-- ✅ UPDATED: Designation Dropdown (populated by JS) -->
+        <div class="fgg">
+          <label>Designation *</label>
+          <select id="eDesignation">
+            <option value="">— Select Category First —</option>
+          </select>
+        </div>
+        
         <div class="fgg"><label>Phone</label><input id="ePhone" type="tel" placeholder="9876543210"/></div>
         <div class="fgg"><label>PIN / Password *</label><input id="ePass" type="password" placeholder="Leave blank to keep existing"/></div>
         <div class="fgg"><label>Role</label>
-<select id="eRole">
-<option value="EMPLOYEE">Employee</option>
-<option value="ADMIN">Admin</option>
-<option value="SUPER_ADMIN">SUPER_ADMIN</option>
-<option value="SUPERVISOR">SUPERVISOR</option>
-
-</select></div>
+          <select id="eRole">
+            <option value="EMPLOYEE">Employee</option>
+            <option value="ADMIN">Admin</option>
+            <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+            <option value="SUPERVISOR">SUPERVISOR</option>
+          </select>
+        </div>
         <div class="fgg"><label>Assign Site</label><select id="eSite"><option value="">— Select —</option></select></div>
         <div class="fgg"><label>Joining Date</label><input id="eJoin" type="date"/></div>
         <div class="fgg"><label>Effective Date</label><input id="eEffDate" type="date"/></div>
@@ -892,6 +910,7 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
     </div>
   </div>
 </div>
+
 
 <!-- Site Modal -->
 <div class="modal-backdrop" id="siteModal">
@@ -1067,6 +1086,24 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
 
 <!-- External JS -->
 <script src="js/manage.js"></script>
+<!-- 1. CORE FIRST (Global state, utils, firebase, init)  
+<script src="js/core.js"></script> -->
+
+<!-- 2. FEATURE MODULES (Load in any order after core) -->
+
+<script src="js/employees.js"></script>
+<script src="js/sectors.js"></script>
+<script src="js/sites.js"></script>
+<script src="js/attendance.js"></script>
+<script src="js/manual.js"></script>
+<script src="js/leave.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/holidays.js"></script>
+<script src="js/weeklyoff.js"></script>
+<script src="js/rectifications.js"></script>
+<script src="js/postlunch.js"></script>
+<script src="js/support.js"></script>
+
 
 
 <!-- Rectify Attendance Modal -->
