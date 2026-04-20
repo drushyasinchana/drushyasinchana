@@ -511,16 +511,18 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
           </div>
           <div class="tbl-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Company ID</th>
-                  <th>Company Name</th>
-                  <th>Admin Email</th>
-                  <th>Plan</th>
-                  <th>Status</th>
-                  <th>City</th>
-                </tr>
-              </thead>
+<thead>
+  <tr>
+    <th>Logo</th>
+    <th>Company ID</th>
+    <th>Company Name</th>
+    <th>Admin Email</th>
+    <th>Plan</th>
+    <th>Release</th>
+    <th>Status</th>
+    <th>City</th>
+  </tr>
+</thead>
               <tbody id="dashCompanyList">
                 <tr class="empty-row"><td colspan="6">Loading…</td></tr>
               </tbody>
@@ -546,18 +548,20 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
           </div>
           <div class="tbl-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Company ID</th>
-                  <th>Company Name</th>
-                  <th>Admin Email</th>
-                  <th>Plan</th>
-                  <th>Max Emp</th>
-                  <th>Status</th>
-                  <th>End Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+             <thead>
+  <tr>
+    <th>Logo</th>
+    <th>Company ID</th>
+    <th>Company Name</th>
+    <th>Admin Email</th>
+    <th>Plan</th>
+    <th>Max Emp</th>
+    <th>Release</th>
+    <th>Status</th>
+    <th>End Date</th>
+    <th>Actions</th>
+  </tr>
+</thead>
               <tbody id="companyTableBody">
                 <tr class="empty-row"><td colspan="8">Loading…</td></tr>
               </tbody>
@@ -642,10 +646,25 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
               <label>Apps Script URL <span>*</span></label>
               <input id="cScriptUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec"/>
             </div>
-            <div class="fg span2">
-              <label>Notes</label>
-              <textarea id="cNotes" placeholder="Any notes about this company…"></textarea>
-            </div>
+<div class="fg">
+  <label>Company Logo</label>
+  <div style="border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;background:#fff;">
+    <div id="logoPreview" style="width:80px;height:80px;margin:0 auto 10px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <span style="color:var(--muted);font-size:.7rem;">No logo</span>
+    </div>
+    <input type="file" id="cLogoFile" accept="image/png,image/jpeg" onchange="previewLogo(this)" style="font-size:.8rem;"/>
+    <p style="font-size:.7rem;color:var(--muted);margin-top:6px;">PNG/JPG, max 100KB</p>
+  </div>
+</div>
+<div class="fg">
+  <label>GitHub Release</label>
+  <input id="cRelease" type="text" placeholder="v1.0.0 or https://github.com/..."/>
+  <span class="hint">GitHub release version or URL</span>
+</div>
+<div class="fg span2">
+  <label>Notes</label>
+  <textarea id="cNotes" placeholder="Any notes about this company…"></textarea>
+</div>
           </div>
 
           <div class="form-actions">
@@ -837,9 +856,32 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
     
     <div id="initResult" style="margin-bottom:20px;"></div>
     
-    <div style="display:flex;gap:12px;margin-bottom:20px;">
-      <button class="btn btn-teal" id="btnInitCompany" onclick="initializeCompany()" disabled>🚀 Initialize Company</button>
-    </div>
+<div style="display:flex; gap:12px; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap;">
+  <div class="fg" style="flex:1; min-width:240px; margin-bottom:0;">
+    <label>Industry Sector *</label>
+    <select id="companySector" required style="width:100%;">
+      <option value="">— Select Sector —</option>
+      <option value="CONST">Construction & Infrastructure</option>
+      <option value="MFG">Manufacturing & Factory Operations</option>
+      <option value="SEC">Security & Facility Management</option>
+      <option value="LOG">Logistics, Warehousing & Supply Chain</option>
+      <option value="RET">Retail & Multi-Store Chains</option>
+      <option value="HLT">Healthcare & Hospital Networks</option>
+      <option value="FLD">Field Services & IT Deployment</option>
+      <option value="EDU">Education & Universities</option>
+      <option value="AGR">Agriculture & Plantations</option>
+      <option value="GOV">Government & PSU</option>
+    </select>
+  </div>
+  
+  <div style="flex-shrink:0;">
+    <button class="btn btn-teal" id="btnInitCompany" onclick="initializeCompany()" disabled>
+      🚀 Initialize Company
+    </button>
+  </div>
+</div>
+
+</div>
     
     <!-- Console Output -->
     <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;">
@@ -1066,6 +1108,60 @@ function nav(page, btn) {
   if (page === 'addAdmin'   && !SA.editingAdminEmail) clearAdminForm();
 }
 
+
+//   ------------ Logo Preview Functon --------------
+
+let logoBlob = null;
+let logoType = null;
+
+function previewLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  if (file.size > 100 * 1024) {
+    toast('Logo must be less than 100KB', 'error');
+    input.value = '';
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('logoPreview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;"/>`;
+    logoBlob = e.target.result;
+    logoType = file.type;
+  };
+  reader.readAsDataURL(file);
+}
+
+
+function clearCompanyForm() {
+  SA.editingCompanyId = null;
+  document.getElementById('compFormTitle').textContent = 'Add New Company';
+  document.getElementById('cId').disabled = false;
+  ['cId','cName','cAdminEmail','cPhone','cSheetId','cScriptUrl','cNotes','cCity'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cPlan').value     = 'basic';
+  document.getElementById('cIsActive').value = 'true';
+  document.getElementById('cMaxEmp').value   = '50';
+  document.getElementById('cStartDate').value= today();
+  const endDate = new Date(); endDate.setFullYear(endDate.getFullYear()+1);
+  document.getElementById('cEndDate').value  = endDate.toISOString().slice(0,10);
+  document.getElementById('companyResult').style.display='none';
+  document.getElementById('companyErr').style.display='none';
+  
+  // ✅ Clear logo state and UI
+  logoBlob = null;
+  logoType = null;
+  document.getElementById('logoPreview').innerHTML = '<span style="color:var(--muted);font-size:.7rem;">No logo</span>';
+  document.getElementById('cLogoFile').value = '';
+  
+  // ✅ Clear release field
+  document.getElementById('cRelease').value = '';
+  
+  // ✅ Clear Firebase Config textarea
+  document.getElementById('cFirebaseConfig').value = '';
+}
+
 /* ══════════════════════════════════════════════════════
    LOGIN GATE
 ══════════════════════════════════════════════════════ */
@@ -1148,23 +1244,61 @@ async function loadDashboard() {
     document.getElementById('stAdmins').textContent    = SA.admins.length;
 
     // Recent companies table
-    const tb = document.getElementById('dashCompanyList');
-    if (!SA.companies.length) {
-      tb.innerHTML = '<tr class="empty-row"><td colspan="6">No companies yet. Add one!</td></tr>';
-    } else {
-      tb.innerHTML = SA.companies.slice(-5).reverse().map(c => `
-        <tr>
-          <td class="mono">${c.companyId||c.id}</td>
-          <td><strong>${c.companyName||'—'}</strong></td>
-          <td style="color:var(--muted);font-size:.8rem;">${c.adminEmail||'—'}</td>
-          <td><span class="badge badge-blue">${c.plan||'basic'}</span></td>
-          <td><span class="badge ${c.isActive?'badge-green':'badge-gray'}">${c.isActive?'Active':'Inactive'}</span></td>
-          <td>${c.city||'—'}</td>
-        </tr>`).join('');
-    }
+// Recent companies table
+const tb = document.getElementById('dashCompanyList');
+if (!SA.companies.length) {
+  tb.innerHTML = '<tr class="empty-row"><td colspan="8">No companies yet. Add one!</td></tr>';
+} else {
+  tb.innerHTML = SA.companies.slice(-5).reverse().map(c => {
+    const logoHtml = c.logo 
+      ? `<img src="data:${c.logoType||'image/png'};base64,${c.logo}" style="width:28px;height:28px;object-fit:contain;border-radius:4px;" alt="Logo">`
+      : '<div style="width:28px;height:28px;background:var(--bg);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem;">🏢</div>';
+    
+    const releaseHtml = c.release 
+      ? `<span class="badge badge-amber" style="font-size:.65rem;">${c.release}</span>`
+      : '<span style="color:var(--muted);font-size:.75rem;">—</span>';
+    
+    return `
+    <tr>
+      <td style="text-align:center;">${logoHtml}</td>
+      <td class="mono">${c.companyId||c.id}</td>
+      <td><strong>${c.companyName||'—'}</strong></td>
+      <td style="color:var(--muted);font-size:.8rem;">${c.adminEmail||'—'}</td>
+      <td><span class="badge badge-blue">${c.plan||'basic'}</span></td>
+      <td>${releaseHtml}</td>
+      <td><span class="badge ${c.isActive?'badge-green':'badge-gray'}">${c.isActive?'Active':'Inactive'}</span></td>
+      <td>${c.city||'—'}</td>
+    </tr>`;
+  }).join('');
+}
 
     populateCompanySelect();
   } catch(e) { toast('Failed to load dashboard: ' + e.message, 'error'); }
+}
+
+
+async function runMigration() {
+  if (!confirm('This will add logo and release fields to all existing companies. Continue?')) return;
+  
+  try {
+    const snap = await fbDB.collection('companies').get();
+    let count = 0;
+    
+    for (const doc of snap.docs) {
+      await doc.ref.update({
+        logo: null,
+        logoType: null,
+        release: '',
+        updatedAt: new Date().toISOString()
+      });
+      count++;
+    }
+    
+    toast(`✅ Migration complete! Updated ${count} companies.`);
+    loadCompanies();
+  } catch (e) {
+    toast('Migration failed: ' + e.message, 'error');
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1183,21 +1317,33 @@ async function loadCompanies() {
 
 function renderCompanies(list) {
   const tb = document.getElementById('companyTableBody');
-  if (!list.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="8">No companies found</td></tr>'; return; }
-  tb.innerHTML = list.map(c => `
+  if (!list.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="10">No companies found</td></tr>'; return; }
+  tb.innerHTML = list.map(c => {
+    const logoHtml = c.logo 
+      ? `<img src="data:${c.logoType||'image/png'};base64,${c.logo}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;" alt="Logo">`
+      : '<div style="width:32px;height:32px;background:var(--bg);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;">🏢</div>';
+    
+    const releaseHtml = c.release 
+      ? `<span class="badge badge-amber">${c.release}</span>`
+      : '<span style="color:var(--muted);font-size:.75rem;">—</span>';
+    
+    return `
     <tr>
+      <td style="text-align:center;">${logoHtml}</td>
       <td class="mono">${c.companyId||c.id}</td>
       <td><strong>${c.companyName||'—'}</strong></td>
       <td style="font-size:.8rem;color:var(--muted);">${c.adminEmail||'—'}</td>
       <td><span class="badge badge-blue">${c.plan||'basic'}</span></td>
       <td class="mono">${c.maxEmployees||'—'}</td>
+      <td>${releaseHtml}</td>
       <td><span class="badge ${c.isActive?'badge-green':'badge-gray'}">${c.isActive?'Active':'Inactive'}</span></td>
       <td style="font-size:.78rem;">${c.endDate||'—'}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick='editCompany(${JSON.stringify(c)})'>Edit</button>
         <button class="btn btn-red btn-sm" onclick="confirmDelete('company','${c.id}','${(c.companyName||c.id).replace(/'/g,"\\'")}')">Delete</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function filterCompanies() {
@@ -1237,25 +1383,32 @@ async function saveCompany() {
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
 
 const data = {
-    companyId:       id,
-    companyName:     name,
-    adminEmail:      email,
-    contactPhone:    document.getElementById('cPhone').value.trim(),
-    plan:            document.getElementById('cPlan').value,
-    maxEmployees:    parseInt(document.getElementById('cMaxEmp').value)||50,
-    startDate:       document.getElementById('cStartDate').value,
-    endDate:         document.getElementById('cEndDate').value,
-    city:            document.getElementById('cCity').value.trim(),
-    isActive:        document.getElementById('cIsActive').value === 'true',
-    
-    // 🔥 NEW: Save client Firebase config
-    firebaseConfig:  JSON.parse(document.getElementById('cFirebaseConfig').value || '{}'),
-    
-    companySheetId:  sheetId,
-    companyScriptUrl:url,
-    notes:           document.getElementById('cNotes').value.trim(),
-    updatedAt:       new Date().toISOString(),
-  };
+  companyId:       id,
+  companyName:     name,
+  adminEmail:      email,
+  contactPhone:    document.getElementById('cPhone').value.trim(),
+  plan:            document.getElementById('cPlan').value,
+  maxEmployees:    parseInt(document.getElementById('cMaxEmp').value)||50,
+  startDate:       document.getElementById('cStartDate').value,
+  endDate:         document.getElementById('cEndDate').value,
+  city:            document.getElementById('cCity').value.trim(),
+  isActive:        document.getElementById('cIsActive').value === 'true',
+  
+  // 🔥 NEW: Client Firebase config
+  firebaseConfig:  JSON.parse(document.getElementById('cFirebaseConfig').value || '{}'),
+  
+  // 🔥 NEW: Logo (Base64 string)
+  logo: logoBlob ? logoBlob.replace(/^data:image\/[a-z]+;base64,/, '') : null,
+  logoType: logoType || null,
+  
+  // 🔥 NEW: GitHub Release
+  release: document.getElementById('cRelease').value.trim(),
+  
+  companySheetId:  sheetId,
+  companyScriptUrl:url,
+  notes:           document.getElementById('cNotes').value.trim(),
+  updatedAt:       new Date().toISOString(),
+};
 
   if (!SA.editingCompanyId) data.createdAt = new Date().toISOString();
 
@@ -1271,6 +1424,12 @@ const data = {
   }
 
   btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Company';
+// Display logo if exists
+if (c.logo) {
+  const preview = document.getElementById('logoPreview');
+  preview.innerHTML = `<img src="data:${c.logoType||'image/png'};base64,${c.logo}" style="width:100%;height:100%;object-fit:contain;"/>`;
+}
+document.getElementById('cRelease').value = c.release || '';
 }
 
 function editCompany(c) {
@@ -1290,22 +1449,31 @@ function editCompany(c) {
   document.getElementById('cSheetId').value   = c.companySheetId || '';
   document.getElementById('cScriptUrl').value = c.companyScriptUrl || '';
   document.getElementById('cNotes').value     = c.notes || '';
+  
+  // ✅ FIX: Populate Firebase Config textarea (pretty-printed)
+  if (c.firebaseConfig && Object.keys(c.firebaseConfig).length > 0) {
+    document.getElementById('cFirebaseConfig').value = JSON.stringify(c.firebaseConfig, null, 2);
+  } else {
+    document.getElementById('cFirebaseConfig').value = '';
+  }
+  
+  // ✅ FIX: Display logo preview if exists
+  if (c.logo) {
+    const preview = document.getElementById('logoPreview');
+    const mimeType = c.logoType || 'image/png';
+    preview.innerHTML = `<img src="${mimeType};base64,${c.logo}" style="width:100%;height:100%;object-fit:contain;"/>`;
+  }
+  
+  // ✅ FIX: Populate release field
+  document.getElementById('cRelease').value = c.release || '';
+  
+  // ✅ Store logo for potential re-upload
+  if (c.logo) {
+    logoBlob = `${c.logoType||'image/png'};base64,${c.logo}`;
+    logoType = c.logoType || 'image/png';
+  }
+  
   nav('addCompany', document.querySelectorAll('.nav-item')[2]);
-}
-
-function clearCompanyForm() {
-  SA.editingCompanyId = null;
-  document.getElementById('compFormTitle').textContent = 'Add New Company';
-  document.getElementById('cId').disabled = false;
-  ['cId','cName','cAdminEmail','cPhone','cSheetId','cScriptUrl','cNotes','cCity'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cPlan').value     = 'basic';
-  document.getElementById('cIsActive').value = 'true';
-  document.getElementById('cMaxEmp').value   = '50';
-  document.getElementById('cStartDate').value= today();
-  const endDate = new Date(); endDate.setFullYear(endDate.getFullYear()+1);
-  document.getElementById('cEndDate').value  = endDate.toISOString().slice(0,10);
-  document.getElementById('companyResult').style.display='none';
-  document.getElementById('companyErr').style.display='none';
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1780,14 +1948,18 @@ async function checkCompanyConfig() {
 
 async function initializeCompany() {
   const companyId = document.getElementById('initCompanyId').value.trim().toUpperCase();
-  const result = document.getElementById('initResult');
+  const sectorCode = document.getElementById('companySector').value; // ✅ Get sector
   
   if (!companyId) {
     result.innerHTML = '<div class="result-box error">Please enter a Company ID.</div>';
     return;
   }
+  if (!sectorCode) { // ✅ Validate sector
+    result.innerHTML = '<div class="result-box error">Please select an Industry Sector.</div>';
+    return;
+  }
   
-  if (!confirm(`Initialize Company: ${companyId}?\n\nThis will create initial collections and data.\nRun only once per company!`)) {
+  if (!confirm(`Initialize Company: ${companyId}?\n\nSector: ${sectorCode}\n\nThis will create initial collections and data.\nRun only once per company!`)) {
     return;
   }
   
@@ -1798,7 +1970,10 @@ async function initializeCompany() {
     const btn = document.getElementById('btnInitCompany');
     if (btn) { btn.disabled = true; btn.textContent = 'Initializing...'; }
     
+    // ✅ Pass sector to initialization function via global temp variable
+    window.initializingSector = sectorCode;
     await runCompanyInitialization(companyId);
+    delete window.initializingSector; // Clean up
     
     result.innerHTML = '<div class="result-box success">✅ Company initialized successfully!</div>';
     
@@ -1811,6 +1986,7 @@ async function initializeCompany() {
     if (btn) { btn.disabled = false; btn.textContent = '🚀 Initialize Company'; }
   }
 }
+
 
 async function runCompanyInitialization(companyId) {
   logToConsole(`🚀 Starting company initialization for: ${companyId}`, 'info');
@@ -1845,6 +2021,40 @@ async function runCompanyInitialization(companyId) {
     logToConsole('✓ Connected to Client Firestore', 'success');
     logToConsole('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
     
+
+    // ══════════════════════════════════════════════════════
+    // ✅ SECTOR INITIALIZATION (Zero Data Loss)
+    // ══════════════════════════════════════════════════════
+    // Get sector from function parameter (passed from initializeCompany)
+    const sectorCode = window.initializingSector || 'CONST'; // Fallback if not passed
+    const sectorData = SECTOR_REGISTRY[sectorCode] || SECTOR_REGISTRY["CONST"];
+    const sectorLabel = `${sectorCode}-${sectorData.name}`;
+    
+    // 1. Master Firestore: Add sector field safely (merge: true = ONLY adds/updates 'sector')
+    logToConsole(`\n📦 Updating Master Company record...`, 'info');
+    await masterDb.collection('companies').doc(companyId).set({
+      sector: sectorLabel
+    }, { merge: true });
+    logToConsole(`  ✓ sector field added: "${sectorLabel}"`, 'success');
+    
+    // 2. Client Firestore: Create sectors collection & doc with categorized designations
+    logToConsole(`\n📦 Creating Client sectors collection...`, 'info');
+    await clientDb.collection('sectors').doc(sectorCode).set({
+      code: sectorCode,
+      name: sectorData.name,
+      designations: sectorData.designations, // Preserves Office/Field grouping
+      createdAt: new Date()
+    });
+    const totalDesig = Object.values(sectorData.designations).flat().length;
+    logToConsole(`  ✓ sectors/${sectorCode} created with ${totalDesig} designations`, 'success');
+    logToConsole(`  └─ Office/Corporate: ${sectorData.designations["Office/Corporate"].length}`, 'info');
+    logToConsole(`  └─ Field/Operations: ${sectorData.designations["Field/Operations"].length}`, 'info');
+    logToConsole('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    // ══════════════════════════════════════════════════════
+
+
+
+
     const now = new Date();
     const dateTimestamp = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
     const defaultPasswordHash = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
@@ -2033,6 +2243,37 @@ async function runCompanyInitialization(companyId) {
     });
     if (attCreated) created = true;
 
+    // 7. Settings Collection (Company Branding + App Update Config)
+    const settingsCreated = await ensureCollection('settings', companyId, {
+      companyId: companyId,
+      
+      // 🔥 BRANDING (logo as Base64 string, like employee Photo field)
+      branding: {
+        logo: null,                     // Base64 string or null (NO URL)
+        primaryColor: '#00838F'         // Default teal hex code
+      },
+      
+      // 🔥 UPDATE CONFIG (for Installer App → AttendEasePro.apk flow)
+      updateConfig: {
+        latestVersionCode: 100,         // Version of AttendEasePro.apk
+        downloadUrl: 'https://github.com/drushyasinchana/drushyasinchana/releases/latest/download/AttendEasePro.apk',
+        isForceUpdate: false,           // Allow older versions by default
+        releaseNotes: 'Initial release - AttendEase Pro v1.0',
+        updatedAt: new Date().toISOString()
+      }
+    }, false, {
+      branding: {
+        logo: null,
+        primaryColor: '#00838F'
+      },
+      updateConfig: {
+        latestVersionCode: 100,
+        downloadUrl: 'https://github.com/drushyasinchana/drushyasinchana/releases/latest/download/AttendEasePro.apk',
+        isForceUpdate: false
+      }
+    });
+    if (settingsCreated) created = true;
+
     logToConsole('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
     if (created) {
       logToConsole('🏁 Initialization complete! All collections created.', 'success');
@@ -2064,6 +2305,23 @@ async function runCompanyInitialization(companyId) {
     throw e;
   }
 }
+
+// ══════════════════════════════════════════════════════
+// SECTOR REGISTRY (Categorized Office vs Field)
+// ══════════════════════════════════════════════════════
+const SECTOR_REGISTRY = {
+  "CONST": { name: "Construction & Infrastructure", designations: { "Office/Corporate": ["General Manager","AGM","Project Manager","HR Manager","HR Executive","Admin Manager","Admin Executive","Accounts Manager","Accountant","CA/Finance Manager","Design Engineer","Structural Engineer","Architect","Estimator","Quantity Surveyor","Procurement Manager","Store Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Steward"], "Field/Operations": ["Site Engineer","Site Supervisor","Safety Officer","Safety Supervisor","Foreman","Mason","Carpenter","Electrician","Plumber","Welder","Heavy Equipment Operator","Crane Operator","Surveyor","Survey Assistant","Laborer","Helper","Bar Bender","Concrete Mixer Operator","Tile Fitter","Painter","Driver","Security Guard"] } },
+  "MFG":   { name: "Manufacturing & Factory Operations", designations: { "Office/Corporate": ["Plant Manager","Factory Manager","Production Manager","QA/QC Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Purchase Manager","Store Manager","Inventory Controller","Sales Manager","Maintenance Manager","Design Engineer","Process Engineer","Industrial Engineer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Production Supervisor","Shift Incharge","Line Supervisor","Machine Operator","CNC Operator","Fitter","Electrician","Mechanic","Welder","Quality Inspector","Maintenance Technician","Store Keeper","Material Handler","Forklift Operator","Assembly Worker","Helper","Packaging Operator","Loading/Unloading Worker","Safety Officer","Fire & Safety Worker","Housekeeping Staff","Security Guard"] } },
+  "SEC":   { name: "Security & Facility Management", designations: { "Office/Corporate": ["Operations Manager","Facility Manager","Contract Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Billing Executive","Client Relationship Manager","Quality Manager","Training Manager","Procurement Officer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Security Supervisor","Security Guard","CCTV Operator","Access Control Operator","Patrol Supervisor","Control Room Operator","Fire & Safety Officer","Safety Supervisor","Housekeeping Supervisor","Housekeeping Staff","Cleaning Worker","Pest Control Technician","Maintenance Worker","Electrician","Plumber","HVAC Technician","Gardener/Landscaper","Driver","Lift Operator","Pantry Boy/Girl","Office Attendant"] } },
+  "LOG":   { name: "Logistics, Warehousing & Supply Chain", designations: { "Office/Corporate": ["Operations Manager","Warehouse Manager","Logistics Manager","Supply Chain Manager","Fleet Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Inventory Manager","Purchase Manager","Sales Manager","Dispatch Manager","Customer Service Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Warehouse Supervisor","Store Supervisor","Inventory Controller","Store Keeper","Forklift Operator","Crane Operator","Picker/Packer","Loading/Unloading Supervisor","Loading Worker","Delivery Driver","Transport Driver","Fleet Coordinator","Dispatch Executive","Gate Keeper","Security Guard","Helper","Material Handler","Quality Checker","Documentation Assistant","Housekeeping Staff"] } },
+  "RET":   { name: "Retail & Multi-Store Chains", designations: { "Office/Corporate": ["Store Manager","Regional Manager","Area Manager","Operations Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Merchandising Manager","Visual Merchandiser","Marketing Executive","Purchase Manager","Inventory Manager","Customer Service Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Floor Supervisor","Department Supervisor","Sales Associate","Sales Executive","Cashier","Billing Executive","Customer Service Rep","Stock Handler","Inventory Executive","Visual Merchandising Assistant","Security Incharge","Security Guard","Housekeeping Staff","Helper","Packer","Delivery Boy","Promoter","Brand Ambassador","Housekeeping Supervisor"] } },
+  "HLT":   { name: "Healthcare & Hospital Networks", designations: { "Office/Corporate": ["Hospital Administrator","Medical Superintendent","Operations Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Finance Manager","Medical Records Manager","Quality Manager","IT Manager","Biomedical Engineer","Pharmacy Manager","Laboratory Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Dietician","Steward"], "Field/Operations": ["Staff Nurse","Nursing Supervisor","Ward Boy/Attendant","Patient Care Assistant","Medical Lab Technician","Radiology Technician","OT Assistant","Operation Theatre Assistant","Pharmacy Executive","Pharmacist","Front Desk Coordinator","Counselor","Physiotherapist","X-Ray Technician","ECG Technician","Dialysis Technician","Housekeeping Staff","Laundry Worker","Security Guard","Driver","Ambulance Driver","Sweeper/Cleaner"] } },
+  "FLD":   { name: "Field Services & IT Deployment", designations: { "Office/Corporate": ["Operations Manager","Project Manager","Service Manager","Technical Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Procurement Manager","Store Manager","Sales Manager","Client Relationship Manager","Design Engineer","Network Architect","System Engineer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper"], "Field/Operations": ["Field Technician","Field Engineer","Site Supervisor","Installation Specialist","Telecom Technician","Network Engineer","Service Engineer","Maintenance Technician","Survey Engineer","Rigger","Testing & Commissioning Engineer","Project Coordinator","Cable Technician","Fiber Optic Technician","Tower Technician","Driver","Helper","Security Guard","Store Keeper","Material Handler"] } },
+  "EDU":   { name: "Education & Universities", designations: { "Office/Corporate": ["Principal/Director","Vice Principal","Administrative Officer","Registrar","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Exam Controller","Admission Officer","Placement Officer","Librarian","IT Manager","Purchase Officer","Store Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Faculty/Professor","Lecturer","Teaching Assistant","Lab Assistant","Lab Technician","Hostel Warden","Hostel Supervisor","Maintenance Supervisor","Electrician","Plumber","Housekeeping Staff","Security Incharge","Security Guard","Gardener","Driver","Library Assistant","Sports Coach","Counselor","Sweeper/Cleaner"] } },
+  "AGR":   { name: "Agriculture & Plantations", designations: { "Office/Corporate": ["Farm Manager","Operations Manager","Estate Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Procurement Manager","Quality Manager","Agronomist","Agricultural Engineer","Sales Manager","Store Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Farm Supervisor","Field Supervisor","Irrigation Technician","Harvesting Supervisor","Tractor Operator","Heavy Equipment Operator","Field Worker","Laborer","Helper","Plant Protection Officer","Pest Control Technician","Quality Checker","Grading Supervisor","Cold Storage Manager","Cold Storage Operator","Driver","Security Guard","Gardener","Animal Caretaker","Milker"] } },
+  "GOV":   { name: "Government & PSU", designations: { "Office/Corporate": ["Section Officer","Under Secretary","Deputy Secretary","Director","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Audit Officer","IT Officer","Purchase Officer","Store Officer","Liaison Officer","Public Relations Officer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Driver","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Inspector","Sub-Inspector","Constable","Junior Engineer","Assistant Engineer","Technical Assistant","Clerk","Data Entry Operator","Stenographer","Typist","Office Superintendent","Field Assistant","Surveyor","Enumerator","Security Personnel","Security Guard","Housekeeping Staff","Sweeper/Cleaner","Mali/Gardener","Helper"] } }
+};
+
 </script>
 </body>
 </html>
