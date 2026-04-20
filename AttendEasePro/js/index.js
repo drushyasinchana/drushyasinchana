@@ -35,8 +35,8 @@ function togglePw() {
 window.addEventListener('DOMContentLoaded', () => {
   const cid = document.getElementById('lCompanyId');
   const eml = document.getElementById('lEmail');
-  if (cid) cid.value = 'DSL001';
-  if (eml) eml.value = 'murthy.snv@gmail.com';
+  if (cid) cid.value = '';
+  if (eml) eml.value = '';
 });
 
 async function doLogin() {
