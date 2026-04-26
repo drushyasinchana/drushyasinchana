@@ -456,6 +456,13 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
 	  Initialize Company
 	</button>
 
+<button class="nav-item" onclick="nav('importData', this)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+  Import Employees
+</button>
+
     </div>
 
     <div class="sb-footer">
@@ -879,6 +886,9 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
       🚀 Initialize Company
     </button>
   </div>
+
+
+
 </div>
 
 </div>
@@ -905,96 +915,96 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
 </div>
 
 
-    </div><!-- /body -->
-  </div><!-- /main -->
-</div><!-- /shell -->
 <!-- ══════════════════════════════════════════════════════
-     UPDATE CLIENT FIREBASE CONFIG PAGE
+     IMPORT EMPLOYEES PAGE
 ══════════════════════════════════════════════════════ -->
-<div class="page" id="pgConfig">
-  <div class="card" style="max-width:800px;">
-    <div class="card-hdr">
-      <h3>🔧 Update Client Firebase Config</h3>
-    </div>
-    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;">
-      Paste the Client project's Firebase config below. This will update the <code>firebaseConfig</code> field in the <code>companies</code> collection.
-    </p>
-    
-    <div class="fgg" style="margin-bottom:16px;">
-      <label>Company ID *</label>
-      <input type="text" id="configCompanyId" placeholder="e.g. DSL001" style="text-transform:uppercase;"/>
+<div class="page" id="pgImportData">
+  <div class="card" style="height: calc(100vh - 120px); display: flex; flex-direction: column;">
+    <!-- Header -->
+    <div class="card-hdr" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0;">📥 Import Employees from Excel</h3>
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate()">⬇️ Download Template</button>
     </div>
     
-    <div class="fgg" style="margin-bottom:16px;">
-      <label>Master (Drushyasinchana) Firebase Config <span style="color:var(--muted);font-weight:400;">(Read-only)</span></label>
-      <textarea id="masterConfigDisplay" rows="6" readonly style="background:#f8f9fa;color:var(--muted);font-size:.8rem;"></textarea>
+    <!-- Form Section (Scrollable if needed) -->
+    <div style="flex-shrink: 0; padding: 16px 20px; border-bottom: 1px solid var(--border); background: #f8f9fa;">
+      <!-- Company ID -->
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem;">Company ID *</label>
+        <input type="text" id="importCompanyId" placeholder="e.g., TEST001" 
+               style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; text-transform: uppercase; font-size: 0.95rem;"
+               onchange="validateCompany()">
+        <div id="companyValidation" style="margin-top: 4px; font-size: 0.85rem;"></div>
+      </div>
+      
+      <!-- File Upload -->
+      <div>
+        <label style="display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem;">Select Excel File *</label>
+        <input type="file" id="importFile" accept=".xlsx,.xls" 
+               style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem;"
+               onchange="parseExcelFile()">
+        <div style="margin-top: 4px; font-size: 0.85rem; color: var(--muted);">💡 Supported formats: .xlsx, .xls</div>
+      </div>
     </div>
     
-    <div class="fgg" style="margin-bottom:16px;">
-      <label>Client Firebase Config <span style="color:var(--muted);font-weight:400;">(Paste your config here)</span></label>
-      <textarea id="clientConfigInput" rows="8" placeholder='{
-  "apiKey": "AIzaSy...",
-  "authDomain": "your-client.firebaseapp.com",
-  "projectId": "your-client",
-  "storageBucket": "your-client.appspot.com",
-  "messagingSenderId": "1234567890",
-  "appId": "1:1234567890:web:abcdef123456"
-}' style="font-family:monospace;font-size:.8rem;"></textarea>
-      <p style="font-size:.75rem;color:var(--hint);margin-top:4px;">
-        💡 Tip: Copy from Firebase Console → Project Settings → Your apps → SDK config
-      </p>
+    <!-- Preview Section (Scrollable Table Area) -->
+    <div id="previewSection" style="display: none; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+      <!-- Preview Header -->
+      <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); background: #fff;">
+        <h4 style="margin: 0; font-size: 1rem;">📋 Preview Data (<span id="previewCount">0</span> employees)</h4>
+        <button class="btn btn-teal" onclick="confirmImport()" id="btnConfirmImport" style="padding: 8px 16px; font-size: 0.9rem;">✅ Confirm Import</button>
+      </div>
+      
+      <!-- Scrollable Table Container -->
+      <div style="flex: 1; overflow-y: auto; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 900px;">
+          <thead style="position: sticky; top: 0; background: var(--bg); z-index: 10;">
+            <tr>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 60px;">Row</th>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 100px;">EMPID</th>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left;">Name</th>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left;">Email</th>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 120px;">Phone</th>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 150px;">Category</th>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 150px;">Designation</th>
+              <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 100px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="previewTableBody">
+            <!-- Dynamic content -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Import Result (Fixed at bottom) -->
+      <div id="importResult" style="flex-shrink: 0; padding: 12px 20px; border-top: 1px solid var(--border); background: #f8f9fa;"></div>
     </div>
     
-    <div id="configResult" style="margin-bottom:16px;"></div>
-    
-    <div class="form-actions">
-      <button class="btn btn-teal" onclick="updateClientConfig()">💾 Update Config</button>
-      <button class="btn btn-outline" onclick="parseClientConfig()">🔍 Parse & Preview</button>
+    <!-- Empty State (shown when no file uploaded) -->
+    <div id="emptyState" style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted);">
+      <div style="text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">📊</div>
+        <div style="font-size: 1.1rem; font-weight: 500;">Upload an Excel file to preview</div>
+        <div style="font-size: 0.9rem; margin-top: 5px;">Select a file above to see employee data</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     INITIALIZE COMPANY DATA PAGE
-══════════════════════════════════════════════════════ -->
-<div class="page" id="pgInit">
-  <div class="card" style="max-width:800px;">
-    <div class="card-hdr">
-      <h3>🚀 Initialize Company Data</h3>
-    </div>
-    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;">
-      Create initial collections (employees, sites, holidays, weekly_offs, attendance) for a company. 
-      <strong>Only run this once per company!</strong>
-    </p>
-    
-    <div class="fgg" style="margin-bottom:16px;">
-      <label>Company ID *</label>
-      <input type="text" id="initCompanyId" placeholder="e.g. DSL001" style="text-transform:uppercase;" onchange="checkCompanyConfig()"/>
-    </div>
-    
-    <div id="initPreview" style="background:#E0F7FA;padding:12px;border-radius:8px;margin-bottom:16px;display:none;">
-      <strong style="color:var(--teal);">✓ Config Found</strong><br>
-      <span id="initPreviewText" style="font-size:.85rem;"></span>
-    </div>
-    
-    <div id="initResult" style="margin-bottom:16px;"></div>
-    
-    <div class="form-actions">
-      <button class="btn btn-teal" id="btnInitCompany" onclick="initializeCompany()" disabled>🚀 Initialize Company</button>
-    </div>
-    
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-      <h4 style="margin-bottom:10px;font-size:.9rem;">What will be created:</h4>
-      <ul style="font-size:.8rem;color:var(--muted);line-height:1.6;">
-        <li>👤 Initial admin employee (EMPID: {prefix}101)</li>
-        <li>🏢 Default site (SITE001 - Head Office)</li>
-        <li>📅 Sample holiday (Republic Day)</li>
-        <li>🔄 Weekly off config (Sunday off for SITE001)</li>
-        <li>📋 Empty attendance collection (with template doc)</li>
-      </ul>
-    </div>
-  </div>
-</div>
+
+
+
+
+
+    </div><!-- /body -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+
+
+
+
+
 <!-- ══════════════════════════════════════════════════════
      CONFIRMATION MODAL
 ══════════════════════════════════════════════════════ -->
@@ -1033,11 +1043,29 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
 
 <div id="toast"></div>
 
+
+
+
+
 <!-- ══════════════ FIREBASE SDK ══════════════ -->
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
+<script src="js/config.js"></script>  <!-- ✅ Add this line EARLY -->
+
+<!-- Core superadmin logic FIRST -->
+<script src="js/superadmin.js"></script>
+
+<!-- Feature modules AFTER (order matters for dependencies) -->
+<script src="js/companies.js"></script>      <!-- Loads SA.companies -->
+<script src="js/admins.js"></script>         <!-- Depends on SA.companies for dropdown -->
+<script src="js/initcompany.js"></script>
+<!-- SheetJS library for Excel parsing -->
+
+<!-- Import Data Module -->
+<script src="js/importdata.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════
    FIREBASE CONFIG — same project as index.html
@@ -1135,32 +1163,6 @@ function previewLogo(input) {
 }
 
 
-function clearCompanyForm() {
-  SA.editingCompanyId = null;
-  document.getElementById('compFormTitle').textContent = 'Add New Company';
-  document.getElementById('cId').disabled = false;
-  ['cId','cName','cAdminEmail','cPhone','cSheetId','cScriptUrl','cNotes','cCity'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cPlan').value     = 'basic';
-  document.getElementById('cIsActive').value = 'true';
-  document.getElementById('cMaxEmp').value   = '50';
-  document.getElementById('cStartDate').value= today();
-  const endDate = new Date(); endDate.setFullYear(endDate.getFullYear()+1);
-  document.getElementById('cEndDate').value  = endDate.toISOString().slice(0,10);
-  document.getElementById('companyResult').style.display='none';
-  document.getElementById('companyErr').style.display='none';
-  
-  // ✅ Clear logo state and UI
-  logoBlob = null;
-  logoType = null;
-  document.getElementById('logoPreview').innerHTML = '<span style="color:var(--muted);font-size:.7rem;">No logo</span>';
-  document.getElementById('cLogoFile').value = '';
-  
-  // ✅ Clear release field
-  document.getElementById('cRelease').value = '';
-  
-  // ✅ Clear Firebase Config textarea
-  document.getElementById('cFirebaseConfig').value = '';
-}
 
 /* ══════════════════════════════════════════════════════
    LOGIN GATE
@@ -1301,327 +1303,9 @@ async function runMigration() {
   }
 }
 
-/* ══════════════════════════════════════════════════════
-   COMPANIES
-══════════════════════════════════════════════════════ */
-async function loadCompanies() {
-  const tb = document.getElementById('companyTableBody');
-  tb.innerHTML = '<tr class="empty-row"><td colspan="8">Loading…</td></tr>';
-  try {
-    const snap = await fbDB.collection('companies').get();
-    SA.companies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderCompanies(SA.companies);
-    populateCompanySelect();
-  } catch(e) { toast('Failed to load companies: ' + e.message, 'error'); }
-}
 
-function renderCompanies(list) {
-  const tb = document.getElementById('companyTableBody');
-  if (!list.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="10">No companies found</td></tr>'; return; }
-  tb.innerHTML = list.map(c => {
-    const logoHtml = c.logo 
-      ? `<img src="data:${c.logoType||'image/png'};base64,${c.logo}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;" alt="Logo">`
-      : '<div style="width:32px;height:32px;background:var(--bg);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;">🏢</div>';
-    
-    const releaseHtml = c.release 
-      ? `<span class="badge badge-amber">${c.release}</span>`
-      : '<span style="color:var(--muted);font-size:.75rem;">—</span>';
-    
-    return `
-    <tr>
-      <td style="text-align:center;">${logoHtml}</td>
-      <td class="mono">${c.companyId||c.id}</td>
-      <td><strong>${c.companyName||'—'}</strong></td>
-      <td style="font-size:.8rem;color:var(--muted);">${c.adminEmail||'—'}</td>
-      <td><span class="badge badge-blue">${c.plan||'basic'}</span></td>
-      <td class="mono">${c.maxEmployees||'—'}</td>
-      <td>${releaseHtml}</td>
-      <td><span class="badge ${c.isActive?'badge-green':'badge-gray'}">${c.isActive?'Active':'Inactive'}</span></td>
-      <td style="font-size:.78rem;">${c.endDate||'—'}</td>
-      <td>
-        <button class="btn btn-outline btn-sm" onclick='editCompany(${JSON.stringify(c)})'>Edit</button>
-        <button class="btn btn-red btn-sm" onclick="confirmDelete('company','${c.id}','${(c.companyName||c.id).replace(/'/g,"\\'")}')">Delete</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
 
-function filterCompanies() {
-  const q  = document.getElementById('companySearch').value.toLowerCase();
-  const st = document.getElementById('companyStatusFilter').value;
-  renderCompanies(SA.companies.filter(c => {
-    const mq = !q || [c.companyId,c.companyName,c.adminEmail,c.city].some(v=>(v||'').toLowerCase().includes(q));
-    const ms = !st || String(c.isActive) === st;
-    return mq && ms;
-  }));
-}
 
-async function saveCompany() {
-  const btn = document.getElementById('btnSaveCompany');
-  const id  = document.getElementById('cId').value.trim().toUpperCase();
-  const name= document.getElementById('cName').value.trim();
-  const email=document.getElementById('cAdminEmail').value.trim();
-  const url = document.getElementById('cScriptUrl').value.trim();
-  const sheetId = document.getElementById('cSheetId').value.trim();
-
-  if (!id || !name || !email) {
-    showRes('companyResult','companyErr','Company ID, Name and Admin Email are required.', true); return;
-  }
-
-  // 🔥 Validate Firebase Config JSON
-  let firebaseConfig = {};
-  try {
-    const raw = document.getElementById('cFirebaseConfig').value.trim();
-    if (raw) firebaseConfig = JSON.parse(raw);
-  } catch(e) {
-    showRes('companyResult','companyErr','Invalid JSON in Firebase Config field. Please check formatting.', true);
-    btn.disabled = false; 
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Company';
-    return;
-  }
-
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
-
-const data = {
-  companyId:       id,
-  companyName:     name,
-  adminEmail:      email,
-  contactPhone:    document.getElementById('cPhone').value.trim(),
-  plan:            document.getElementById('cPlan').value,
-  maxEmployees:    parseInt(document.getElementById('cMaxEmp').value)||50,
-  startDate:       document.getElementById('cStartDate').value,
-  endDate:         document.getElementById('cEndDate').value,
-  city:            document.getElementById('cCity').value.trim(),
-  isActive:        document.getElementById('cIsActive').value === 'true',
-  
-  // 🔥 NEW: Client Firebase config
-  firebaseConfig:  JSON.parse(document.getElementById('cFirebaseConfig').value || '{}'),
-  
-  // 🔥 NEW: Logo (Base64 string)
-  logo: logoBlob ? logoBlob.replace(/^data:image\/[a-z]+;base64,/, '') : null,
-  logoType: logoType || null,
-  
-  // 🔥 NEW: GitHub Release
-  release: document.getElementById('cRelease').value.trim(),
-  
-  companySheetId:  sheetId,
-  companyScriptUrl:url,
-  notes:           document.getElementById('cNotes').value.trim(),
-  updatedAt:       new Date().toISOString(),
-};
-
-  if (!SA.editingCompanyId) data.createdAt = new Date().toISOString();
-
-  try {
-    await fbDB.collection('companies').doc(id).set(data, { merge: true });
-    toast(SA.editingCompanyId ? 'Company updated!' : 'Company added!');
-    showRes('companyResult','companyErr', SA.editingCompanyId ? '✓ Company updated successfully' : '✓ Company added successfully');
-    SA.editingCompanyId = null;
-    document.getElementById('compFormTitle').textContent = 'Add New Company';
-    document.getElementById('cId').disabled = false;
-  } catch(e) {
-    showRes('companyResult','companyErr','Error: ' + e.message, true);
-  }
-
-  btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Company';
-// Display logo if exists
-if (c.logo) {
-  const preview = document.getElementById('logoPreview');
-  preview.innerHTML = `<img src="data:${c.logoType||'image/png'};base64,${c.logo}" style="width:100%;height:100%;object-fit:contain;"/>`;
-}
-document.getElementById('cRelease').value = c.release || '';
-}
-
-function editCompany(c) {
-  SA.editingCompanyId = c.id;
-  document.getElementById('compFormTitle').textContent = 'Edit Company — ' + c.companyId;
-  document.getElementById('cId').value        = c.companyId || c.id;
-  document.getElementById('cId').disabled     = true; // can't change ID
-  document.getElementById('cName').value      = c.companyName || '';
-  document.getElementById('cAdminEmail').value= c.adminEmail || '';
-  document.getElementById('cPhone').value     = c.contactPhone || '';
-  document.getElementById('cPlan').value      = c.plan || 'basic';
-  document.getElementById('cMaxEmp').value    = c.maxEmployees || 50;
-  document.getElementById('cStartDate').value = c.startDate || '';
-  document.getElementById('cEndDate').value   = c.endDate || '';
-  document.getElementById('cCity').value      = c.city || '';
-  document.getElementById('cIsActive').value  = String(c.isActive !== false);
-  document.getElementById('cSheetId').value   = c.companySheetId || '';
-  document.getElementById('cScriptUrl').value = c.companyScriptUrl || '';
-  document.getElementById('cNotes').value     = c.notes || '';
-  
-  // ✅ FIX: Populate Firebase Config textarea (pretty-printed)
-  if (c.firebaseConfig && Object.keys(c.firebaseConfig).length > 0) {
-    document.getElementById('cFirebaseConfig').value = JSON.stringify(c.firebaseConfig, null, 2);
-  } else {
-    document.getElementById('cFirebaseConfig').value = '';
-  }
-  
-  // ✅ FIX: Display logo preview if exists
-  if (c.logo) {
-    const preview = document.getElementById('logoPreview');
-    const mimeType = c.logoType || 'image/png';
-    preview.innerHTML = `<img src="${mimeType};base64,${c.logo}" style="width:100%;height:100%;object-fit:contain;"/>`;
-  }
-  
-  // ✅ FIX: Populate release field
-  document.getElementById('cRelease').value = c.release || '';
-  
-  // ✅ Store logo for potential re-upload
-  if (c.logo) {
-    logoBlob = `${c.logoType||'image/png'};base64,${c.logo}`;
-    logoType = c.logoType || 'image/png';
-  }
-  
-  nav('addCompany', document.querySelectorAll('.nav-item')[2]);
-}
-
-/* ══════════════════════════════════════════════════════
-   ADMINS
-══════════════════════════════════════════════════════ */
-async function loadAdmins() {
-  const tb = document.getElementById('adminTableBody');
-  tb.innerHTML = '<tr class="empty-row"><td colspan="6">Loading…</td></tr>';
-  try {
-    const snap = await fbDB.collection('admins').get();
-    SA.admins  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderAdmins(SA.admins);
-  } catch(e) { toast('Failed to load admins: ' + e.message, 'error'); }
-}
-
-function renderAdmins(list) {
-  const tb = document.getElementById('adminTableBody');
-  if (!list.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="6">No admins found</td></tr>'; return; }
-  tb.innerHTML = list.map(a => `
-    <tr>
-      <td class="mono">${a.empCode||'—'}</td>
-      <td><strong>${a.name||'—'}</strong></td>
-      <td style="font-size:.8rem;color:var(--muted);">${a.email||a.id}</td>
-      <td class="mono">${a.companyId||'—'}</td>
-      <td><span class="badge ${a.role==='SUPERADMIN'?'badge-amber':'badge-blue'}">${a.role||'ADMIN'}</span></td>
-      <td>
-        <button class="btn btn-outline btn-sm" onclick='editAdmin(${JSON.stringify(a)})'>Edit</button>
-        <button class="btn btn-red btn-sm" onclick="confirmDelete('admin','${a.id}','${(a.name||a.id).replace(/'/g,"\\'")}')">Delete</button>
-      </td>
-    </tr>`).join('');
-}
-
-function filterAdmins() {
-  const q = document.getElementById('adminSearch').value.toLowerCase();
-  renderAdmins(SA.admins.filter(a =>
-    !q || [a.name,a.email,a.empCode,a.companyId].some(v=>(v||'').toLowerCase().includes(q))
-  ));
-}
-
-async function saveAdmin() {
-  const btn     = document.getElementById('btnSaveAdmin');
-  const name    = document.getElementById('aName').value.trim();
-  const empCode = document.getElementById('aEmpCode').value.trim().toUpperCase();
-  const email   = document.getElementById('aEmail').value.trim().toLowerCase();
-  const password= document.getElementById('aPassword').value.trim();
-  const company = document.getElementById('aCompanyId').value;
-  const role    = document.getElementById('aRole').value;
-
-  if (!name || !empCode || !email || !company) {
-    showRes('adminResult','adminErr','Name, Emp Code, Email and Company are required.', true); return;
-  }
-  if (!SA.editingAdminEmail && !password) {
-    showRes('adminResult','adminErr','Password is required for new admins.', true); return;
-  }
-  if (password && password.length < 6) {
-    showRes('adminResult','adminErr','Password must be at least 6 characters.', true); return;
-  }
-
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
-
-  const data = {
-    name, empCode, email, companyId: company, role,
-    updatedAt: new Date().toISOString(),
-  };
-  if (!SA.editingAdminEmail) data.createdAt = new Date().toISOString();
-
-  try {
-    // Step 1 — Create Firebase Auth user via REST API
-    // Uses Firebase Auth REST API (no Admin SDK needed)
-    const isNew = !SA.editingAdminEmail;
-    if (isNew && password) {
-      try {
-        const authRes = await fetch(
-          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FIREBASE_CONFIG.apiKey,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email:             email,
-              password:          password,
-              returnSecureToken: false,
-            }),
-          }
-        );
-        const authData = await authRes.json();
-        if (authData.error) {
-          // Email already exists in Auth — that's OK, just update Firestore
-          if (authData.error.message !== 'EMAIL_EXISTS') {
-            showRes('adminResult','adminErr',
-              'Firebase Auth error: ' + authData.error.message, true);
-            btn.disabled = false;
-            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Admin';
-            return;
-          }
-          console.warn('Auth user already exists — updating Firestore only');
-        } else {
-          console.log('✅ Firebase Auth user created:', email);
-        }
-      } catch(authErr) {
-        console.warn('Auth creation failed:', authErr.message);
-        // Continue — save Firestore even if Auth fails
-      }
-    }
-
-    // Step 2 — Save to Firestore admins collection
-    await fbDB.collection('admins').doc(email).set(data, { merge: true });
-
-    toast(isNew ? '✅ Admin created with Firebase Auth + Firestore!' : 'Admin updated!');
-    showRes('adminResult','adminErr',
-      isNew
-        ? '✓ Admin created successfully. They can now log in with: ' + email
-        : '✓ Admin updated successfully'
-    );
-    SA.editingAdminEmail = null;
-    document.getElementById('adminFormTitle').textContent = 'Add New Admin';
-    document.getElementById('aEmail').disabled = false;
-
-  } catch(e) {
-    showRes('adminResult','adminErr','Error: ' + e.message, true);
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Admin';
-}
-
-function editAdmin(a) {
-  SA.editingAdminEmail = a.id;
-  document.getElementById('adminFormTitle').textContent = 'Edit Admin — ' + (a.name||a.id);
-  document.getElementById('aName').value     = a.name     || '';
-  document.getElementById('aEmpCode').value  = a.empCode  || '';
-  document.getElementById('aEmail').value    = a.email    || a.id;
-  document.getElementById('aEmail').disabled = true; // email = doc ID, can't change
-  document.getElementById('aPassword').value = '';   // never pre-fill password
-  document.getElementById('aCompanyId').value= a.companyId|| '';
-  document.getElementById('aRole').value     = a.role     || 'ADMIN';
-  nav('addAdmin', document.querySelectorAll('.nav-item')[5]);
-}
-
-function clearAdminForm() {
-  SA.editingAdminEmail = null;
-  document.getElementById('adminFormTitle').textContent = 'Add New Admin';
-  document.getElementById('aEmail').disabled = false;
-  ['aName','aEmpCode','aEmail','aPassword'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('aCompanyId').value = '';
-  document.getElementById('aRole').value      = 'ADMIN';
-  document.getElementById('adminResult').style.display='none';
-  document.getElementById('adminErr').style.display='none';
-}
 
 function populateCompanySelect() {
   const sel = document.getElementById('aCompanyId');
@@ -1678,200 +1362,7 @@ function navSuperAdmin(page, btn) {
   if (page === 'init') loadInitPage();
 }
 
-// ══════════════════════════════════════════════════════
-// MASTER FIREBASE CONFIG (Hardcoded)
-// ══════════════════════════════════════════════════════
-const MASTER_CONFIG = {
-  apiKey: "AIzaSyCvAyr-4CUAYPXLMBwZ-L9hBlmDcrOjWpA",
-  authDomain: "attendease-963df.firebaseapp.com",
-  projectId: "attendease-963df",
-  storageBucket: "attendease-963df.firebasestorage.app",
-  messagingSenderId: "107756709284",
-  appId: "1:107756709284:web:fd8765b97a73f2ce7d8d31",
-};
 
-// Initialize Master Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(MASTER_CONFIG);
-}
-const masterDb = firebase.firestore();
-
-// Display Master config on page load
-function loadConfigPage() {
-  const display = document.getElementById('masterConfigDisplay');
-  if (display) {
-    display.value = JSON.stringify(MASTER_CONFIG, null, 2);
-  }
-}
-
-function loadInitPage() {
-  console.log('🚀 Init page loaded');
-}
-
-// ══════════════════════════════════════════════════════
-// CONFIG PAGE FUNCTIONS
-// ══════════════════════════════════════════════════════
-function parseClientConfig() {
-  const input = document.getElementById('clientConfigInput').value.trim();
-  const result = document.getElementById('configResult');
-  const preview = document.getElementById('configPreview');
-  const previewContent = document.getElementById('configPreviewContent');
-  const btnUpdate = document.getElementById('btnUpdateConfig');
-  
-  if (!input) {
-    result.innerHTML = '<div class="result-box error">❌ Please paste a Firebase config first.</div>';
-    preview.style.display = 'none';
-    if (btnUpdate) btnUpdate.disabled = true;
-    return;
-  }
-  
-  try {
-    // Try to parse as JSON first
-    let config;
-    try {
-      config = JSON.parse(input);
-    } catch (e) {
-      // Try to parse as JavaScript object format
-      config = parseJSObject(input);
-    }
-    
-    // Validate required fields
-    const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
-    const missingFields = requiredFields.filter(field => !config[field]);
-    
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-    }
-    
-    // Show structured preview with ALL 6 fields
-    previewContent.innerHTML = `
-      <div style="background:#f8f9fa;padding:12px;border-radius:6px;font-family:monospace;font-size:0.85rem;">
-        <div style="margin-bottom:8px;"><strong style="color:#00838F;">firebaseConfig</strong> <span style="color:#6B8A8F;font-size:0.8rem;">(map)</span></div>
-        <div style="padding-left:16px;">
-          <div class="preview-field"><span class="preview-label">apiKey:</span><span class="preview-value">${config.apiKey ? config.apiKey.substring(0, 20) + '...' : '—'}</span></div>
-          <div class="preview-field"><span class="preview-label">authDomain:</span><span class="preview-value">${config.authDomain}</span></div>
-          <div class="preview-field"><span class="preview-label">projectId:</span><span class="preview-value">${config.projectId}</span></div>
-          <div class="preview-field"><span class="preview-label">storageBucket:</span><span class="preview-value">${config.storageBucket}</span></div>
-          <div class="preview-field"><span class="preview-label">messagingSenderId:</span><span class="preview-value">${config.messagingSenderId}</span></div>
-          <div class="preview-field"><span class="preview-label">appId:</span><span class="preview-value">${config.appId}</span></div>
-        </div>
-      </div>
-    `;
-    preview.style.display = 'block';
-    result.innerHTML = '<div class="result-box success">✅ Config parsed successfully! All 6 fields detected. Click "💾 Update Config" to save to Firestore.</div>';
-    
-    // Store parsed config for later use
-    window._parsedClientConfig = config;
-    if (btnUpdate) btnUpdate.disabled = false;
-    
-  } catch (e) {
-    result.innerHTML = `<div class="result-box error">❌ Parse Error: ${e.message}<br><br>Expected format:<br><pre>{
-  "apiKey": "AIzaSy...",
-  "authDomain": "...",
-  "projectId": "...",
-  "storageBucket": "...",
-  "messagingSenderId": "...",
-  "appId": "..."
-}</pre></div>`;
-    preview.style.display = 'none';
-    if (btnUpdate) btnUpdate.disabled = true;
-  }
-}
-
-// Helper: Parse JavaScript object format
-function parseJSObject(str) {
-  str = str.replace(/\/\/.*$/gm, '').replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-  const config = {};
-  const lines = str.split('\n');
-  
-  for (let line of lines) {
-    line = line.trim();
-    if (!line || line.startsWith('//')) continue;
-    
-    const match = line.match(/["']?(\w+)["']?\s*:\s*["']?([^"',}]+)["']?/);
-    if (match) {
-      const key = match[1];
-      let value = match[2].trim();
-      if ((value.startsWith('"') && value.endsWith('"')) || 
-          (value.startsWith("'") && value.endsWith("'"))) {
-        value = value.slice(1, -1);
-      }
-      config[key] = value;
-    }
-  }
-  
-  return config;
-}
-
-async function checkCompanyExists() {
-  const companyId = document.getElementById('configCompanyId').value.trim().toUpperCase();
-  const btnUpdate = document.getElementById('btnUpdateConfig');
-  
-  if (!companyId) {
-    if (btnUpdate) btnUpdate.disabled = true;
-    return;
-  }
-  
-  try {
-    const snap = await masterDb.collection('companies').doc(companyId).get();
-    if (!snap.exists) {
-      document.getElementById('configResult').innerHTML = '<div class="result-box error">❌ Company not found in Master Firestore.</div>';
-      if (btnUpdate) btnUpdate.disabled = true;
-    } else {
-      const data = snap.data();
-      document.getElementById('configResult').innerHTML = `<div class="result-box success">✅ Company found: ${data.companyName || companyId}</div>`;
-      if (btnUpdate) btnUpdate.disabled = !window._parsedClientConfig;
-    }
-  } catch (e) {
-    console.error('Check error:', e);
-    if (btnUpdate) btnUpdate.disabled = true;
-  }
-}
-
-async function updateClientConfig() {
-  const companyId = document.getElementById('configCompanyId').value.trim().toUpperCase();
-  const result = document.getElementById('configResult');
-  const config = window._parsedClientConfig;
-  
-  if (!companyId || !config) {
-    result.innerHTML = '<div class="result-box error">❌ Please enter Company ID and parse config first.</div>';
-    return;
-  }
-  
-  // Show confirmation with field details
-  const confirmMsg = `Update Client Firebase Config for Company: ${companyId}?\n\n📦 firebaseConfig map:\n• apiKey: ${config.apiKey?.substring(0, 20)}...\n• authDomain: ${config.authDomain}\n• projectId: ${config.projectId}\n• storageBucket: ${config.storageBucket}\n• messagingSenderId: ${config.messagingSenderId}\n• appId: ${config.appId?.substring(0, 20)}...`;
-  
-  if (!confirm(confirmMsg)) {
-    return;
-  }
-  
-  try {
-    const btn = document.getElementById('btnUpdateConfig');
-    if (btn) { btn.disabled = true; btn.textContent = 'Updating...'; }
-    
-    // Save to Firestore with correct structure
-    await masterDb.collection('companies').doc(companyId).update({
-      firebaseConfig: {
-        apiKey: config.apiKey,
-        authDomain: config.authDomain,
-        projectId: config.projectId,
-        storageBucket: config.storageBucket,
-        messagingSenderId: config.messagingSenderId,
-        appId: config.appId
-      },
-      updatedAt: new Date()
-    });
-    
-    result.innerHTML = `<div class="result-box success">✅ Config updated successfully for ${companyId}!<br><br>📦 firebaseConfig saved with 6 fields:<br>• projectId: ${config.projectId}<br>• authDomain: ${config.authDomain}</div>`;
-    
-  } catch (e) {
-    result.innerHTML = `<div class="result-box error">❌ Update Error: ${e.message}</div>`;
-    console.error('Update error:', e);
-  } finally {
-    const btn = document.getElementById('btnUpdateConfig');
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Update Config'; }
-  }
-}
 
 // ══════════════════════════════════════════════════════
 // INIT PAGE FUNCTIONS
@@ -1946,381 +1437,6 @@ async function checkCompanyConfig() {
   }
 }
 
-async function initializeCompany() {
-  const companyId = document.getElementById('initCompanyId').value.trim().toUpperCase();
-  const sectorCode = document.getElementById('companySector').value; // ✅ Get sector
-  
-  if (!companyId) {
-    result.innerHTML = '<div class="result-box error">Please enter a Company ID.</div>';
-    return;
-  }
-  if (!sectorCode) { // ✅ Validate sector
-    result.innerHTML = '<div class="result-box error">Please select an Industry Sector.</div>';
-    return;
-  }
-  
-  if (!confirm(`Initialize Company: ${companyId}?\n\nSector: ${sectorCode}\n\nThis will create initial collections and data.\nRun only once per company!`)) {
-    return;
-  }
-  
-  clearConsole();
-  logToConsole('🚀 Starting company initialization...', 'info');
-  
-  try {
-    const btn = document.getElementById('btnInitCompany');
-    if (btn) { btn.disabled = true; btn.textContent = 'Initializing...'; }
-    
-    // ✅ Pass sector to initialization function via global temp variable
-    window.initializingSector = sectorCode;
-    await runCompanyInitialization(companyId);
-    delete window.initializingSector; // Clean up
-    
-    result.innerHTML = '<div class="result-box success">✅ Company initialized successfully!</div>';
-    
-  } catch (e) {
-    result.innerHTML = `<div class="result-box error">❌ Initialization Error: ${e.message}</div>`;
-    logToConsole(`💥 Error: ${e.message}`, 'error');
-    console.error('Init error:', e);
-  } finally {
-    const btn = document.getElementById('btnInitCompany');
-    if (btn) { btn.disabled = false; btn.textContent = '🚀 Initialize Company'; }
-  }
-}
-
-
-async function runCompanyInitialization(companyId) {
-  logToConsole(`🚀 Starting company initialization for: ${companyId}`, 'info');
-  
-  // Fetch company data to get admin email
-  logToConsole('📥 Fetching company data from Master Firestore...', 'info');
-  const snap = await masterDb.collection('companies').doc(companyId).get();
-  if (!snap.exists) throw new Error('Company not found');
-  
-  const companyData = snap.data();
-  const adminEmail = companyData.adminEmail || `admin@${companyId.toLowerCase()}.com`;
-  const companyName = companyData.companyName || companyId;
-  
-  // Get Client Firebase config
-  const clientConfig = companyData.firebaseConfig;
-  if (!clientConfig || !clientConfig.apiKey) {
-    throw new Error('Client Firebase config not found. Please update config first.');
-  }
-  
-  logToConsole(`✓ Found Config: ${clientConfig.projectId}`, 'success');
-  logToConsole('🔌 Connecting to Client Firebase...', 'info');
-  
-  // Initialize Client Firebase (temporary app for initialization)
-  let clientApp;
-  try {
-    try {
-      clientApp = firebase.app('client-init');
-    } catch (e) {
-      clientApp = firebase.initializeApp(clientConfig, 'client-init');
-    }
-    const clientDb = clientApp.firestore();
-    logToConsole('✓ Connected to Client Firestore', 'success');
-    logToConsole('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-    
-
-    // ══════════════════════════════════════════════════════
-    // ✅ SECTOR INITIALIZATION (Zero Data Loss)
-    // ══════════════════════════════════════════════════════
-    // Get sector from function parameter (passed from initializeCompany)
-    const sectorCode = window.initializingSector || 'CONST'; // Fallback if not passed
-    const sectorData = SECTOR_REGISTRY[sectorCode] || SECTOR_REGISTRY["CONST"];
-    const sectorLabel = `${sectorCode}-${sectorData.name}`;
-    
-    // 1. Master Firestore: Add sector field safely (merge: true = ONLY adds/updates 'sector')
-    logToConsole(`\n📦 Updating Master Company record...`, 'info');
-    await masterDb.collection('companies').doc(companyId).set({
-      sector: sectorLabel
-    }, { merge: true });
-    logToConsole(`  ✓ sector field added: "${sectorLabel}"`, 'success');
-    
-    // 2. Client Firestore: Create sectors collection & doc with categorized designations
-    logToConsole(`\n📦 Creating Client sectors collection...`, 'info');
-    await clientDb.collection('sectors').doc(sectorCode).set({
-      code: sectorCode,
-      name: sectorData.name,
-      designations: sectorData.designations, // Preserves Office/Field grouping
-      createdAt: new Date()
-    });
-    const totalDesig = Object.values(sectorData.designations).flat().length;
-    logToConsole(`  ✓ sectors/${sectorCode} created with ${totalDesig} designations`, 'success');
-    logToConsole(`  └─ Office/Corporate: ${sectorData.designations["Office/Corporate"].length}`, 'info');
-    logToConsole(`  └─ Field/Operations: ${sectorData.designations["Field/Operations"].length}`, 'info');
-    logToConsole('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-    // ══════════════════════════════════════════════════════
-
-
-
-
-    const now = new Date();
-    const dateTimestamp = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
-    const defaultPasswordHash = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
-    const empId = companyId.slice(0, 3).toUpperCase() + '101';
-
-    // Helper: Ensure collection/doc exists with specific fields
-    const ensureCollection = async (colName, docId, docData, isEmployee = false, fields = {}) => {
-      logToConsole(`\n📦 Processing collection: ${colName}`, 'info');
-      
-      try {
-        const check = await clientDb.collection(colName).limit(1).get();
-        
-        // ✅ For employees: migrate ALL existing employees to new field structure
-        if (isEmployee && !check.empty) {
-          logToConsole(`  ✓ Employees collection has data. Migrating ALL employees to new structure...`, 'info');
-          
-          // Fetch ALL employees for this company
-          const allEmps = await clientDb.collection(colName)
-            .where('companyId', '==', companyId)
-            .get();
-          
-          let updatedCount = 0;
-          for (const empDoc of allEmps.docs) {
-            const empData = empDoc.data();
-            const updateData = {};
-            
-            // ✅ Check and migrate OLD fields to NEW structure
-            if (empData.Photo === undefined) updateData.Photo = null;  // BYTES type
-            if (empData.biometricData === undefined) {
-              // Migrate old photoUrl to biometricData array if exists
-              if (empData.photoUrl) {
-                updateData.biometricData = [empData.photoUrl]; // Convert to array
-                updateData.photoUrl = firebase.firestore.FieldValue.delete(); // Remove old field
-              } else {
-                updateData.biometricData = []; // Empty array
-              }
-            }
-            
-            // Ensure other missing fields
-            if (empData.Designation === undefined) updateData.Designation = '';
-            if (empData.EffectiveDate === undefined) updateData.EffectiveDate = dateTimestamp;
-            if (empData.JoinDate === undefined) updateData.JoinDate = dateTimestamp;
-            if (empData.PasswordHash === undefined) updateData.PasswordHash = '';
-            if (empData.Role === undefined) updateData.Role = 'EMPLOYEE';
-            if (empData.Site === undefined) updateData.Site = '';
-            if (empData.Status === undefined) updateData.Status = 'ACTIVE';
-            if (empData.UpdatedAt === undefined) updateData.UpdatedAt = new Date().toISOString();
-            
-            // Only update if there are fields to add/migrate
-            if (Object.keys(updateData).length > 0) {
-              updateData.updatedAt = new Date();
-              await empDoc.ref.update(updateData);
-              updatedCount++;
-              logToConsole(`  ✓ Migrated ${empData.EMPID || empDoc.id}`, 'success');
-              if (updateData.biometricData) {
-                logToConsole(`    └─ biometricData: ${updateData.biometricData.length} template(s)`, 'info');
-              }
-            }
-          }
-          
-          logToConsole(`  ✓ Migrated ${updatedCount} employee(s) to new structure`, 'success');
-          return true;
-        }
-        
-        // For other collections: skip if has data
-        if (!check.empty && !isEmployee) {
-          logToConsole(`  ✓ Collection already has data. Skipping.`, 'warn');
-          return true;
-        }
-        
-        // For new employee: create initial admin with NEW field structure
-        if (isEmployee && check.empty) {
-          const payload = { 
-            ...docData, 
-            companyId, 
-            _template: true, 
-            createdAt: now, 
-            ...fields,
-            Photo: null,              // ✅ BYTES type (null initially)
-            biometricData: []         // ✅ ARRAY type (empty initially)
-          };
-          await clientDb.collection(colName).doc(docId).set(payload);
-          logToConsole(`  ✓ Created initial employee: ${docId}`, 'success');
-          logToConsole(`  └─ Photo: null (BYTES)`, 'info');
-          logToConsole(`  └─ biometricData: [] (ARRAY)`, 'info');
-          return true;
-        }
-        
-        // For other new collections: create template doc
-        const payload = { ...docData, companyId, _template: true, createdAt: now, ...fields };
-        await clientDb.collection(colName).doc(docId).set(payload);
-        logToConsole(`  ✓ Created document: ${docId}`, 'success');
-        logToConsole(`  └─ Fields: ${Object.keys(payload).join(', ')}`, 'info');
-        return true;
-      } catch (e) {
-        logToConsole(`  ✗ Failed: ${e.message}`, 'error');
-        return false;
-      }
-    };
-
-    let created = false;
-
-    // 1. Employees (with NEW field structure + migration)
-    const empCreated = await ensureCollection('employees', empId, {
-      EMPID: empId, 
-      EmpName: 'Update Name', 
-      Email: adminEmail, 
-      Phone: ' ',
-      Designation: 'Manager', 
-      PasswordHash: defaultPasswordHash, 
-      Role: 'ADMIN',
-      Site: 'SITE001', 
-      Status: 'ACTIVE', 
-      JoinDate: dateTimestamp,
-      EffectiveDate: dateTimestamp, 
-      updatedAt: now
-    }, true, {
-      PasswordHash: defaultPasswordHash,
-      Role: 'ADMIN',
-      Site: 'SITE001',
-      Status: 'ACTIVE',
-      Photo: null,              // ✅ BYTES type
-      biometricData: []         // ✅ ARRAY type
-    });
-    if (empCreated) created = true;
-
-    // 2. Leave Balances
-    const lbCreated = await ensureCollection('leave_balances', empId, {
-      EMPID: empId,
-      empName: 'Update Name',
-      leaveYear: now.getFullYear(),
-      privilege_leave: { total: 20, utilized: 0, balance: 20, carried_fwd: 0 },
-      casual_leave: { total: 12, utilized: 0, balance: 12 },
-      sick_leave: { total: 12, utilized: 0, balance: 12 },
-      comp_off: { total: 0, utilized: 0, balance: 0 },
-      maternity_leave: { total: 0, utilized: 0 },
-      loss_of_pay: 0,
-      lastUpdated: now
-    }, true);
-    if (lbCreated) created = true;
-
-    // 3. Sites
-    const sitesCreated = await ensureCollection('sites', 'SITE001', {
-      SiteID: 'SITE001', SiteName: 'Head Office', Address: 'Update Address',
-      Latitude: 12.9716, Longitude: 77.5946, Radius: 100,
-      ShiftStart: '09:00', ShiftEnd: '18:00', LunchTime: '13:00', Status: 'ACTIVE'
-    }, false, {
-      SiteName: 'Head Office',
-      Latitude: 12.9716,
-      Longitude: 77.5946,
-      Radius: 100,
-      ShiftStart: '09:00',
-      ShiftEnd: '18:00'
-    });
-    if (sitesCreated) created = true;
-
-    // 4. Holidays
-    const holCreated = await ensureCollection('holidays', 'HOL001', {
-      HolidayID: 'HOL001', HolidayName: 'Republic Day',
-      Date: new Date(now.getFullYear(), 0, 26), Type: 'National Holiday',
-      Day: 'Monday', ApplicableSites: 'ALL', State: 'ALL', Description: 'Gazetted Holiday'
-    }, false, {
-      HolidayName: 'Republic Day',
-      Type: 'National Holiday',
-      Day: 'Monday'
-    });
-    if (holCreated) created = true;
-
-    // 5. Weekly Offs
-    const woCreated = await ensureCollection('weekly_offs', 'SITE001', {
-      SiteID: 'SITE001', WeeklyOff1: 'Sunday', WeeklyOff2: 'None',
-      EffectiveFrom: dateTimestamp, Remarks: 'Standard single off'
-    }, false, {
-      WeeklyOff1: 'Sunday',
-      WeeklyOff2: 'None',
-      Remarks: 'Standard single off'
-    });
-    if (woCreated) created = true;
-
-    // 6. Attendance
-    const attCreated = await ensureCollection('attendance', '_visible', {
-      Note: 'Template doc - safe to delete when real records exist', Status: 'TEMPLATE'
-    }, false, {
-      Note: 'Template doc',
-      Status: 'TEMPLATE'
-    });
-    if (attCreated) created = true;
-
-    // 7. Settings Collection (Company Branding + App Update Config)
-    const settingsCreated = await ensureCollection('settings', companyId, {
-      companyId: companyId,
-      
-      // 🔥 BRANDING (logo as Base64 string, like employee Photo field)
-      branding: {
-        logo: null,                     // Base64 string or null (NO URL)
-        primaryColor: '#00838F'         // Default teal hex code
-      },
-      
-      // 🔥 UPDATE CONFIG (for Installer App → AttendEasePro.apk flow)
-      updateConfig: {
-        latestVersionCode: 100,         // Version of AttendEasePro.apk
-        downloadUrl: 'https://github.com/drushyasinchana/drushyasinchana/releases/latest/download/AttendEasePro.apk',
-        isForceUpdate: false,           // Allow older versions by default
-        releaseNotes: 'Initial release - AttendEase Pro v1.0',
-        updatedAt: new Date().toISOString()
-      }
-    }, false, {
-      branding: {
-        logo: null,
-        primaryColor: '#00838F'
-      },
-      updateConfig: {
-        latestVersionCode: 100,
-        downloadUrl: 'https://github.com/drushyasinchana/drushyasinchana/releases/latest/download/AttendEasePro.apk',
-        isForceUpdate: false
-      }
-    });
-    if (settingsCreated) created = true;
-
-    logToConsole('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-    if (created) {
-      logToConsole('🏁 Initialization complete! All collections created.', 'success');
-      logToConsole(`\n📋 Initial Admin Credentials:`, 'info');
-      logToConsole(`   Employee ID: ${empId}`, 'info');
-      logToConsole(`   Password: 123456`, 'info');
-      logToConsole(`   Email: ${adminEmail}`, 'info');
-      logToConsole(`\n📋 NEW Employee Field Structure:`, 'info');
-      logToConsole(`   - Photo: null (BYTES type - for profile photo)`, 'info');
-      logToConsole(`   - biometricData: [] (ARRAY type - for face/fingerprint templates)`, 'info');
-      logToConsole(`\n Migration Applied:`, 'info');
-      logToConsole(`   - Old photoUrl field converted to biometricData array`, 'info');
-      logToConsole(`   - All existing employees updated with new structure`, 'info');
-    } else {
-      logToConsole('✅ All collections already exist. Fields migrated if needed.', 'warn');
-    }
-    
-    // Cleanup
-    try {
-      firebase.app('client-init').delete();
-      logToConsole('\n🔌 Disconnected from Client Firebase', 'info');
-    } catch (e) {}
-    
-  } catch (e) {
-    logToConsole(`💥 Initialization failed: ${e.message}`, 'error');
-    try {
-      firebase.app('client-init').delete();
-    } catch (e) {}
-    throw e;
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// SECTOR REGISTRY (Categorized Office vs Field)
-// ══════════════════════════════════════════════════════
-const SECTOR_REGISTRY = {
-  "CONST": { name: "Construction & Infrastructure", designations: { "Office/Corporate": ["General Manager","AGM","Project Manager","HR Manager","HR Executive","Admin Manager","Admin Executive","Accounts Manager","Accountant","CA/Finance Manager","Design Engineer","Structural Engineer","Architect","Estimator","Quantity Surveyor","Procurement Manager","Store Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Steward"], "Field/Operations": ["Site Engineer","Site Supervisor","Safety Officer","Safety Supervisor","Foreman","Mason","Carpenter","Electrician","Plumber","Welder","Heavy Equipment Operator","Crane Operator","Surveyor","Survey Assistant","Laborer","Helper","Bar Bender","Concrete Mixer Operator","Tile Fitter","Painter","Driver","Security Guard"] } },
-  "MFG":   { name: "Manufacturing & Factory Operations", designations: { "Office/Corporate": ["Plant Manager","Factory Manager","Production Manager","QA/QC Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Purchase Manager","Store Manager","Inventory Controller","Sales Manager","Maintenance Manager","Design Engineer","Process Engineer","Industrial Engineer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Production Supervisor","Shift Incharge","Line Supervisor","Machine Operator","CNC Operator","Fitter","Electrician","Mechanic","Welder","Quality Inspector","Maintenance Technician","Store Keeper","Material Handler","Forklift Operator","Assembly Worker","Helper","Packaging Operator","Loading/Unloading Worker","Safety Officer","Fire & Safety Worker","Housekeeping Staff","Security Guard"] } },
-  "SEC":   { name: "Security & Facility Management", designations: { "Office/Corporate": ["Operations Manager","Facility Manager","Contract Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Billing Executive","Client Relationship Manager","Quality Manager","Training Manager","Procurement Officer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Security Supervisor","Security Guard","CCTV Operator","Access Control Operator","Patrol Supervisor","Control Room Operator","Fire & Safety Officer","Safety Supervisor","Housekeeping Supervisor","Housekeeping Staff","Cleaning Worker","Pest Control Technician","Maintenance Worker","Electrician","Plumber","HVAC Technician","Gardener/Landscaper","Driver","Lift Operator","Pantry Boy/Girl","Office Attendant"] } },
-  "LOG":   { name: "Logistics, Warehousing & Supply Chain", designations: { "Office/Corporate": ["Operations Manager","Warehouse Manager","Logistics Manager","Supply Chain Manager","Fleet Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Inventory Manager","Purchase Manager","Sales Manager","Dispatch Manager","Customer Service Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Warehouse Supervisor","Store Supervisor","Inventory Controller","Store Keeper","Forklift Operator","Crane Operator","Picker/Packer","Loading/Unloading Supervisor","Loading Worker","Delivery Driver","Transport Driver","Fleet Coordinator","Dispatch Executive","Gate Keeper","Security Guard","Helper","Material Handler","Quality Checker","Documentation Assistant","Housekeeping Staff"] } },
-  "RET":   { name: "Retail & Multi-Store Chains", designations: { "Office/Corporate": ["Store Manager","Regional Manager","Area Manager","Operations Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Merchandising Manager","Visual Merchandiser","Marketing Executive","Purchase Manager","Inventory Manager","Customer Service Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Floor Supervisor","Department Supervisor","Sales Associate","Sales Executive","Cashier","Billing Executive","Customer Service Rep","Stock Handler","Inventory Executive","Visual Merchandising Assistant","Security Incharge","Security Guard","Housekeeping Staff","Helper","Packer","Delivery Boy","Promoter","Brand Ambassador","Housekeeping Supervisor"] } },
-  "HLT":   { name: "Healthcare & Hospital Networks", designations: { "Office/Corporate": ["Hospital Administrator","Medical Superintendent","Operations Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Finance Manager","Medical Records Manager","Quality Manager","IT Manager","Biomedical Engineer","Pharmacy Manager","Laboratory Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Dietician","Steward"], "Field/Operations": ["Staff Nurse","Nursing Supervisor","Ward Boy/Attendant","Patient Care Assistant","Medical Lab Technician","Radiology Technician","OT Assistant","Operation Theatre Assistant","Pharmacy Executive","Pharmacist","Front Desk Coordinator","Counselor","Physiotherapist","X-Ray Technician","ECG Technician","Dialysis Technician","Housekeeping Staff","Laundry Worker","Security Guard","Driver","Ambulance Driver","Sweeper/Cleaner"] } },
-  "FLD":   { name: "Field Services & IT Deployment", designations: { "Office/Corporate": ["Operations Manager","Project Manager","Service Manager","Technical Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Procurement Manager","Store Manager","Sales Manager","Client Relationship Manager","Design Engineer","Network Architect","System Engineer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper"], "Field/Operations": ["Field Technician","Field Engineer","Site Supervisor","Installation Specialist","Telecom Technician","Network Engineer","Service Engineer","Maintenance Technician","Survey Engineer","Rigger","Testing & Commissioning Engineer","Project Coordinator","Cable Technician","Fiber Optic Technician","Tower Technician","Driver","Helper","Security Guard","Store Keeper","Material Handler"] } },
-  "EDU":   { name: "Education & Universities", designations: { "Office/Corporate": ["Principal/Director","Vice Principal","Administrative Officer","Registrar","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Exam Controller","Admission Officer","Placement Officer","Librarian","IT Manager","Purchase Officer","Store Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Faculty/Professor","Lecturer","Teaching Assistant","Lab Assistant","Lab Technician","Hostel Warden","Hostel Supervisor","Maintenance Supervisor","Electrician","Plumber","Housekeeping Staff","Security Incharge","Security Guard","Gardener","Driver","Library Assistant","Sports Coach","Counselor","Sweeper/Cleaner"] } },
-  "AGR":   { name: "Agriculture & Plantations", designations: { "Office/Corporate": ["Farm Manager","Operations Manager","Estate Manager","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Procurement Manager","Quality Manager","Agronomist","Agricultural Engineer","Sales Manager","Store Manager","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Farm Supervisor","Field Supervisor","Irrigation Technician","Harvesting Supervisor","Tractor Operator","Heavy Equipment Operator","Field Worker","Laborer","Helper","Plant Protection Officer","Pest Control Technician","Quality Checker","Grading Supervisor","Cold Storage Manager","Cold Storage Operator","Driver","Security Guard","Gardener","Animal Caretaker","Milker"] } },
-  "GOV":   { name: "Government & PSU", designations: { "Office/Corporate": ["Section Officer","Under Secretary","Deputy Secretary","Director","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Audit Officer","IT Officer","Purchase Officer","Store Officer","Liaison Officer","Public Relations Officer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Driver","Chef/Cook","Kitchen Helper","Canteen Staff"], "Field/Operations": ["Inspector","Sub-Inspector","Constable","Junior Engineer","Assistant Engineer","Technical Assistant","Clerk","Data Entry Operator","Stenographer","Typist","Office Superintendent","Field Assistant","Surveyor","Enumerator","Security Personnel","Security Guard","Housekeeping Staff","Sweeper/Cleaner","Mali/Gardener","Helper"] } }
-};
 
 </script>
 </body>
