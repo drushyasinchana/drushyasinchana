@@ -450,6 +450,34 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
 </div>
 
 
+<!-- SITES PAGE -->
+<div class="page" id="pgSites">
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Sites</h3>
+      <button class="btn btn-teal btn-sm" onclick="openSiteModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Site
+      </button>
+    </div>
+    
+    <div class="filter-bar">
+      <input type="text" id="siteSearch" placeholder="Search sites..." oninput="filterSites()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;"/>
+      <select id="siteStatusFilter" onchange="filterSites()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;">
+        <option value="">All Status</option>
+        <option value="ACTIVE">Active</option>
+        <option value="INACTIVE">Inactive</option>
+      </select>
+    </div>
+    
+    <!-- ✅ THIS ELEMENT IS REQUIRED -->
+    <div id="sitesList" style="padding:20px;">
+      <!-- Sites will be rendered here -->
+    </div>
+  </div>
+</div>
+
+
 <!-- ATTENDANCE PAGE -->
 <div class="page" id="pgAttendance">
   <div class="card" style="height: calc(100vh - 120px); display: flex; flex-direction: column;">
