@@ -19,6 +19,11 @@
 <!-- Image compression for Bytes upload -->
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
+<!-- ✅ MUST BE FIRST: Initialize global password cache -->
+<script>
+  window.plainPasswordCache = window.plainPasswordCache || {};
+  console.log('🔐 Password cache initialized');
+</script>
 
 <style>
 :root{
@@ -395,73 +400,123 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
         </div>
       </div>
 
-      <!-- EMPLOYEES -->
-      <div class="page" id="pgEmployees">
-        <div class="card">
-          <div class="card-hdr">
-            <h3>Employee Directory</h3>
-            <button class="btn btn-teal btn-sm" onclick="openEmpModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Add Employee
-            </button>
-          </div>
-          <div class="filter-bar">
-            <input type="text" id="empSearch" placeholder="Search name, code, email…" oninput="filterEmployees()" style="flex:1;min-width:160px;"/>
-            <select id="empStatusFilter" onchange="filterEmployees()">
-              <option value="">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
-            </select>
-            <select id="empSiteFilter" onchange="filterEmployees()"><option value="">All Sites</option></select>
-          </div>
-          <div class="tbl-wrap">
-            <table>
-<thead><tr><th>PHOTO</th><th>EMPID</th><th>Name</th><th>Email</th><th>Designation</th><th>Phone</th><th>Site</th><th>Join Date</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="empTableBody"><tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+<!-- EMPLOYEES PAGE -->
+<div class="page" id="pgEmployees">
+  <div class="card" style="height: calc(100vh - 120px); display: flex; flex-direction: column;">
+    
+    <!-- Header (fixed) -->
+    <div class="card-hdr" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+      <h3>Employee Directory</h3>
+      <button class="btn btn-teal btn-sm" onclick="openEmpModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Employee
+      </button>
+    </div>
+    
+    <!-- Filters (fixed) -->
+    <div class="filter-bar" style="flex-shrink: 0; padding: 12px 20px; border-bottom: 1px solid var(--border); background: #f8f9fa;">
+      <input type="text" id="empSearch" placeholder="Search name, code, email…" oninput="filterEmployees()" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;"/>
+      <select id="empStatusFilter" onchange="filterEmployees()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-left:8px;">
+        <option value="">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+      </select>
+      <select id="empSiteFilter" onchange="filterEmployees()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-left:8px;"><option value="">All Sites</option></select>
+    </div>
+    
+    <!-- Scrollable Table Area -->
+    <div style="flex: 1; overflow-y: auto; overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1100px;">
+        <thead style="position: sticky; top: 0; background: var(--bg); z-index: 10;">
+          <tr>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 60px;">Photo</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 100px;">EMPID</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left;">Name</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left;">Email</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 150px;">Designation</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 120px;">Phone</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 120px;">Site</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 110px;">Join Date</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 100px;">Role</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">Status</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 200px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="empTableBody">
+          <tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+  </div>
+</div>
 
-      <!-- SITES -->
-      <div class="page" id="pgSites">
-        <div class="card">
-          <div class="card-hdr">
-            <h3>Site Management</h3>
-            <button class="btn btn-teal btn-sm" onclick="openSiteModal()">+ Add Site</button>
-          </div>
-          <div class="filter-bar">
-            <input type="text" id="siteSearch" placeholder="Search sites…" oninput="filterSites()" style="flex:1;min-width:160px;"/>
-            <select id="siteStatusFilter" onchange="filterSites()">
-              <option value="">All Status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
-            </select>
-            <button class="btn btn-outline btn-sm" onclick="loadSites()">↻ Refresh</button>
-          </div>
-          <div id="sitesList" class="site-grid">
-            <div class="empty"><p>Loading sites...</p></div>
-          </div>
-        </div>
-      </div>
 
-      <!-- ATTENDANCE -->
-      <div class="page" id="pgAttendance">
-        <div class="card">
-          <div class="card-hdr"><h3>Attendance Records</h3></div>
-          <div class="filter-bar">
-            <input type="date" id="attDate" onchange="loadAttendance()"/>
-            <select id="attSite" onchange="loadAttendance()"><option value="">All Sites</option></select>
-            <select id="attStatus" onchange="filterAttTable()">
-              <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
-            </select>
-            <button class="btn btn-outline btn-sm" onclick="loadAttendance()">↻ Refresh</button>
-          </div>
-          <div class="chips" id="attSummary"></div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>Employee</th><th>EMPID</th><th>Site</th><th>IN</th><th>OUT</th><th>Hours</th><th>Status</th><th>Location</th><th>Half Day</th><th>Marked By</th></tr></thead>
-              <tbody id="attTableBody"><tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Select a date to load records</td></tr></tbody>
-            </table>
-          </div>
-        </div>
+<!-- ATTENDANCE PAGE -->
+<div class="page" id="pgAttendance">
+  <div class="card" style="height: calc(100vh - 120px); display: flex; flex-direction: column;">
+    
+    <!-- Header (fixed) -->
+    <div class="card-hdr" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+      <h3>Attendance Records</h3>
+      <button class="btn btn-outline btn-sm" onclick="startLiveUpdates()">🔄 Live Mode</button>
+    </div>
+    
+    <!-- Filters (fixed) -->
+    <div class="filter-bar" style="flex-shrink: 0; padding: 12px 20px; border-bottom: 1px solid var(--border); background: #f8f9fa; position: relative; z-index: 20;">
+      <input type="date" id="attDate" onchange="loadAttendance()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;"/>
+      <select id="attSite" onchange="loadAttendance()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-left:8px;min-width:150px;"><option value="">All Sites</option></select>
+      <select id="attStatus" onchange="filterAttTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-left:8px;">
+        <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="loadAttendance()" style="margin-left:8px;">↻ Refresh</button>
+    </div>
+    
+    <!-- Live Stats Bar (fixed) -->
+    <div id="attLiveStats" style="flex-shrink: 0; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--teal-s); display: flex; gap: 20px; align-items: center; font-size: 0.9rem;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="color:var(--ink);font-weight:500;">Total:</span>
+        <span id="liveTotal" style="font-weight:600;color:var(--ink);">0</span>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="color:var(--green);font-weight:500;">Present:</span>
+        <span id="livePresent" style="font-weight:600;color:var(--green);">0</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="color:var(--red);font-weight:500;">Absent:</span>
+        <span id="liveAbsent" style="font-weight:600;color:var(--red);">0</span>
+      </div>
+      <!-- Mini Bar Chart -->
+      <div style="flex:1; display:flex; gap:2px; height:20px; align-items:center;">
+        <div id="barPresent" style="background:var(--green); border-radius:3px; height:100%; transition:width 0.3s;"></div>
+        <div id="barAbsent" style="background:var(--red); border-radius:3px; height:100%; transition:width 0.3s;"></div>
+      </div>
+      <span id="liveTimestamp" style="font-size:0.8rem;color:var(--muted);margin-left:10px;"></span>
+    </div>
+    
+    <!-- Scrollable Table Area -->
+    <div style="flex: 1; overflow-y: auto; overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1100px;">
+        <thead style="position: sticky; top: 0; background: var(--bg); z-index: 10;">
+          <tr>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left;">Employee</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 100px;">EMPID</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 120px;">Site</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">IN</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">OUT</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 80px;">Hours</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">Status</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 120px;">Location</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">Half Day</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 100px;">Marked By</th>
+          </tr>
+        </thead>
+        <tbody id="attTableBody">
+          <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Select a date to load records</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+  </div>
+</div>
 
 <!-- POST LUNCH TRACKING -->
 <div class="page" id="pgPostlunch">  <!-- ✅ Must match nav() -->  <div class="card">
@@ -887,7 +942,28 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
         </div>
         
         <div class="fgg"><label>Phone</label><input id="ePhone" type="tel" placeholder="9876543210"/></div>
-        <div class="fgg"><label>PIN / Password *</label><input id="ePass" type="password" placeholder="Leave blank to keep existing"/></div>
+
+<!--        <div class="fgg"><label>PIN / Password *</label><input id="ePass" type="password" placeholder="Leave blank to keep existing"/></div> -->
+<div class="fg">
+  <label>Password</label>
+  <div class="pw-wrap" style="position:relative;">
+    <!-- ✅ Standard password input: blank by default, masked when typing -->
+    <input id="ePass" type="password" placeholder="Enter new password..." 
+           style="width:100%;padding:11px 44px 11px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:0.9rem;"/>
+    
+    <!-- ✅ Eye icon toggle button -->
+    <button class="pw-eye" type="button" id="togglePassIcon" tabindex="-1"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:flex;align-items:center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  </div>
+  <div style="font-size:0.75rem;color:var(--hint);margin-top:4px;">
+    🔐 Enter new value to change, or leave blank to keep current.
+  </div>
+</div>
+
         <div class="fgg"><label>Role</label>
           <select id="eRole">
             <option value="EMPLOYEE">Employee</option>
