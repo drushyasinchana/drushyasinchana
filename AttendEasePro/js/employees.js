@@ -1,15 +1,51 @@
 /* ══════════════════════════════════════════════════════
    EMPLOYEES.JS - Employee Management Module
+   Features:
+     - Scrollable table within fixed page height
+     - Fixed header while scrolling rows
+     - Smart field mapping for edit/save
    Firestore Schema (employees collection):
    ├─ companyId, Category, Designation, EffectiveDate
    ├─ EMPID, Email, EmpName, JoinDate, PasswordHash
    ├─ Phone, Role, Site, Status
    ├─ Photo (bytes, ONLY via 📷 modal), photoUrl, biometricData
-   ══════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 
-/**
- * Loads employees for current company
- */
+/* ══════════════════════════════════════════════════════
+   HELPER: Converts Firestore Timestamps or Strings to YYYY-MM-DD
+══════════════════════════════════════════════════════ */
+const toInputDate = (val) => {
+  if (!val) return '';
+  try {
+    let d;
+    // 1. Handle Firestore Timestamp Object
+    if (val && typeof val.toDate === 'function') {
+      d = val.toDate();
+    } 
+    // 2. Handle Serialized JSON Timestamp ({seconds: ...})
+    else if (val && (val.seconds !== undefined || val._seconds !== undefined)) {
+      const s = val.seconds || val._seconds;
+      const n = val.nanoseconds || val._nanoseconds || 0;
+      d = new Date(s * 1000 + n / 1e6);
+    }
+    // 3. Handle standard Date strings or JS Date objects
+    else {
+      d = new Date(val);
+    }
+
+    if (isNaN(d.getTime())) return '';
+    
+    // Format strictly as YYYY-MM-DD for HTML date inputs
+    return d.toISOString().split('T')[0];
+  } catch (err) {
+    console.warn("Date conversion error:", err);
+    return '';
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   LOAD EMPLOYEES
+══════════════════════════════════════════════════════ */
 async function loadEmployees() {
   if (!S.clientDb) { toast('DB not connected', 'error'); return; }
   try {
@@ -22,9 +58,9 @@ async function loadEmployees() {
   }
 }
 
-/**
- * Renders employee list to table
- */
+/* ══════════════════════════════════════════════════════
+   RENDER EMPLOYEES TABLE
+══════════════════════════════════════════════════════ */
 function renderEmployees(list) {
   const tb = document.getElementById('empTableBody');
   if (!tb) return;
@@ -75,17 +111,17 @@ function renderEmployees(list) {
     
     return `
     <tr>
-      <td style="text-align:center;">${photoHtml}</td>
-      <td class="mono"><strong>${e.EMPID || '—'}</strong></td>
-      <td>${e.EmpName || '—'}</td>
-      <td style="color:var(--muted);font-size:.85rem;">${e.Email || '—'}</td>
-      <td>${e.Designation || '—'}</td>
-      <td>${e.Phone || '—'}</td>
-      <td>${e.Site || '—'}</td>
-      <td class="mono" style="font-size:.85rem;">${fmtDate(e.JoinDate)}</td>
-      <td><span class="badge ${(e.Role||'').toUpperCase()==='SUPER_ADMIN'?'badge-purple':(e.Role||'').toUpperCase()==='ADMIN'?'badge-blue':'badge-gray'}">${e.Role||'EMPLOYEE'}</span></td>
-      <td><span class="badge ${(e.Status||'').toUpperCase()==='ACTIVE'?'badge-green':'badge-gray'}">${e.Status||'ACTIVE'}</span></td>
-      <td>
+      <td style="text-align:center;padding:10px;">${photoHtml}</td>
+      <td class="mono" style="padding:10px;"><strong>${e.EMPID || '—'}</strong></td>
+      <td style="padding:10px;">${e.EmpName || '—'}</td>
+      <td style="padding:10px;color:var(--muted);font-size:.85rem;">${e.Email || '—'}</td>
+      <td style="padding:10px;">${e.Designation || '—'}</td>
+      <td style="padding:10px;">${e.Phone || '—'}</td>
+      <td style="padding:10px;">${e.Site || '—'}</td>
+      <td class="mono" style="padding:10px;font-size:.85rem;">${fmtDate(e.JoinDate)}</td>
+      <td style="padding:10px;"><span class="badge ${(e.Role||'').toUpperCase()==='SUPER_ADMIN'?'badge-purple':(e.Role||'').toUpperCase()==='ADMIN'?'badge-blue':'badge-gray'}">${e.Role||'EMPLOYEE'}</span></td>
+      <td style="padding:10px;"><span class="badge ${(e.Status||'').toUpperCase()==='ACTIVE'?'badge-green':'badge-gray'}">${e.Status||'ACTIVE'}</span></td>
+      <td style="padding:10px;">
         <button class="btn btn-outline btn-sm" onclick='editEmployee(${JSON.stringify(safeEditData).replace(/'/g, "\\'")})'>Edit</button>
         <button class="btn btn-outline btn-sm" onclick="openPhotoModal('${e.EMPID}', '${e.EmpName}')" style="margin:0 4px;" title="Upload Photo">📷</button>
         <button class="btn btn-outline btn-sm" onclick="deleteEmployee('${e.EMPID}')" style="color:var(--red);margin-left:4px;">Delete</button>
@@ -94,9 +130,9 @@ function renderEmployees(list) {
   }).join('');
 }
 
-/**
- * Opens modal for adding new employee
- */
+/* ══════════════════════════════════════════════════════
+   OPEN EMPLOYEE MODAL (Add New)
+══════════════════════════════════════════════════════ */
 async function openEmpModal() {
   // Reset Category & Designation
   const eCategory = document.getElementById('eCategory');
@@ -131,9 +167,9 @@ async function openEmpModal() {
   openModal('empModal');
 }
 
-/**
- * Loads designations based on selected category (from sectors.js)
- */
+/* ══════════════════════════════════════════════════════
+   LOAD DESIGNATIONS FOR SECTOR (from sectors.js)
+══════════════════════════════════════════════════════ */
 async function loadDesignationsForSector() {
   const select = document.getElementById('eDesignation');
   if (!select) return;
@@ -184,55 +220,20 @@ function loadFallbackDesignations(select) {
   });
 }
 
-/**
- * Opens modal for editing employee with pre-filled data
- */
-/**
- * HELPER: Converts Firestore Timestamps or Strings to YYYY-MM-DD
- * Place this at the top of your script file.
- */
-const toInputDate = (val) => {
-  if (!val) return '';
-  try {
-    let d;
-    // 1. Handle Firestore Timestamp Object
-    if (val && typeof val.toDate === 'function') {
-      d = val.toDate();
-    } 
-    // 2. Handle Serialized JSON Timestamp ({seconds: ...})
-    else if (val && (val.seconds !== undefined || val._seconds !== undefined)) {
-      const s = val.seconds || val._seconds;
-      const n = val.nanoseconds || val._nanoseconds || 0;
-      d = new Date(s * 1000 + n / 1e6);
-    }
-    // 3. Handle standard Date strings or JS Date objects
-    else {
-      d = new Date(val);
-    }
 
-    if (isNaN(d.getTime())) return '';
-    
-    // Format strictly as YYYY-MM-DD for HTML date inputs
-    return d.toISOString().split('T')[0];
-  } catch (err) {
-    console.warn("Date conversion error:", err);
-    return '';
-  }
-};
-
-/**
- * MAIN FUNCTION: Populates the Edit Modal
- */
+/* ══════════════════════════════════════════════════════
+   EDIT EMPLOYEE - Populate modal with existing data
+══════════════════════════════════════════════════════ */
 function editEmployee(e) {
   console.log('✏️ Editing employee:', e.EMPID);
   
-  // 1. Text fields - Fixed mapping for EmpName, Email, and photoUrl
+  // 1. Text fields - Fixed mapping
   const elMap = {
     'eCode': e.EMPID,
-    'eName': e.EmpName,    // Matches your 'yash' record
-    'eEmail': e.Email,     // Matches your 'yash' record
+    'eName': e.EmpName,
+    'eEmail': e.Email,
     'ePhone': e.Phone,
-    'ePhotoURL': e.photoUrl // Matches your lowercase 'photoUrl' field
+    'ePhotoURL': e.photoUrl
   };
 
   Object.keys(elMap).forEach(id => {
@@ -242,7 +243,7 @@ function editEmployee(e) {
 
   document.getElementById('eCode').disabled = true;
 
-  // 2. ✅ Dates: Population using the helper above
+  // 2. Dates: Population using helper
   document.getElementById('eJoin').value = toInputDate(e.JoinDate);
   document.getElementById('eEffDate').value = toInputDate(e.EffectiveDate);
 
@@ -279,7 +280,6 @@ function editEmployee(e) {
     photoInitial.style.display = 'block';
     photoInitial.textContent = (e.EmpName || '?').charAt(0).toUpperCase();
     
-    // Show photo if available (either as string or bytes)
     if (e.Photo || e.photoUrl) {
       photoImg.src = e.photoUrl || e.Photo;
       photoImg.style.display = 'block';
@@ -292,9 +292,10 @@ function editEmployee(e) {
   if (typeof openModal === 'function') openModal('empModal');
 }
 
-/**
- * SAVE FUNCTION: Sends data to Firestore
- */
+
+/* ══════════════════════════════════════════════════════
+   SAVE EMPLOYEE - Send data to Firestore
+══════════════════════════════════════════════════════ */
 async function saveEmployee() {
   const empCode = document.getElementById('eCode')?.value.trim().toUpperCase();
   const name = document.getElementById('eName')?.value.trim();
@@ -330,7 +331,6 @@ async function saveEmployee() {
       Site: siteId,
       Role: role,
       Status: status,
-      // Store as Date objects for Firestore
       JoinDate: joinDate ? new Date(joinDate) : new Date(),
       EffectiveDate: effDate ? new Date(effDate) : new Date(),
       photoUrl: photoURL || '',
@@ -364,9 +364,9 @@ async function saveEmployee() {
   }
 }
 
-/**
- * Filters employee list by search/status/site
- */
+/* ══════════════════════════════════════════════════════
+   FILTER EMPLOYEES
+══════════════════════════════════════════════════════ */
 function filterEmployees() {
   const search = (document.getElementById('empSearch')?.value || '').toLowerCase();
   const statusFilter = document.getElementById('empStatusFilter')?.value || '';
@@ -382,13 +382,9 @@ function filterEmployees() {
   renderEmployees(filtered);
 }
 
-/**
- * Saves employee (Add or Edit) - ONLY updates defined schema fields
- */
-
-/**
- * Deletes employee document
- */
+/* ══════════════════════════════════════════════════════
+   DELETE EMPLOYEE
+══════════════════════════════════════════════════════ */
 async function deleteEmployee(empId) {
   if (!confirm('Are you sure you want to delete employee ' + empId + '?')) return;
   try {
@@ -402,9 +398,9 @@ async function deleteEmployee(empId) {
   }
 }
 
-/**
- * Populates site/employee dropdowns across modules
- */
+/* ══════════════════════════════════════════════════════
+   POPULATE SITE/EMPLOYEE DROPDOWNS
+══════════════════════════════════════════════════════ */
 function populateSiteSelects() {
   // Site dropdowns
   ['eSite','empSiteFilter','attSite','rptSite','mSite','leaveSite','correctSite','revokeSite'].forEach(id => {
@@ -435,8 +431,8 @@ function populateSiteSelects() {
 }
 
 /* ══════════════════════════════════════════════════════
-   PHOTO UPLOAD (📷 Modal) - ONLY this updates Photo field
-   ══════════════════════════════════════════════════════ */
+   PHOTO UPLOAD FUNCTIONS
+══════════════════════════════════════════════════════ */
 let currentPhotoEmpId = null;
 
 function openPhotoModal(empId, empName) {
@@ -486,7 +482,6 @@ async function savePhoto() {
     const base64String = await blobToBase64(compressedBlob);
     const cleanBase64 = base64String.replace(/^image\/jpeg;base64,/, '');
     
-    // ✅ ONLY update Photo-related fields via .update()
     await S.clientDb.collection('employees').doc(currentPhotoEmpId).update({
       Photo: cleanBase64,
       PhotoType: 'image/jpeg',
@@ -548,11 +543,34 @@ function compressJPG(file, maxSize = 300, quality = 0.8) {
 
 
 /* ══════════════════════════════════════════════════════
-   KEYBOARD SHORTCUTS (Escape Key)
-   ══════════════════════════════════════════════════════ */
+   HELPER: Password visibility toggle
+══════════════════════════════════════════════════════ */
+function setupPasswordToggle(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (!input || !icon) {
+    console.warn(`⚠️ Toggle elements not found: #${inputId}, #${iconId}`);
+    return;
+  }
+  
+  icon.onclick = function() {
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+      input.type = 'password';
+      icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+  };
+}
+
+
+
+/* ══════════════════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', function(event) {
   if (event.key === 'Escape' || event.keyCode === 27) {
-    // Close all open modals
     const modals = document.querySelectorAll('.modal-backdrop.open');
     modals.forEach(m => {
       m.classList.remove('open');

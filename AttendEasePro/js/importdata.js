@@ -1,8 +1,13 @@
 /* ══════════════════════════════════════════════════════
    IMPORTDATA.JS - Bulk Employee Import from Excel
+   Features:
+     - Smart upsert: Update only empty fields if employee exists
+     - Insert new record if employee doesn't exist
+     - Random 6-digit password with proper SHA-256 hashing
+     - Export results with passwords
    Dependencies: masterDb, SA, XLSX library (SheetJS)
    Schema: employees collection with exact field mapping
-   ══════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 
 let parsedEmployees = [];
 let currentCompanyId = '';
@@ -13,6 +18,17 @@ let importResults = [];
  */
 function generateRandomPassword() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Hashes password using SHA-256 (async)
+ */
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -83,7 +99,6 @@ async function parseExcelFile() {
 
 /**
  * Processes and validates employee data from Excel
- * Maps to exact Firestore schema for employees collection
  */
 async function processEmployeeData(data) {
   const processed = [];
@@ -108,60 +123,55 @@ async function processEmployeeData(data) {
   
   const allDesignations = Object.values(sectorDesignations).flat();
   
-  data.forEach((row, index) => {
-    // Generate random 6-digit password and hash it
+  // Process each row with async password hashing
+  for (const row of data) {
     const randomPassword = generateRandomPassword();
-    const encoder = new TextEncoder();
-    const passwordHash = Array.from(new Uint8Array(
-      crypto.subtle.digest('SHA-256', encoder.encode(randomPassword))
-    )).map(b => b.toString(16).padStart(2, '0')).join('');
+    const passwordHash = await hashPassword(randomPassword);
     
-    // Parse JoinDate - handle various formats
+    // Parse JoinDate
     let joinDate = new Date(today);
     if (row.JoinDate || row.joindate) {
       const jd = row.JoinDate || row.joindate;
       if (typeof jd === 'string') {
-        // Try ISO format first, then fallback
         const parsed = new Date(jd);
         if (!isNaN(parsed)) joinDate = parsed;
       }
     }
     
-    const emp = {
-      row: index + 1,
-      // Required fields from Excel
-      EMPID: (row.EMPID || row.empid || '').toString().trim().toUpperCase(),
-      EmpName: (row.EmpName || row.empname || row.Name || '').toString().trim(),
-      
-      // Optional fields from Excel (null if not provided)
-      Email: (row.Email || row.email || '').toString().trim().toLowerCase() || null,
-      Phone: (row.Phone || row.phone || '').toString().trim() || null,
-      
-      // Category/Designation with defaults
-      Category: (row.Category || row.category || 'Office/Corporate').toString().trim(),
-      Designation: (row.Designation || row.designation || '').toString().trim(),
-      
-      // Date fields
-      JoinDate: joinDate,
-      
-      // Auto-filled fields per schema
-      companyId: currentCompanyId,
-      EffectiveDate: dateTimestamp,
-      PasswordHash: passwordHash,
-      PlainPassword: randomPassword, // Store for export only
-      Role: 'EMPLOYEE',
-      Status: 'ACTIVE',
-      Photo: null,
-      photoUrl: null,
-      biometricData: [],
-      UpdatedAt: new Date().toISOString(),
-      
-      // Validation
-      isValid: true,
-      errors: []
-    };
+    // Inside processEmployeeData(), in the emp object:
+
+const emp = {
+  row: data.indexOf(row) + 1,
+  EMPID: (row.EMPID || row.empid || '').toString().trim().toUpperCase(),
+  EmpName: (row.EmpName || row.empname || row.Name || '').toString().trim(),
+  Email: (row.Email || row.email || '').toString().trim().toLowerCase() || null,
+  Phone: (row.Phone || row.phone || '').toString().trim() || null,
+  Category: (row.Category || row.category || 'Office/Corporate').toString().trim(),
+  Designation: (row.Designation || row.designation || '').toString().trim(),
+  JoinDate: joinDate,
+  
+  // Auto-filled fields per schema
+  companyId: currentCompanyId,
+  EffectiveDate: dateTimestamp,
+  PasswordHash: passwordHash,
+  PlainPassword: randomPassword,  // For export only
+  Role: 'EMPLOYEE',
+  Status: 'ACTIVE',
+  
+  // ✅ ADD SITE FIELD with default value
+  Site: 'SITE001',  // Default site for all imported employees
+  
+  Photo: null,
+  photoUrl: null,
+  biometricData: [],
+  UpdatedAt: new Date().toISOString(),
+  
+  // Validation
+  isValid: true,
+  errors: []
+};
     
-    // Validation rules
+    // Validation
     if (!emp.EMPID) { emp.isValid = false; emp.errors.push('EMPID required'); }
     if (!emp.EmpName) { emp.isValid = false; emp.errors.push('Name required'); }
     if (emp.Designation && allDesignations.length > 0 && !allDesignations.includes(emp.Designation)) {
@@ -169,7 +179,7 @@ async function processEmployeeData(data) {
     }
     
     processed.push(emp);
-  });
+  }
   return processed;
 }
 
@@ -208,11 +218,9 @@ function displayPreview(employees) {
     tbody.appendChild(tr);
   });
   
-  // Show preview, hide empty state
   previewSection.style.display = 'flex';
   if (emptyState) emptyState.style.display = 'none';
   
-  // Enable/disable confirm button
   const hasInvalid = employees.some(e => !e.isValid);
   const btnConfirm = document.getElementById('btnConfirmImport');
   if (btnConfirm) {
@@ -222,10 +230,39 @@ function displayPreview(employees) {
   }
 }
 
+/**
+ * ✅ SMART UPSERT: Merge new data with existing, only filling empty fields
+ */
+function mergeEmployeeData(existing, newData) {
+  const merged = { ...existing };
+  
+  // Fields to potentially update (only if existing value is null/empty)
+const updatableFields = [
+  'EmpName', 'Email', 'Phone', 'Category', 'Designation',
+  'JoinDate', 'EffectiveDate', 'Role', 'Status',
+  'Site',  // ✅ Add Site to updatable fields
+  'Photo', 'photoUrl', 'biometricData'
+];
 
+  updatableFields.forEach(field => {
+    const existingVal = existing[field];
+    const newVal = newData[field];
+    
+    // Only update if existing is null/empty/undefined AND new value is valid
+    if ((existingVal === null || existingVal === undefined || existingVal === '') && 
+        newVal !== null && newVal !== undefined && newVal !== '') {
+      merged[field] = newVal;
+    }
+  });
+  
+  // Always update these metadata fields
+  merged.UpdatedAt = new Date().toISOString();
+  
+  return merged;
+}
 
 /**
- * Confirms and imports employees to Firestore
+ * Confirms and imports employees to Firestore with smart upsert
  */
 async function confirmImport() {
   if (!currentCompanyId || parsedEmployees.length === 0) { alert('No data to import'); return; }
@@ -235,8 +272,10 @@ async function confirmImport() {
   const confirmMsg = `Import ${validEmployees.length} employees to Company ${currentCompanyId}?\n\n` +
     `✓ Valid records: ${validEmployees.length}\n` +
     `✗ Invalid records: ${parsedEmployees.length - validEmployees.length}\n\n` +
-    `⚠️ Each employee will get a random 6-digit password.\n` +
-    `Passwords will be included in the export file.`;
+    `🔄 Smart Upsert Mode:\n` +
+    `   • If employee exists: Update fields (PasswordHash will be updated)\n` +
+    `   • If employee new: Insert full record\n\n` +
+    `⚠️ Passwords will be updated to the random values shown in export.`;
   
   if (!confirm(confirmMsg)) return;
   
@@ -244,14 +283,13 @@ async function confirmImport() {
   const btnConfirm = document.getElementById('btnConfirmImport');
   
   btnConfirm.disabled = true;
-  btnConfirm.textContent = '⏳ Importing...';
-  resultDiv.innerHTML = '<div style="padding:15px;background:var(--bg);border-radius:6px;">Importing employees...</div>';
+  btnConfirm.textContent = '⏳ Processing...';
+  resultDiv.innerHTML = '<div style="padding:15px;background:var(--bg);border-radius:6px;">Processing employees...</div>';
   
-  let successCount = 0, errorCount = 0;
+  let successCount = 0, errorCount = 0, insertCount = 0, updateCount = 0;
   importResults = [];
   
   try {
-    // Get client Firebase config from Master
     const companySnap = await masterDb.collection('companies').doc(currentCompanyId).get();
     const clientConfig = companySnap.data().firebaseConfig;
     
@@ -259,7 +297,6 @@ async function confirmImport() {
       throw new Error('Client Firebase config not found. Please update config first.');
     }
     
-    // Initialize client Firebase app
     let clientApp;
     try {
       clientApp = firebase.app('import-client');
@@ -268,31 +305,75 @@ async function confirmImport() {
     }
     const clientDb = clientApp.firestore();
     
-    // Import each valid employee
     for (const emp of validEmployees) {
       try {
-        // Build payload matching exact Firestore schema
-        const payload = {
-          companyId: emp.companyId,
-          EMPID: emp.EMPID,
-          EmpName: emp.EmpName,
-          Email: emp.Email,
-          Phone: emp.Phone,
-          Category: emp.Category,
-          Designation: emp.Designation,
-          JoinDate: emp.JoinDate,
-          EffectiveDate: emp.EffectiveDate,
-          PasswordHash: emp.PasswordHash,
-          Role: emp.Role,
-          Status: emp.Status,
-          Photo: emp.Photo,
-          photoUrl: emp.photoUrl,
-          biometricData: emp.biometricData,
-          UpdatedAt: emp.UpdatedAt
-        };
+        const empId = emp.EMPID;
+        const existingDoc = await clientDb.collection('employees').doc(empId).get();
+        const exists = existingDoc.exists;
         
-        // Save to Firestore
-        await clientDb.collection('employees').doc(emp.EMPID).set(payload);
+        let payload, action;
+        
+        if (exists) {
+          // ✅ UPDATE: Merge data, but ALWAYS update PasswordHash
+          const existingData = existingDoc.data();
+          
+          // Start with existing data
+          payload = { ...existingData };
+          
+          // Update fields from import (overwrite existing values)
+          const updatableFields = [
+            'EmpName', 'Email', 'Phone', 'Category', 'Designation',
+            'JoinDate', 'EffectiveDate', 'Role', 'Status',
+            'Photo', 'photoUrl', 'biometricData'
+          ];
+          
+          updatableFields.forEach(field => {
+            if (emp[field] !== undefined && emp[field] !== null && emp[field] !== '') {
+              payload[field] = emp[field];
+            }
+          });
+          
+          // ✅ ALWAYS update PasswordHash for imports (source of truth)
+          payload.PasswordHash = emp.PasswordHash;
+          
+          // Always update metadata
+          payload.UpdatedAt = new Date().toISOString();
+          payload.companyId = emp.companyId; // Ensure company ID is set
+          
+          action = 'Updated';
+          updateCount++;
+          
+          await clientDb.collection('employees').doc(empId).set(payload, { merge: true });
+          
+        } else {
+          // ✅ INSERT: New employee with full payload
+          payload = {
+  companyId: emp.companyId,
+  EMPID: emp.EMPID,
+  EmpName: emp.EmpName,
+  Email: emp.Email,
+  Phone: emp.Phone,
+  Category: emp.Category,
+  Designation: emp.Designation,
+  JoinDate: emp.JoinDate,
+  EffectiveDate: emp.EffectiveDate,
+  PasswordHash: emp.PasswordHash,
+  Role: emp.Role,
+  Status: emp.Status,
+  
+  // ✅ ADD SITE FIELD
+  Site: emp.Site,  // Will be 'SITE001' from processEmployeeData
+  
+  Photo: emp.Photo,
+  photoUrl: emp.photoUrl,
+  biometricData: emp.biometricData,
+  UpdatedAt: emp.UpdatedAt
+};
+          action = 'Inserted';
+          insertCount++;
+          
+          await clientDb.collection('employees').doc(empId).set(payload);
+        }
         
         successCount++;
         importResults.push({
@@ -302,8 +383,9 @@ async function confirmImport() {
           Phone: emp.Phone,
           Category: emp.Category,
           Designation: emp.Designation,
-          Status: 'ACTIVE',  // ✅ Show ACTIVE in export, not "Success"
-          Password: emp.PlainPassword,  // Include random password
+          Status: 'ACTIVE',
+          Password: emp.PlainPassword,  // Show the password that now works
+          Action: action,
           Error: ''
         });
         
@@ -318,18 +400,23 @@ async function confirmImport() {
           Designation: emp.Designation,
           Status: 'FAILED',
           Password: emp.PlainPassword,
+          Action: 'Error',
           Error: e.message
         });
-        console.error(`Failed to import ${emp.EMPID}:`, e);
+        console.error(`Failed to process ${emp.EMPID}:`, e);
       }
     }
     
-    // Show results with export button
+    // Show results
     let resultHtml = `
       <div style="padding:15px;background:#f0fff4;border:1px solid var(--green);border-radius:6px;">
         <strong style="color:var(--green);font-size:1rem;">✅ Import Complete!</strong><br>
         <span style="font-size:0.95rem;">✓ Success: ${successCount}</span><br>
+        <span style="font-size:0.95rem;">📥 Inserted: ${insertCount} | 🔄 Updated: ${updateCount}</span><br>
         ${errorCount > 0 ? `<span style="font-size:0.95rem;">✗ Failed: ${errorCount}</span><br>` : ''}
+        <div style="margin-top:8px;font-size:0.85rem;color:var(--muted);">
+          🔐 Passwords in export file are now active for all imported employees
+        </div>
       </div>
       <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-teal" onclick="exportResults()" style="padding:10px 16px;">
@@ -353,7 +440,6 @@ async function confirmImport() {
     
     resultDiv.innerHTML = resultHtml;
     
-    // Cleanup client app
     try {
       firebase.app('import-client').delete();
     } catch (e) {}
@@ -371,41 +457,33 @@ async function confirmImport() {
     btnConfirm.textContent = '✅ Confirm Import';
   }
 }
-
 /**
- * Exports import results to Excel with passwords
- * Status column shows "ACTIVE" for successful imports
+ * Exports import results to Excel with passwords and action type
  */
 function exportResults() {
   if (importResults.length === 0) { alert('No results to export'); return; }
   
-  // Format data for export - Status shows ACTIVE/FAILED
-  const exportData = importResults.map(r => ({
-    'EMPID': r.EMPID,
-    'Name': r.EmpName,
-    'Email': r.Email || '',
-    'Phone': r.Phone || '',
-    'Category': r.Category,
-    'Designation': r.Designation,
-    'Status': r.Status,  // ✅ Shows "ACTIVE" not "Success"
-    'Password': r.Password || 'N/A',  // Random 6-digit password
-    'Error': r.Error || ''
-  }));
+const exportData = importResults.map(r => ({
+  'EMPID': r.EMPID,
+  'Name': r.EmpName,
+  'Email': r.Email || '',
+  'Phone': r.Phone || '',
+  'Category': r.Category,
+  'Designation': r.Designation,
+  'Site': r.Site || 'SITE001',  // ✅ Add Site column
+  'Status': r.Status,
+  'Action': r.Action || 'N/A',
+  'Password': r.Password || 'N/A',
+  'Error': r.Error || ''
+}));
   
   const ws = XLSX.utils.json_to_sheet(exportData);
   
-  // Set column widths for better readability
-  const wscols = [
-    {wch: 12}, // EMPID
-    {wch: 25}, // Name
-    {wch: 30}, // Email
-    {wch: 15}, // Phone
-    {wch: 20}, // Category
-    {wch: 25}, // Designation
-    {wch: 10}, // Status
-    {wch: 12}, // Password
-    {wch: 30}  // Error
-  ];
+const wscols = [
+  {wch: 12}, {wch: 25}, {wch: 30}, {wch: 15}, {wch: 20},
+  {wch: 25}, {wch: 12},  // ✅ Site column width
+  {wch: 10}, {wch: 10}, {wch: 12}, {wch: 30}
+];
   ws['!cols'] = wscols;
   
   const wb = XLSX.utils.book_new();
@@ -414,8 +492,6 @@ function exportResults() {
   const filename = `Employee_Import_Results_${currentCompanyId}_${new Date().toISOString().split('T')[0]}.xlsx`;
   XLSX.writeFile(wb, filename);
 }
-
-
 
 /**
  * Clears import form
@@ -427,7 +503,6 @@ function clearImportForm() {
   document.getElementById('previewSection').style.display = 'none';
   document.getElementById('importResult').innerHTML = '';
   
-  // Show empty state
   const emptyState = document.getElementById('emptyState');
   if (emptyState) emptyState.style.display = 'flex';
   

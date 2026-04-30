@@ -1,7 +1,12 @@
 /* ══════════════════════════════════════════════════════
-   ATTENDEASE - INDEX.JS (MINIMAL WORKING)
+   ATTENDEASE - INDEX.JS (Login Page Logic)
+   Purpose: Handle admin login, validate company, store session, redirect cleanly
+   Security: Company ID stored in sessionStorage (NOT in URL)
 ══════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════
+   MASTER FIREBASE CONFIG (Hardcoded - Super Admin Project)
+══════════════════════════════════════════════════════ */
 const MASTER_CONFIG = {
   apiKey: "AIzaSyCvAyr-4CUAYPXLMBwZ-L9hBlmDcrOjWpA",
   authDomain: "attendease-963df.firebaseapp.com",
@@ -11,18 +16,36 @@ const MASTER_CONFIG = {
   appId: "1:107756709284:web:fd8765b97a73f2ce7d8d31",
 };
 
-if (!firebase.apps.length) firebase.initializeApp(MASTER_CONFIG);
+/* ══════════════════════════════════════════════════════
+   Initialize Master Firebase
+══════════════════════════════════════════════════════ */
+if (!firebase.apps.length) {
+  firebase.initializeApp(MASTER_CONFIG);
+  console.log('✅ Master Firebase initialized');
+}
 const masterAuth = firebase.auth();
 const masterDb = firebase.firestore();
 
 console.log("✅ Master Firebase ready");
 
-function showErr(el, msg) { if (el) { el.textContent = msg; el.style.display = 'block'; } }
+/* ══════════════════════════════════════════════════════
+   Utility: Show error message
+══════════════════════════════════════════════════════ */
+function showErr(el, msg) {
+  if (el) {
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+}
 
+/* ══════════════════════════════════════════════════════
+   Toggle password visibility
+══════════════════════════════════════════════════════ */
 function togglePw() {
   const inp = document.getElementById('lPassword');
   const ic = document.getElementById('eyeIcon');
   if (!inp || !ic) return;
+  
   if (inp.type === 'password') {
     inp.type = 'text';
     ic.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
@@ -32,45 +55,63 @@ function togglePw() {
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   Clear form on page load
+══════════════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', () => {
   const cid = document.getElementById('lCompanyId');
   const eml = document.getElementById('lEmail');
+  const pw = document.getElementById('lPassword');
+  const err = document.getElementById('loginError');
+  
   if (cid) cid.value = '';
   if (eml) eml.value = '';
+  if (pw) pw.value = '';
+  if (err) { err.textContent = ''; err.style.display = 'none'; }
 });
 
+/* ══════════════════════════════════════════════════════
+   LOGIN FUNCTION - Main auth logic
+══════════════════════════════════════════════════════ */
 async function doLogin() {
   console.log('🔐 Login called');
+  
   const btn = document.getElementById('btnLogin');
   const err = document.getElementById('loginError');
   const cidIn = document.getElementById('lCompanyId');
   const emlIn = document.getElementById('lEmail');
   const pwIn = document.getElementById('lPassword');
   
+  // Validate elements exist
   if (!btn || !err || !cidIn || !emlIn || !pwIn) { 
-    console.error('❌ Missing elements'); 
+    console.error('❌ Missing form elements'); 
     return; 
   }
   
+  // Get input values
   const companyId = cidIn.value.trim().toUpperCase();
   const email = emlIn.value.trim().toLowerCase();
   const password = pwIn.value;
   
+  // Clear previous errors
   err.style.display = 'none';
+  
+  // Basic validation
   if (!companyId) { showErr(err, 'Company ID required'); return; }
   if (!email) { showErr(err, 'Email required'); return; }
   if (!password) { showErr(err, 'Password required'); return; }
   
+  // Disable button, show loading
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Signing in…';
   
   try {
-    // 1. Authenticate with Firebase (Master project)
-    console.log('🔑 Authenticating...');
+    // 1. Authenticate with Firebase Auth (Master project)
+    console.log('🔑 Authenticating with Firebase...');
     await masterAuth.signInWithEmailAndPassword(email, password);
     console.log('✅ Auth success:', email);
     
-    // 2. Fetch and validate company config
+    // 2. Fetch and validate company config from Master Firestore
     console.log('🔍 Validating company:', companyId);
     const snap = await masterDb.collection('companies').doc(companyId).get();
     
@@ -80,7 +121,7 @@ async function doLogin() {
     
     const data = snap.data();
     
-    // 3. Validate admin email
+    // 3. Validate admin email matches company record
     if (data.adminEmail && data.adminEmail.toLowerCase() !== email) {
       throw new Error('Email not registered for company ' + companyId);
     }
@@ -90,13 +131,14 @@ async function doLogin() {
       throw new Error('Company ' + companyId + ' is inactive');
     }
     
-    // 5. ✅ STORE COMPANY ID IN SESSION (for manage.js fallback)
-    sessionStorage.setItem('companyId', companyId);
+    // 5. ✅ STORE COMPANY ID IN SESSION STORAGE (NOT in URL)
+    sessionStorage.setItem('currentCompanyId', companyId);
+    sessionStorage.setItem('currentUserEmail', email);
+    console.log('✅ Session stored for company:', companyId);
     
-    // 6. ✅ REDIRECT WITH COMPANY ID (URL param + hash fallback)
-    const targetUrl = `manage.html?companyId=${encodeURIComponent(companyId)}#${companyId}`;
-    console.log('🚀 Redirecting to:', targetUrl);
-    window.location.href = targetUrl;
+    // 6. ✅ REDIRECT TO CLEAN URL (no query params, no hash)
+    console.log('🚀 Redirecting to: manage.html');
+    window.location.href = 'manage.html';  // ← Clean URL!
     
   } catch (e) {
     console.error('❌ Login error:', e);
@@ -109,6 +151,8 @@ async function doLogin() {
       msg = 'Too many attempts. Try again later';
     } else if (e.code === 'auth/invalid-email') {
       msg = 'Invalid email format';
+    } else if (e.code === 'auth/network-request-failed') {
+      msg = 'Network error. Please check your connection';
     }
     
     showErr(err, msg);
@@ -116,13 +160,27 @@ async function doLogin() {
     btn.innerHTML = 'Sign In';
     
     // Sign out on error to clean auth state
-    masterAuth.signOut().catch(()=>{});
+    masterAuth.signOut().catch(() => {});
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   Handle Enter key in form fields
+══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('loginScreen')?.classList.contains('active')) {
     const el = document.activeElement;
-    if (el && ['lCompanyId','lEmail','lPassword'].includes(el.id)) { e.preventDefault(); doLogin(); }
+    if (el && ['lCompanyId','lEmail','lPassword'].includes(el.id)) {
+      e.preventDefault();
+      doLogin();
+    }
   }
 });
+
+/* ══════════════════════════════════════════════════════
+   Export for external use (if needed)
+══════════════════════════════════════════════════════ */
+// These functions are already global, but explicit for clarity:
+// - doLogin()
+// - togglePw()
+// - showErr()

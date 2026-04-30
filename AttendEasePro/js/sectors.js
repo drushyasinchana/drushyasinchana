@@ -1,10 +1,13 @@
-// ══════════════════════════════════════════════════════
-// SECTORS.JS - Categorized Designation Loader
-// Office vs Field roles for cleaner dropdowns
-// ══════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
+   SECTORS.JS - Categorized Designation Loader
+   Office vs Field roles for cleaner dropdowns
+   Dependencies: S.prefs.companyId, S.clientDb (from manage.js)
+══════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════
+   SECTOR REGISTRY - Full designation lists per sector
+══════════════════════════════════════════════════════ */
 const SECTOR_REGISTRY = {
-  
   "CONST": {
     name: "Construction & Infrastructure",
     designations: {
@@ -24,7 +27,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "MFG": {
     name: "Manufacturing & Factory Operations",
     designations: {
@@ -45,7 +47,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "SEC": {
     name: "Security & Facility Management",
     designations: {
@@ -65,7 +66,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "LOG": {
     name: "Logistics, Warehousing & Supply Chain",
     designations: {
@@ -85,7 +85,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "RET": {
     name: "Retail & Multi-Store Chains",
     designations: {
@@ -105,7 +104,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "HLT": {
     name: "Healthcare & Hospital Networks",
     designations: {
@@ -125,7 +123,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "FLD": {
     name: "Field Services & IT Deployment",
     designations: {
@@ -145,7 +142,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "EDU": {
     name: "Education & Universities",
     designations: {
@@ -164,7 +160,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "AGR": {
     name: "Agriculture & Plantations",
     designations: {
@@ -184,7 +179,6 @@ const SECTOR_REGISTRY = {
       ]
     }
   },
-
   "GOV": {
     name: "Government & PSU",
     designations: {
@@ -203,67 +197,94 @@ const SECTOR_REGISTRY = {
       ]
     }
   }
-
 };
 
-/**
- * Loads categorized designations into #eDesignation dropdown
- * Creates optgroups for Office/Field separation
- */
+/* ══════════════════════════════════════════════════════
+   Get sector code for current company (with caching)
+══════════════════════════════════════════════════════ */
+async function getSectorCode() {
+  // 1. Return cached if available
+  if (window.S?.prefs?.sectorCode) {
+    return window.S.prefs.sectorCode;
+  }
+  
+  // 2. Get from client settings collection
+  try {
+    const companyId = window.S?.prefs?.companyId;
+    const clientDb = window.S?.clientDb;
+    
+    if (!companyId || !clientDb) {
+      console.warn('⚠️ Cannot fetch sector: missing companyId or clientDb');
+      return 'CONST'; // Default fallback
+    }
+    
+    const settingsDoc = await clientDb.collection('settings').doc(companyId).get();
+    if (settingsDoc.exists && settingsDoc.data().sectorCode) {
+      const sectorCode = settingsDoc.data().sectorCode;
+      // Cache for future use
+      if (!window.S.prefs) window.S.prefs = {};
+      window.S.prefs.sectorCode = sectorCode;
+      return sectorCode;
+    }
+  } catch (e) {
+    console.warn('⚠️ Failed to fetch sector from Firestore:', e.message);
+  }
+  
+  // 3. Default fallback
+  return 'CONST';
+}
+
+/* ══════════════════════════════════════════════════════
+   Load ALL designations for current sector into dropdown
+   Creates optgroups for Office/Field separation
+══════════════════════════════════════════════════════ */
 async function loadDesignationsForSector() {
   const select = document.getElementById('eDesignation');
   if (!select) return;
-
+  
   // Clear existing options
   select.innerHTML = '<option value="">— Select Designation —</option>';
-
-  let sectorCode = S.prefs?.sectorCode;
-
-  // Fetch sector from client settings if not cached
-  if (!sectorCode && S.clientDb) {
-    try {
-      const settingsDoc = await S.clientDb.collection('settings').doc(S.prefs?.companyId).get();
-      if (settingsDoc.exists && settingsDoc.data().sectorCode) {
-        sectorCode = settingsDoc.data().sectorCode;
-        if (!S.prefs) S.prefs = {};
-        S.prefs.sectorCode = sectorCode;
-      }
-    } catch (e) {
-      console.warn('⚠️ Failed to fetch sector:', e.message);
-    }
-  }
-
-  // Fallback to default
-  if (!sectorCode) sectorCode = 'CONST';
-
-  const sectorData = SECTOR_REGISTRY[sectorCode];
-  if (!sectorData) return;
-
-  const categories = sectorData.designations;
   
-  // Create optgroups for each category
-  Object.keys(categories).forEach(category => {
-    const optgroup = document.createElement('optgroup');
-    optgroup.label = category;
+  try {
+    // Get sector code (with caching)
+    const sectorCode = await getSectorCode();
+    const sectorData = SECTOR_REGISTRY[sectorCode];
     
-    categories[category].forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d;
-      opt.textContent = d;
-      optgroup.appendChild(opt);
+    if (!sectorData) {
+      console.warn(`⚠️ Sector "${sectorCode}" not found in registry`);
+      loadFallbackDesignations(select, null); // Load all fallback
+      return;
+    }
+    
+    const categories = sectorData.designations;
+    
+    // Create optgroups for each category
+    Object.keys(categories).forEach(category => {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = category;
+      
+      categories[category].forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        optgroup.appendChild(opt);
+      });
+      
+      select.appendChild(optgroup);
     });
     
-    select.appendChild(optgroup);
-  });
+    console.log(`✅ Loaded designations for sector: ${sectorCode}`);
+    
+  } catch (e) {
+    console.error('❌ Failed to load designations:', e);
+    loadFallbackDesignations(select, null); // Load all fallback
+  }
 }
 
-
-
-// ══════════════════════════════════════════════════════
-// CATEGORY FILTER: Filters designations by Office/Field
-// Called when #eCategory dropdown changes in Employee Modal
-// ══════════════════════════════════════════════════════
-
+/* ══════════════════════════════════════════════════════
+   Filter designations by category (Office/Field)
+   Called when #eCategory dropdown changes in Employee Modal
+══════════════════════════════════════════════════════ */
 async function onCategoryChange() {
   console.log('🔄 Category changed, loading designations...');
   
@@ -279,36 +300,17 @@ async function onCategoryChange() {
   designationSelect.innerHTML = '<option value="">— Select Designation —</option>';
   
   try {
-    // 1. Get sector code from client settings
-    const companyId = window.S?.prefs?.companyId;
-    if (!companyId) {
-      console.warn('⚠️ No companyId in S.prefs');
+    // Get sector code (with caching)
+    const sectorCode = await getSectorCode();
+    const sectorData = SECTOR_REGISTRY[sectorCode];
+    
+    if (!sectorData) {
+      console.warn(`⚠️ Sector "${sectorCode}" not found in registry`);
       loadFallbackDesignations(designationSelect, category);
       return;
     }
     
-    const clientDb = window.S?.clientDb;
-    if (!clientDb) {
-      console.warn('⚠️ S.clientDb not ready');
-      loadFallbackDesignations(designationSelect, category);
-      return;
-    }
-    
-    // 2. Fetch sector code from settings collection
-    const settingsDoc = await clientDb.collection('settings').doc(companyId).get();
-    const sectorCode = settingsDoc.data()?.sectorCode || 'CONST';
-    
-    // 3. Fetch sector document from sectors collection
-    const sectorDoc = await clientDb.collection('sectors').doc(sectorCode).get();
-    
-    if (!sectorDoc.exists) {
-      console.warn(`⚠️ Sector "${sectorCode}" not found in Firestore`);
-      loadFallbackDesignations(designationSelect, category);
-      return;
-    }
-    
-    // 4. Extract designations for selected category
-    const sectorData = sectorDoc.data();
+    // Get designations for selected category
     const designations = sectorData.designations?.[category] || [];
     
     if (designations.length === 0) {
@@ -317,7 +319,7 @@ async function onCategoryChange() {
       return;
     }
     
-    // 5. Populate designation dropdown
+    // Populate designation dropdown
     designations.forEach(d => {
       const opt = document.createElement('option');
       opt.value = d;
@@ -333,48 +335,52 @@ async function onCategoryChange() {
   }
 }
 
-/**
- * Fallback: Loads hardcoded designations if Firestore fails
- */
+/* ══════════════════════════════════════════════════════
+   Fallback: Loads FULL hardcoded designations if Firestore fails
+   Uses the same data as SECTOR_REGISTRY for consistency
+══════════════════════════════════════════════════════ */
 function loadFallbackDesignations(select, category) {
-  const fallback = {
-    "Office/Corporate": [
-      "General Manager", "AGM", "Project Manager", "HR Manager", "HR Executive",
-      "Admin Manager", "Accounts Manager", "Accountant", "CA/Finance Manager",
-      "Design Engineer", "Front Desk Executive", "Receptionist", "Office Assistant"
-    ],
-    "Field/Operations": [
-      "Site Engineer", "Site Supervisor", "Safety Officer", "Foreman",
-      "Mason", "Carpenter", "Electrician", "Plumber", "Welder",
-      "Heavy Equipment Operator", "Surveyor", "Laborer", "Helper", "Driver", "Security Guard"
-    ]
-  };
+  // Use CONST sector as default fallback (has comprehensive lists)
+  const fallbackData = SECTOR_REGISTRY["CONST"];
   
-  const list = fallback[category] || [];
+  if (!fallbackData) {
+    select.innerHTML = '<option value="">— Error Loading Designations —</option>';
+    return;
+  }
   
-  if (list.length === 0) {
+  // If category specified, filter; otherwise load all
+  let designations = [];
+  if (category && fallbackData.designations[category]) {
+    designations = fallbackData.designations[category];
+  } else {
+    // Load all designations from both categories
+    Object.values(fallbackData.designations).forEach(catList => {
+      designations = designations.concat(catList);
+    });
+  }
+  
+  if (designations.length === 0) {
     select.innerHTML = '<option value="">— No Designations —</option>';
     return;
   }
   
-  list.forEach(d => {
+  // Populate dropdown
+  designations.forEach(d => {
     const opt = document.createElement('option');
     opt.value = d;
     opt.textContent = d;
     select.appendChild(opt);
   });
   
-  console.log(`⚠️ Loaded ${list.length} fallback designations for ${category}`);
+  console.log(`⚠️ Loaded ${designations.length} fallback designations${category ? ` for ${category}` : ''}`);
 }
 
-/**
- * Helper: Reset designation dropdown when category is cleared
- * Call this if you want to clear designations when category is reset
- */
+/* ══════════════════════════════════════════════════════
+   Helper: Reset designation dropdown when category is cleared
+══════════════════════════════════════════════════════ */
 function resetDesignationDropdown() {
   const select = document.getElementById('eDesignation');
   if (select) {
     select.innerHTML = '<option value="">— Select Category First —</option>';
   }
 }
-
