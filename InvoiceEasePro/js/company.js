@@ -55,6 +55,45 @@ LOAD COMPANY PROFILE
 Fixes: Address width (shortened), 3 lines, City/State/PIN side-by-side
 ══════════════════════════════════════════════════════ */
 window.loadCompanyProfile = async function() {
+
+
+window.loadCompanyProfile = async function() {
+  // ... (your existing loading code) ...
+  
+  const data = doc.exists ? doc.data() : {};
+  
+  // ✅ CHECK PLAN BEFORE SHOWING "ADD COMPANY" BUTTON
+  // We assume Plan is stored in Master DB or Company Profile
+  // For now, let's fetch it from session storage or master DB
+  // Simplified: Assume 'invoiceProCompanies' list tells us what plan we are on.
+  // Ideally, check Master DB. For now, we'll add a placeholder button.
+
+  c.innerHTML = `
+    <div class="card">
+      <h3>⚙️ Company Profile & Settings</h3>
+      
+      <!-- ✅ NEW: Add Company Button (Pro Only) -->
+      <div id="addCompanySection" style="display:none; margin-bottom:24px; background:#E3F2FD; padding:16px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong style="color:#1565C0;">Pro Plan Feature</strong>
+          <div style="font-size:0.85rem; color:#555;">Manage multiple company profiles under one account.</div>
+        </div>
+        <button class="btn btn-teal" onclick="showAddCompanyModal()">+ Add New Company</button>
+      </div>
+
+      <!-- ... (rest of your profile form code) ... -->
+  `;
+  
+  // Logic to show/hide based on plan (You'll need to pass plan data here)
+  // For demo, I've set display:flex in HTML above, you can toggle it via JS
+};
+
+// ✅ Modal to Add New Company
+window.showAddCompanyModal = async function() {
+  // This function would open a modal to create a NEW company entry in Master DB
+  // and generate a new Client DB config.
+  alert('This will create a new Client Database project. Contact Super Admin to enable.');
+};
   console.log('🏢 Loading company profile...');
   const c = document.getElementById('companyContainer');
   c.innerHTML = '<div style="text-align:center;padding:40px;">Loading profile...</div>';

@@ -1,12 +1,68 @@
 /* ══════════════════════════════════════════════════════
-INVOICEEASE PRO - INVOICE MANAGEMENT (Finalized)
-Features: Save, Edit, Delete, Preview (Embedded), Signature Toggle
+INVOICEEASE PRO - INVOICE MANAGEMENT (Complete Fixed)
+Features: Save, Edit, Delete, Preview, Signature Toggle, Bill No. Preview, SAC/Rate Auto-fill
 ══════════════════════════════════════════════════════ */
+
+// ✅ Helper: Generate preview invoice number (for display before save)
+async function getPreviewInvoiceNumber() {
+  try {
+    const profile = await window.InvoiceApp.clientDb.collection('companyProfile')
+      .doc(window.InvoiceApp.companyId).get();
+    const profileData = profile.data() || {};
+    
+    const prefix = profileData.invoicePrefix || window.InvoiceApp.companyId.slice(0,3).toUpperCase();
+    const financialYear = profileData.financialYear || getCurrentFinancialYear();
+    const startNumber = profileData.invoiceStartNumber || 1;
+    
+    const seqRef = window.InvoiceApp.clientDb.collection('sequences').doc(prefix);
+    const seqDoc = await seqRef.get();
+    
+    let nextNum;
+    if (seqDoc.exists) {
+      const seqData = seqDoc.data();
+      if (seqData.financialYear !== financialYear) {
+        nextNum = startNumber;
+      } else {
+        nextNum = seqData.currentNumber;
+      }
+    } else {
+      nextNum = startNumber;
+    }
+    
+    const formattedNum = String(nextNum).padStart(3, '0');
+    let invoiceNumber = `${prefix}/${financialYear}/${formattedNum}`;
+    
+    // Enforce 16-char max (GST rule)
+    if (invoiceNumber.length > 16) {
+      invoiceNumber = `${prefix}-${formattedNum}`;
+      if (invoiceNumber.length > 16) {
+        invoiceNumber = `${prefix}${nextNum}`;
+      }
+    }
+    
+    return invoiceNumber;
+  } catch (e) {
+    console.error('Preview number error:', e);
+    return 'KAR-001'; // Fallback
+  }
+}
+
+// ✅ Helper: Get current financial year (April-March)
+function getCurrentFinancialYear() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  if (month >= 4) {
+    return `${year}-${(year+1).toString().slice(-2)}`;
+  } else {
+    return `${year-1}-${year.toString().slice(-2)}`;
+  }
+}
 
 window.loadInvoices = async function() {
   console.log('📄 Loading invoices...');
   const c = document.getElementById('invoicesContainer');
-  if (!c) return;
+  if (!c) { console.error('invoicesContainer not found'); return; }
   
   c.innerHTML = '<div style="text-align:center;padding:40px;">Loading invoices...</div>';
   
@@ -14,25 +70,30 @@ window.loadInvoices = async function() {
     const db = window.InvoiceApp.clientDb;
     const cid = window.InvoiceApp.companyId;
     
-    if (!db || !cid) throw new Error('Database or Company ID not initialized');
+    if (!db || !cid) {
+      throw new Error('Database or Company ID not initialized');
+    }
     
     // Fetch without orderBy to avoid index errors, sort in JS
     const snap = await db.collection('invoices').where('companyId', '==', cid).get();
     
-    const invoices = [];
-    snap.forEach(doc => invoices.push({ id: doc.id, ...doc.data() }));
+    console.log('📄 Invoices loaded:', snap.size);
     
-    // Sort by date descending
-    invoices.sort((a, b) => {
-      const dA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-      const dB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-      return dB - dA;
-    });
-    
-    if (invoices.length === 0) {
+    if (snap.empty) {
       c.innerHTML = `<div style="text-align:center;padding:60px;"><div style="font-size:3rem;">📄</div><h3 style="color:var(--muted);">No Invoices Yet</h3><button class="btn btn-teal" style="margin-top:16px;" onclick="showInvoiceModal()">+ Create Invoice</button></div>`;
       return;
     }
+    
+    // Sort in JavaScript
+    const invoices = [];
+    snap.forEach(doc => {
+      invoices.push({ id: doc.id, ...doc.data() });
+    });
+    invoices.sort((a, b) => {
+      const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+      const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+      return bDate - aDate; // Descending
+    });
     
     let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h2 style="margin:0;">Invoices</h2><button class="btn btn-teal" onclick="showInvoiceModal()">+ Create Invoice</button></div><div class="table-container"><table><thead><tr><th>Invoice No</th><th>Customer</th><th>Date</th><th style="text-align:right;">Amount</th><th style="text-align:center;">Status</th><th style="text-align:center;">Actions</th></tr></thead><tbody>`;
     
@@ -47,11 +108,12 @@ window.loadInvoices = async function() {
         <td style="color:var(--muted);">${d}</td>
         <td style="text-align:right;font-weight:600;">₹${parseFloat(inv.grandTotal || 0).toLocaleString('en-IN')}</td>
         <td style="text-align:center;"><span class="badge ${sc}">${inv.status || 'draft'}</span></td>
-        <td style="text-align:center;">
-          <button class="btn-icon" onclick="showInvoicePreview('${inv.id}')" title="View PDF">👁️</button>
-          <button class="btn-icon" onclick="editInvoice('${inv.id}')" title="Edit">✏️</button>
-          <button class="btn-icon" onclick="deleteInvoice('${inv.id}')" title="Delete" style="color:var(--red);">🗑</button>
-        </td>
+<td style="text-align:center;">
+  <button class="btn-icon" onclick="showInvoicePreview('${inv.id}')" title="View PDF">👁️</button>
+  <button class="btn-icon" onclick="editInvoice('${inv.id}')" title="Edit">✏️</button>
+  <button class="btn-icon" onclick="downloadInvoicePDF('${inv.id}')" title="Download PDF">📄</button>
+  <button class="btn-icon" onclick="deleteInvoice('${inv.id}')" title="Delete" style="color:var(--red);">🗑</button>
+</td>
       </tr>`;
     });
     
@@ -59,7 +121,7 @@ window.loadInvoices = async function() {
     c.innerHTML = h;
   } catch (e) {
     console.error('Load invoices error:', e);
-    c.innerHTML = `<div style="color:var(--red);text-align:center;padding:40px;">Error loading invoices</div>`;
+    c.innerHTML = `<div style="color:var(--red);text-align:center;padding:40px;">Error loading invoices: ${e.message}<br><button class="btn btn-teal" style="margin-top:12px;" onclick="window.loadInvoices()">Retry</button></div>`;
   }
 };
 
@@ -84,7 +146,7 @@ window.deleteInvoice = async function(id) {
   }
 };
 
-// ✅ Show Modal (Create or Edit)
+// ✅ Show Modal (Create or Edit) - WITH BILL NO. PREVIEW
 window.showInvoiceModal = async function(editId = null, editData = null) {
   // Remove old modal if exists
   const oldModal = document.getElementById('invoiceModal');
@@ -111,6 +173,13 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
           <input type="hidden" id="editDocId" value="${editId || ''}">
           
           <div class="form-grid" style="grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px;">
+            <!-- ✅ Bill No. Preview Field -->
+            <div class="fg">
+              <label>Bill No. (Preview)</label>
+              <input type="text" id="invBillNoPreview" readonly value="Loading..." style="padding:12px;font-size:1rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;"/>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">This number will be assigned on save</div>
+            </div>
+            
             <div class="fg"><label>Customer *</label><select id="invCustomer" required style="padding:12px;font-size:1rem;">
               <option value="">Select Customer</option>
               ${custSnap.docs.map(d=>{
@@ -175,6 +244,12 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   document.body.appendChild(modal);
   modal.style.display = 'flex';
   
+  // ✅ Load Bill No. Preview
+  getPreviewInvoiceNumber().then(num => {
+    const previewInput = document.getElementById('invBillNoPreview');
+    if (previewInput) previewInput.value = num;
+  });
+  
   // Add items
   if (editData && editData.items) {
     editData.items.forEach(item => addInvoiceItem(item));
@@ -183,7 +258,7 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   }
 };
 
-// ✅ Add Item Row
+// ✅ Add Item Row - WITH CLASS NAME FOR RELIABLE SELECTION
 window.addInvoiceItem = async function(presetItem = null) {
   const c = document.getElementById('invoiceItems');
   if(!c) return;
@@ -191,6 +266,8 @@ window.addInvoiceItem = async function(presetItem = null) {
   const snap = await window.InvoiceApp.clientDb.collection('invoiceParticulars').where('companyId','==',window.InvoiceApp.companyId).where('isActive','==',true).get();
   
   const row = document.createElement('div');
+  // ✅ Add className for reliable selection
+  row.className = 'invoice-item-row';
   row.style.cssText = 'display:grid;grid-template-columns:2.5fr 1fr 1.2fr 1fr 1.2fr auto;gap:14px;margin-bottom:14px;align-items:end;padding-bottom:14px;border-bottom:1px dashed var(--border);';
   row.innerHTML = `
     <div><label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Particulars</label>
@@ -218,12 +295,29 @@ window.addInvoiceItem = async function(presetItem = null) {
   }
 };
 
+// ✅ FIXED: On Item Change - Use className selector
 window.onItemChange = function(sel, idx) {
-  const row = sel.closest('[style]');
-  if(!row) return;
+  // ✅ Use class name instead of [style] selector
+  const row = sel.closest('.invoice-item-row');
+  if (!row) {
+    console.error('Row not found for index', idx);
+    return;
+  }
+  
   const opt = sel.options[sel.selectedIndex];
-  row.querySelector('.item-sac').value = opt.dataset.sac || '';
-  row.querySelector('.item-rate').value = opt.dataset.rate || 0;
+  
+  // ✅ Safely get data attributes with fallbacks
+  const sac = opt.dataset.sac || '';
+  const rate = opt.dataset.rate || '0';
+  
+  // ✅ Populate fields
+  const sacInput = row.querySelector('.item-sac');
+  const rateInput = row.querySelector('.item-rate');
+  
+  if (sacInput) sacInput.value = sac;
+  if (rateInput) rateInput.value = rate;
+  
+  // Recalculate amount
   calcItem(idx);
 };
 
@@ -232,6 +326,7 @@ window.calcItem = function(idx) {
   const row = rows[idx];
   if(!row) return;
   const amt = (parseFloat(row.querySelector('.item-rate').value)||0) * (parseFloat(row.querySelector('.item-qty').value)||0);
+  row.querySelector('.item-amount') || (row.insertAdjacentHTML('beforeend', `<input type="hidden" class="item-amount" value="${amt.toFixed(2)}"/>`));
   row.querySelector('.item-amount').value = amt.toFixed(2);
   calcTotal();
 };
@@ -258,7 +353,7 @@ window.calcTotal = function() {
   document.getElementById('calcGrandTotal').textContent = '₹'+(sub+cgst+sgst).toFixed(2);
 };
 
-// ✅ Save Invoice (With Preview Logic)
+// ✅ Save Invoice (With Preview Logic & GST-Compliant Numbering)
 window.saveInvoice = async function(e) {
   e.preventDefault();
   
@@ -371,8 +466,8 @@ window.saveInvoice = async function(e) {
         items, subtotal:sub, totalCgst:cgst, totalSgst:sgst, grandTotal:sub+cgst+sgst,
         remarks: document.getElementById('invRemarks').value, status: 'draft',
         signatureIncluded: includeSignature,
-        seriesId: prefix,           // Track which series was used
-        financialYear: financialYear, // Track FY for reporting
+        seriesId: prefix,
+        financialYear: financialYear,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -382,7 +477,7 @@ window.saveInvoice = async function(e) {
         seriesId: prefix,
         prefix: prefix,
         financialYear: financialYear,
-        currentNumber: nextNum + 1,  // Increment for next invoice
+        currentNumber: nextNum + 1,
         maxLength: 16,
         branchName: profileData.branchName || 'Default',
         supplyType: profileData.supplyType || 'domestic',
@@ -423,35 +518,13 @@ window.saveInvoice = async function(e) {
   }
 };
 
-// ✅ Helper: Get current financial year (April-March)
-function getCurrentFinancialYear() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 1-12
-  if (month >= 4) {
-    return `${year}-${(year+1).toString().slice(-2)}`;
-  } else {
-    return `${year-1}-${year.toString().slice(-2)}`;
-  }
-}
-
 // ✅ Generate PDF Blob for Preview
 async function generateInvoicePDFBlob(id, includeSignature = true) {
   const docSnap = await window.InvoiceApp.clientDb.collection('invoices').doc(id).get();
   if(!docSnap.exists) return null;
   
-  // Generate PDF but return blob url instead of saving
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  
-  // Re-use the logic from downloadInvoicePDF but return doc.output('bloburl')
-  // I'll implement the core rendering here to avoid code duplication issues in this response
-  // For brevity, this calls the main renderer but intercepts the output
-  
-  // Since I can't copy-paste the massive PDF logic here again without making it huge,
-  // I will assume the user will use the 'downloadInvoicePDF' logic but modify the end.
-  // However, to be safe and complete, I will provide the FULL PDF logic in 'downloadInvoicePDF' 
-  // and call it here with a special flag.
   
   return await renderInvoicePDF(docSnap.data(), id, includeSignature, 'bloburl');
 }
@@ -462,7 +535,6 @@ window.downloadInvoicePDF = async function(id) {
   if(!docSnap.exists) return;
   
   const inv = docSnap.data();
-  // Default to true if property doesn't exist (backwards compatibility)
   const includeSig = inv.signatureIncluded !== false; 
   
   await renderInvoicePDF(inv, id, includeSig, 'save');
@@ -476,7 +548,6 @@ window.showInvoicePreview = async function(id) {
   const inv = docSnap.data();
   const includeSig = inv.signatureIncluded !== false;
   
-  // Create a simple modal just for viewing
   const modal = document.createElement('div');
   modal.id = 'viewModal';
   modal.className = 'modal';
@@ -513,33 +584,22 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   const margin = 15;
   const contentWidth = pageWidth - (margin * 2);
   
-// ==========================================
-// 1. HEADER: Logo + Title
-// ==========================================
-let y = 15;
-
-// ✅ Logo (Left) - INCREASED SIZE
-if (comp.logoUrl) {
-  try {
-    const logoData = comp.logoUrl.startsWith('') ? comp.logoUrl : `image/jpeg;base64,${comp.logoUrl}`;
-    // Size increased to 50mm x 25mm
-    doc.addImage(logoData, 'JPEG', margin, y, 50, 25); 
-  } catch(e) { 
-    console.log('Logo error:', e); 
-    // Fallback: draw placeholder box
-    doc.setFillColor(200, 200, 200);
-    doc.rect(margin, y, 50, 25, 'F');
+  // 1. HEADER: Logo + Title
+  let y = 15;
+  
+  if (comp.logoUrl) {
+    try {
+      const logoData = comp.logoUrl.startsWith('') ? comp.logoUrl : `image/jpeg;base64,${comp.logoUrl}`;
+      doc.addImage(logoData, 'JPEG', margin, y, 50, 25); // Increased size
+    } catch(e) { console.log('Logo error:', e); }
   }
-}
-
-// Title (Right)
-// Adjusted Y position slightly to align better with larger logo
-doc.setFontSize(22);
-doc.setFont(undefined, 'bold');
-doc.setTextColor(40, 80, 140);
-doc.text('TAX INVOICE', pageWidth - margin, y + 8, { align: 'right' });
-
-y += 28; // Increased spacing after header
+  
+  doc.setFontSize(22);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(40, 80, 140);
+  doc.text('TAX INVOICE', pageWidth - margin, y + 8, { align: 'right' });
+  
+  y += 28;
   
   // 2. COMPANY DETAILS
   doc.setTextColor(40, 80, 140);
@@ -789,7 +849,7 @@ y += 28; // Increased spacing after header
     doc.text('IFSC: ' + (comp.bankDetails.ifscCode || ''), margin, y);
   }
   
-  // ✅ SIGNATURE LOGIC
+  // SIGNATURE LOGIC
   let sigY = y - 8;
   const sigX = pageWidth - margin;
   
@@ -806,7 +866,6 @@ y += 28; // Increased spacing after header
       sigY += 15; 
     }
   } else {
-    // Space for manual signature
     sigY += 15;
   }
   
@@ -858,7 +917,10 @@ function numberToWords(num) {
 
 window.closeModal = function(id) {
   const modal = document.getElementById(id);
-  if (modal) modal.remove();
+  if (modal) {
+    modal.style.display = 'none';
+    setTimeout(() => modal.remove(), 200);
+  }
 };
 
 // Global ESC handler

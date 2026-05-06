@@ -190,25 +190,17 @@ window.exportReportCSV = function() {
   downloadFile(csv, `Report_${window.reportSummary.year}_${window.reportSummary.month}.csv`, 'text/csv');
 };
 
-// ✅ Export PDF - Professional Format
+// ✅ Export Report PDF (Fixed Font Encoding)
 window.exportReportPDF = function() {
   if (!window.currentReportData) return;
   
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   
-  // Get company info
-  const companyId = window.InvoiceApp.companyId;
-  const companyProfile = window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId).get().then(doc => {
-    if (doc.exists) return doc.data();
-    return {};
-  });
-  
-  // For now, we'll use basic info. In production, fetch company profile first.
   const companyName = window.InvoiceApp.companyName || 'Company Name';
   
-  // Header
-  doc.setFillColor(0, 131, 143); // Teal color
+  // ✅ Header with Standard Colors
+  doc.setFillColor(0, 131, 143); // Teal
   doc.rect(0, 0, 210, 30, 'F');
   
   doc.setTextColor(255, 255, 255);
@@ -244,13 +236,13 @@ window.exportReportPDF = function() {
     totalAmount += inv.grandTotal || 0;
   });
   
-  // Summary Box
+  // ✅ Summary Box (Using "Rs." instead of symbol)
   doc.setFillColor(240, 248, 250);
   doc.rect(15, 55, 180, 20, 'F');
   doc.setFont(undefined, 'bold');
-  doc.text(`Taxable Value: ₹${totalTaxable.toFixed(2)}`, 20, 63);
-  doc.text(`Total GST: ₹${totalGST.toFixed(2)}`, 80, 63);
-  doc.text(`Grand Total: ₹${totalAmount.toFixed(2)}`, 140, 63);
+  doc.text('Taxable Value: Rs. ' + totalTaxable.toFixed(2), 20, 63);
+  doc.text('Total GST: Rs. ' + totalGST.toFixed(2), 80, 63);
+  doc.text('Grand Total: Rs. ' + totalAmount.toFixed(2), 140, 63);
   
   // Table Header
   let y = 85;
@@ -277,7 +269,7 @@ window.exportReportPDF = function() {
     if (y > 270) {
       doc.addPage();
       y = 20;
-      // Repeat header on new page
+      // Repeat header
       doc.setFillColor(0, 131, 143);
       doc.rect(15, y - 7, 180, 7, 'F');
       doc.setTextColor(255, 255, 255);
@@ -293,7 +285,6 @@ window.exportReportPDF = function() {
       doc.setTextColor(0, 0, 0);
     }
     
-    // Alternating row colors
     if (index % 2 === 0) {
       doc.setFillColor(248, 248, 248);
       doc.rect(15, y - 4, 180, 4, 'F');
@@ -304,12 +295,13 @@ window.exportReportPDF = function() {
     const dateStr = inv.invoiceDate?.toDate ? inv.invoiceDate.toDate().toLocaleDateString('en-IN') : 
                     inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('en-IN') : '-';
     
+    // ✅ Using "Rs." to avoid font errors
     doc.text(inv.invoiceNumber || '-', 18, y);
     doc.text(inv.customerName || '-', 45, y);
     doc.text(dateStr, 95, y);
-    doc.text('₹' + taxable.toFixed(2), 130, y, {align: 'right'});
-    doc.text('₹' + gst.toFixed(2), 160, y, {align: 'right'});
-    doc.text('₹' + inv.grandTotal.toFixed(2), 185, y, {align: 'right'});
+    doc.text('Rs. ' + taxable.toFixed(2), 130, y, {align: 'right'});
+    doc.text('Rs. ' + gst.toFixed(2), 160, y, {align: 'right'});
+    doc.text('Rs. ' + inv.grandTotal.toFixed(2), 185, y, {align: 'right'});
     
     y += 5;
   });
