@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>InvoiceEase Pro — Management</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<!-- jsPDF for PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;--amber:#E65100;
+  --r:12px;--r-sm:8px;--sh:0 2px 12px rgba(0,131,143,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+a{color:inherit;text-decoration:none;}
+
+/* Layout */
+.app-layout{display:flex;min-height:100vh;}
+.sidebar{width:280px;background:linear-gradient(180deg,var(--teal-dd) 0%,var(--teal) 100%);color:#fff;display:flex;flex-direction:column;padding:28px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar-brand{padding:0 28px 28px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:16px;}
+.sidebar-logo{width:64px;height:64px;border-radius:14px;background:rgba(255,255,255,.15);padding:8px;object-fit:contain;}
+.sidebar-title{font-size:1.25rem;font-weight:700;line-height:1.2;}
+.sidebar-sub{font-size:.8rem;color:rgba(255,255,255,.7);}
+.nav-menu{flex:1;padding:24px 16px;}
+.nav-item{display:flex;align-items:center;gap:14px;padding:13px 18px;border-radius:10px;color:rgba(255,255,255,.8);font-size:.95rem;cursor:pointer;transition:all .2s;margin-bottom:6px;}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:600;}
+.nav-item svg{width:20px;height:20px;flex-shrink:0;}
+.sidebar-footer{padding:24px 28px;border-top:1px solid rgba(255,255,255,.12);font-size:.8rem;color:rgba(255,255,255,.5);}
+
+.main-area{flex:1;display:flex;flex-direction:column;}
+.top-bar{background:#fff;padding:18px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh);}
+.top-left{font-size:1.3rem;font-weight:700;color:var(--ink);}
+.top-right{display:flex;align-items:center;gap:20px;}
+.user-info{text-align:right;}
+.user-name{font-size:1rem;font-weight:600;}
+.user-email{font-size:.8rem;color:var(--muted);}
+.btn-logout{padding:10px 20px;background:#fff;color:var(--red);border:2px solid var(--red);border-radius:10px;font-size:.9rem;font-weight:600;display:flex;align-items:center;gap:8px;transition:all .2s;}
+.btn-logout:hover{background:#FFEBEE;}
+
+.content{flex:1;padding:32px;overflow-y:auto;}
+.page{display:none;animation:fadeUp .25s ease;}
+.page.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+.card{background:#fff;border-radius:var(--r);padding:28px;border:1px solid var(--border);box-shadow:var(--sh);margin-bottom:24px;}
+.card h3{font-size:1.2rem;font-weight:700;color:var(--ink2);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.empty-state{text-align:center;padding:48px;color:var(--muted);}
+.badge{padding:5px 12px;border-radius:22px;font-size:.75rem;font-weight:600;display:inline-block;}
+.badge-green{background:#E8F5E9;color:var(--green);}
+.badge-amber{background:#FFF3E0;color:var(--amber);}
+.badge-red{background:#FFEBEE;color:var(--red);}
+.badge-gray{background:var(--bg);color:var(--muted);}
+
+/* Buttons */
+.btn{padding:10px 18px;border-radius:var(--r-sm);font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;}
+.btn-teal{background:var(--teal);color:#fff;}
+.btn-teal:hover{background:var(--teal-d);box-shadow:0 4px 12px rgba(0,131,143,.25);}
+.btn-outline{background:#fff;color:var(--teal-d);border:1.5px solid var(--border);}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+.btn-icon{background:none;border:none;font-size:1.1rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .2s;}
+.btn-icon:hover{background:var(--teal-s);}
+.btn-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted);line-height:1;}
+
+/* Tables */
+.table-container{background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);max-height:calc(100vh - 320px);overflow-y:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:14px;text-align:left;font-weight:600;color:var(--teal-d);background:var(--teal-s);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:5;}
+td{padding:14px;border-bottom:1px solid var(--border);color:var(--ink2);}
+tr:hover{background:var(--teal-s);}
+
+/* Forms */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:20px;}
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:.85rem;font-weight:600;color:var(--ink2);margin-bottom:6px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:.95rem;transition:border-color .2s,box-shadow .2s;outline:none;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,131,143,.1);}
+
+/* Modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:1000;padding:20px;}
+.modal-content{background:#fff;border-radius:var(--r);padding:32px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.2);animation:fadeUp .2s ease;}
+
+/* Stats */
+.stat-card{background:var(--teal-s);padding:24px;border-radius:12px;text-align:center;}
+.stat-card.green{background:#E8F5E9;}
+.stat-card.amber{background:#FFF3E0;}
+.stat-value{font-size:2.2rem;font-weight:700;color:var(--teal-d);}
+.stat-label{font-size:.9rem;color:var(--muted);margin-top:6px;}
+
+@media(max-width:900px){
+  .sidebar{width:80px;padding:20px 0;}
+  .sidebar-brand div, .nav-item span, .sidebar-footer{display:none;}
+  .sidebar-logo{width:48px;height:48px;}
+  .nav-item{justify-content:center;padding:14px;}
+  .form-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="https://drushyasinchana.in/assets/images/logo.png" class="sidebar-logo"/>
+      <div>
+        <div class="sidebar-title">InvoiceEase Pro</div>
+        <div class="sidebar-sub">Client Portal</div>
+      </div>
+    </div>
+    
+    <nav class="nav-menu">
+      <div class="nav-item active" onclick="nav('dashboard', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="nav('invoices', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Invoices</span>
+      </div>
+      <div class="nav-item" onclick="nav('customers', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Customers</span>
+      </div>
+      <div class="nav-item" onclick="nav('particulars', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Particulars</span>
+      </div>
+      <div class="nav-item" onclick="nav('reports', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Reports</span>
+      </div>
+      <div class="nav-item" onclick="nav('company', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Company Profile</span>
+      </div>
+    </nav>
+    
+    <div class="sidebar-footer">
+      © 2026 Drushyasinchana Tech Solutions
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-area">
+    <header class="top-bar">
+      <div class="top-left" id="pageTitle">Dashboard</div>
+      <div class="top-right">
+        <div class="user-info">
+          <div class="user-name" id="userName">Loading...</div>
+          <div class="user-email" id="userEmail">...</div>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Dashboard -->
+      <div id="pgDashboard" class="page active">
+        <div class="card">
+          <h3>📊 Quick Overview</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;">
+            <div class="stat-card"><div class="stat-value" id="statInvoices">0</div><div class="stat-label">Total Invoices</div></div>
+            <div class="stat-card green"><div class="stat-value" id="statCustomers">0</div><div class="stat-label">Active Customers</div></div>
+            <div class="stat-card amber"><div class="stat-value" id="statRevenue">₹0</div><div class="stat-label">Revenue (This Month)</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🚀 Welcome to InvoiceEase Pro</h3>
+          <p style="color:var(--muted);line-height:1.7;">Your professional GST invoicing workspace is ready. Create invoices, manage customers, and export compliance-ready reports with one click.</p>
+        </div>
+      </div>
+
+      <!-- Invoices -->
+      <div id="pgInvoices" class="page">
+        <div id="invoicesContainer"></div>
+      </div>
+
+      <!-- Customers -->
+      <div id="pgCustomers" class="page">
+        <div id="customersContainer"></div>
+      </div>
+
+      <!-- Particulars -->
+      <div id="pgParticulars" class="page">
+        <div id="particularsContainer"></div>
+      </div>
+
+      <!-- Reports -->
+      <div id="pgReports" class="page">
+        <div id="reportsContainer"></div>
+      </div>
+
+      <!-- Company Profile -->
+      <div id="pgCompany" class="page">
+        <div id="companyContainer"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<!-- Application Modules -->
+<script src="js/firebase-config.js"></script>
+<script src="js/manage.js"></script>
+<script src="js/invoices.js"></script>
+<script src="js/customers.js"></script>
+<script src="js/particulars.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/company.js"></script>
+
+</body>
+</html>

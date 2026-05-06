@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>InvoiceEase Pro — Client Portal</title>
+<link rel="icon" type="image/png" href="https://drushyasinchana.in/assets/images/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --teal:#00838F;--teal-d:#00606B;--teal-dd:#004E57;
+  --teal-l:#B2EBF2;--teal-s:#E0F7FA;
+  --ink:#0D1F22;--ink2:#2E4A4F;
+  --muted:#6B8A8F;--hint:#9EB8BC;
+  --bg:#F0F5F6;--card:#FFFFFF;--border:#D8E8EA;
+  --green:#2E7D32;--red:#C62828;
+  --r:12px;--r-sm:8px;
+  --sh:0 2px 12px rgba(0,131,143,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+input{font-family:inherit;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--teal-l);border-radius:3px;}
+.screen{display:none;min-height:100vh;align-items:stretch;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.anim{animation:fadeUp .25s ease both;}
+
+/* Login Layout */
+#loginScreen{background:linear-gradient(140deg,var(--teal-dd) 0%,var(--teal) 55%,#00ACC1 100%);}
+.login-left{flex:1;display:flex;flex-direction:column;justify-content:center;padding:64px 72px;position:relative;overflow:hidden;}
+.login-left::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 15% 50%,rgba(255,255,255,.07) 0%,transparent 65%);pointer-events:none;}
+.lb-inner{position:relative;z-index:1;}
+.lb-brand-row{display:flex;align-items:center;gap:16px;margin-bottom:40px;}
+.lb-logo{width:96px;height:96px;border-radius:20px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);padding:12px;object-fit:contain;}
+.lb-brand-name{font-size:1.5rem;font-weight:700;color:#fff;}
+.lb-brand-sub{font-size:.85rem;color:rgba(255,255,255,.7);margin-top:2px;}
+.lb-h1{font-size:3.2rem;font-weight:700;color:#fff;letter-spacing:-.03em;line-height:1.05;margin-bottom:16px;}
+.lb-h1 span{color:var(--teal-l);}
+.lb-p{color:rgba(255,255,255,.75);font-size:1rem;line-height:1.7;max-width:420px;}
+.lb-features{margin-top:56px;display:flex;flex-direction:column;gap:16px;}
+.lb-feat{display:flex;align-items:center;gap:14px;color:rgba(255,255,255,.85);font-size:.95rem;}
+.lb-dot{width:8px;height:8px;border-radius:50%;background:var(--teal-l);flex-shrink:0;}
+.lb-footer{margin-top:64px;border-top:1px solid rgba(255,255,255,.15);padding-top:24px;}
+.lb-footer span{font-size:.85rem;color:rgba(255,255,255,.5);}
+.login-right{width:480px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:64px 56px;}
+.login-box{width:100%;}
+.login-box h2{font-size:1.7rem;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.login-box .sub{color:var(--muted);font-size:.95rem;margin-bottom:40px;}
+.fg{margin-bottom:22px;}
+.fg label{display:block;font-size:.85rem;font-weight:600;color:var(--ink2);margin-bottom:8px;}
+.fg input{width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:var(--r-sm);font-size:1rem;color:var(--ink);background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;}
+.fg input:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,131,143,.12);}
+/* Password field with toggle */
+.pw-wrapper{position:relative;}
+.pw-wrapper input{padding-right:48px;}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;}
+.pw-toggle:hover{color:var(--teal);}
+.btn-login{width:100%;padding:16px;background:var(--teal);color:#fff;border:none;border-radius:var(--r-sm);font-size:1.05rem;font-weight:600;transition:background .2s,box-shadow .2s,transform .1s;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:10px;}
+.btn-login:hover{background:var(--teal-d);box-shadow:0 6px 20px rgba(0,131,143,.35);}
+.btn-login:active{transform:scale(.98);}
+.btn-login:disabled{opacity:.65;cursor:not-allowed;}
+#loginError{margin-top:20px;padding:14px 16px;border-radius:var(--r-sm);background:#FFEBEE;color:var(--red);font-size:.9rem;display:none;border:1px solid #FFCDD2;}
+.login-note{margin-top:36px;text-align:center;font-size:.85rem;color:var(--hint);line-height:1.7;}
+.spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+@media(max-width:900px){
+  .login-left{padding:48px 36px;}
+  .login-right{width:100%;padding:48px 32px;}
+  .lb-h1{font-size:2.6rem;}
+  .lb-logo{width:80px;height:80px;}
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="screen active">
+  <div class="login-left">
+    <div class="lb-inner anim">
+      <div class="lb-brand-row">
+        <img src="https://drushyasinchana.in/assets/images/logo.png" alt="InvoiceEase Pro" class="lb-logo"/>
+        <div>
+          <div class="lb-brand-name">InvoiceEase Pro</div>
+          <div class="lb-brand-sub">by Drushyasinchana Tech Solutions</div>
+        </div>
+      </div>
+      <div class="lb-h1">Smart <span>GST</span> Invoicing</div>
+      <p class="lb-p">Professional invoice management, auto-GST calculations, customer tracking, and compliance-ready reports — built for Indian businesses.</p>
+      <div class="lb-features">
+        <div class="lb-feat"><div class="lb-dot"></div>Auto-GST (CGST/SGST/IGST) Calculation</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Customer & Particulars Master Data</div>
+        <div class="lb-feat"><div class="lb-dot"></div>One-Click PDF Export & Email</div>
+        <div class="lb-feat"><div class="lb-dot"></div>Secure Multi-Tenant Architecture</div>
+      </div>
+      <div class="lb-footer">
+        <span>drushyasinchana.in · Bengaluru, Karnataka · © 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box anim">
+      <h2>Client Portal Sign In</h2>
+      <p class="sub">Access your invoicing workspace</p>
+
+      <div class="fg">
+        <label>Company ID</label>
+        <input id="companyId" type="text" placeholder="ENTER COMPANY ID" autocomplete="organization" style="text-transform:uppercase;"/>
+      </div>
+      <div class="fg">
+        <label>Email Address</label>
+        <input id="email" type="email" placeholder="admin@company.com" autocomplete="username"/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="pw-wrapper">
+          <input id="password" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="pw-toggle" onclick="togglePw()" type="button" aria-label="Toggle password visibility">
+            <svg id="eyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="btnLogin" onclick="handleLogin()">
+        <span id="btnText">Sign In</span>
+        <span id="btnSpinner" class="spinner" style="display:none;"></span>
+      </button>
+      <div id="loginError"></div>
+      
+      <div class="login-note">
+        Secure portal for registered clients only.<br/>
+        Need access? Contact <strong>Drushyasinchana Admin</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<!-- Config & Logic -->
+<script src="js/login.js"></script>
+</body>
+</html>

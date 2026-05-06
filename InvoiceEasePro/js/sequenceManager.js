@@ -1,0 +1,174 @@
+/* ══════════════════════════════════════════════════════
+INVOICEEASE PRO - SEQUENCE MANAGER
+GST-Compliant Invoice Numbering System
+══════════════════════════════════════════════════════ */
+
+window.SequenceManager = {
+  // Generate next invoice number with GST rules
+  async getNextInvoiceNumber(seriesId = null) {
+    const db = window.InvoiceApp.clientDb;
+    const cid = window.InvoiceApp.companyId;
+    
+    // Default to company prefix if no series specified
+    if (!seriesId) {
+      const profile = await db.collection('companyProfile').doc(cid).get();
+      seriesId = profile.data()?.invoicePrefix || cid.slice(0,3).toUpperCase();
+    }
+    
+    const currentFY = this.getCurrentFinancialYear();
+    const seqRef = db.collection('sequences').doc(seriesId);
+    
+    return db.runTransaction(async (transaction) => {
+      const seqDoc = await transaction.get(seqRef);
+      
+      let seqData;
+      if (!seqDoc.exists) {
+        // Create new series if doesn't exist
+        seqData = {
+          seriesId,
+          prefix: seriesId,
+          financialYear: currentFY,
+          currentNumber: 1,
+          maxLength: 16,
+          branchName: "Default",
+          supplyType: "domestic",
+          isActive: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        transaction.set(seqRef, seqData);
+      } else {
+        seqData = seqDoc.data();
+      }
+      
+      // ✅ Check if financial year changed - reset counter
+      if (seqData.financialYear !== currentFY) {
+        seqData.currentNumber = 1;
+        seqData.financialYear = currentFY;
+        seqData.lastResetDate = firebase.firestore.FieldValue.serverTimestamp();
+      }
+      
+      const nextNum = seqData.currentNumber;
+      const formattedNum = String(nextNum).padStart(3, '0'); // 001, 002, etc.
+      
+      // ✅ Build invoice number: PREFIX/FY/NUMBER (e.g., KAR/2026-27/001)
+      let invoiceNumber = `${seqData.prefix}/${seqData.financialYear}/${formattedNum}`;
+      
+      // ✅ Enforce 16-character max (GST rule)
+      if (invoiceNumber.length > 16) {
+        // Fallback: shorten format to PREFIX-NUM (e.g., KAR-001)
+        invoiceNumber = `${seqData.prefix}-${formattedNum}`;
+        if (invoiceNumber.length > 16) {
+          // Last resort: just prefix + number
+          invoiceNumber = `${seqData.prefix}${nextNum}`;
+        }
+      }
+      
+      // Update sequence
+      transaction.update(seqRef, {
+        currentNumber: nextNum + 1,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      return {
+        invoiceNumber,
+        seriesId,
+        financialYear: currentFY,
+        number: nextNum
+      };
+    });
+  },
+  
+  // Get current financial year (April-March)
+  getCurrentFinancialYear() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // 1-12
+    
+    // FY starts April 1
+    if (month >= 4) {
+      return `${year}-${(year+1).toString().slice(-2)}`;
+    } else {
+      return `${year-1}-${year.toString().slice(-2)}`;
+    }
+  },
+  
+  // Validate invoice number meets GST rules
+  validateInvoiceNumber(invoiceNumber) {
+    const errors = [];
+    
+    // Rule 1: Max 16 characters
+    if (invoiceNumber.length > 16) {
+      errors.push('Invoice number exceeds 16 characters');
+    }
+    
+    // Rule 2: Only allowed characters (A-Z, 0-9, -, /)
+    if (!/^[A-Za-z0-9\-\/]+$/.test(invoiceNumber)) {
+      errors.push('Invoice number contains invalid characters');
+    }
+    
+    // Rule 3: Must contain prefix and number
+    if (!/[A-Za-z]+/.test(invoiceNumber) || !/\d+/.test(invoiceNumber)) {
+      errors.push('Invoice number must contain both letters and numbers');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  },
+  
+  // Cancel invoice (instead of delete) for audit trail
+  async cancelInvoice(invoiceId, reason = '') {
+    const db = window.InvoiceApp.clientDb;
+    
+    await db.collection('invoices').doc(invoiceId).update({
+      status: 'cancelled',
+      cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+      cancellationReason: reason,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Note: We do NOT decrement the sequence - maintains consecutive numbering
+    return true;
+  },
+  
+  // Get available series for dropdown
+  async getAvailableSeries() {
+    const db = window.InvoiceApp.clientDb;
+    const snap = await db.collection('sequences')
+      .where('isActive', '==', true)
+      .get();
+    
+    return snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+  },
+  
+  // Create new series (for new branch/type)
+  async createSeries(seriesId, config) {
+    const db = window.InvoiceApp.clientDb;
+    const currentFY = this.getCurrentFinancialYear();
+    
+    const validation = this.validateInvoiceNumber(`${config.prefix || seriesId}/2026-27/001`);
+    if (!validation.isValid) {
+      throw new Error(`Invalid series config: ${validation.errors.join(', ')}`);
+    }
+    
+    await db.collection('sequences').doc(seriesId).set({
+      seriesId,
+      prefix: config.prefix || seriesId,
+      financialYear: currentFY,
+      currentNumber: config.startNumber || 1,
+      maxLength: 16,
+      branchName: config.branchName || '',
+      supplyType: config.supplyType || 'domestic',
+      isActive: config.isActive !== false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    return true;
+  }
+};
