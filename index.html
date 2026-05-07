@@ -253,6 +253,43 @@
     #close-popup { background:var(--gold); color:#fff; border:none; padding:9px 24px; border-radius:6px; font-family:'DM Sans',sans-serif; font-size:.86rem; font-weight:600; cursor:pointer; transition:background .2s; }
     #close-popup:hover { background:var(--gold-mid); }
 
+    /* ── BOOKING MODAL ── */
+    #booking-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,.55); z-index:1100;
+      backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+    }
+    #booking-overlay.active { display:flex; }
+    #booking-modal {
+      background:#fff; border:1px solid #e8cc88;
+      border-radius:16px; overflow:hidden;
+      width:min(820px,96vw); height:min(680px,90vh);
+      display:flex; flex-direction:column;
+      box-shadow:0 30px 80px rgba(0,0,0,.25);
+      animation:modalIn .3s ease;
+    }
+    @keyframes modalIn { from{opacity:0;transform:scale(.93);} to{opacity:1;transform:scale(1);} }
+    .booking-modal-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 20px; background:var(--gold-pale);
+      border-bottom:1px solid #e8cc88; flex-shrink:0;
+    }
+    .booking-modal-title {
+      font-family:'Cinzel',serif; font-size:.88rem; font-weight:700;
+      color:var(--gold); display:flex; align-items:center; gap:8px;
+    }
+    #close-booking {
+      background:none; border:1px solid #e8cc88; color:var(--gold);
+      width:30px; height:30px; border-radius:6px; cursor:pointer;
+      font-size:.85rem; display:flex; align-items:center; justify-content:center;
+      transition:all .2s;
+    }
+    #close-booking:hover { background:var(--gold); color:#fff; }
+    #booking-iframe {
+      flex:1; border:none; width:100%; display:block;
+    }
+
     /* ── RESPONSIVE ── */
     @media(max-width:900px){
       .stats-strip{grid-template-columns:repeat(2,1fr);}
@@ -286,7 +323,8 @@
     <a href="#services">Services</a>
     <a href="#media">Media</a>
     <a href="#about">About</a>
-    <a href="#contact" class="nav-cta">Virtual Legal Consultation</a>
+    <a href="#contact">Contact</a>
+    <a href="javascript:void(0)" class="nav-cta" id="nav-book-btn"><i class="fas fa-calendar-check"></i> Book Now</a>
   </nav>
   <button class="menu-toggle" id="menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
 </header>
@@ -312,7 +350,7 @@
   </div>
   <div class="hero-buttons">
     <a href="#services" class="btn-primary"><i class="fas fa-th-large"></i> Explore Services</a>
-    <a href="/cdn-cgi/l/email-protection#e2869097918a9b83918b8c818a838c83a2858f838b8ecc818d8fdd91978088878196dfb48b909697838ec2ae8785838ec2a18d8c91978e9683968b8d8cc2b0879397879196" class="btn-secondary"><i class="fas fa-balance-scale"></i> Virtual Legal Consultation</a>
+    <a href="javascript:void(0)" class="btn-secondary" id="hero-book-btn"><i class="fas fa-calendar-check"></i> Book Now — Virtual Consultation</a>
   </div>
 </section>
 
@@ -389,7 +427,8 @@
     <h3>Ready to Get Started?</h3>
     <p>Let's discuss how I can help you achieve your goals with comprehensive expertise across law, technology, and creative domains.</p>
     <div class="cta-buttons">
-      <a href="#contact" class="btn-primary"><i class="fas fa-rocket"></i> Start Your Project</a>
+      <a href="#book-now" class="btn-primary"><i class="fas fa-rocket"></i> Start Your Project</a>
+      <a href="javascript:void(0)" class="btn-secondary" onclick="document.getElementById('hero-book-btn').click()"><i class="fas fa-calendar-check"></i> Book Now</a>
     </div>
   </div>
 </div>
@@ -411,7 +450,7 @@
       </div>
       <!--
         NOTE: Channel playlist embeds require a valid UCxxxx channel ID.
-        If the channel handle is @drushyasinchana-official, go to your YouTube channel page,
+        If the channel handle is @drushyasinchana22, go to your YouTube channel page,
         view page source, search "channelId" to get the UCxxxxx string.
         Then replace the src below:
         https://www.youtube.com/embed/videoseries?list=UU<your-channel-id-without-UC>
@@ -422,13 +461,13 @@
           <i class="fab fa-youtube" style="font-size:3rem;color:#dc2626;margin-bottom:14px;display:block;"></i>
           <p style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--text-main);margin-bottom:6px;">Drushyasinchana</p>
           <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:18px;">Subscribe to watch our latest videos on<br>legal insights, IT tutorials &amp; creative content.</p>
-          <a href="https://youtube.com/@drushyasinchana-official?sub_confirmation=1" target="_blank" rel="noopener" class="yt-subscribe-btn"><i class="fab fa-youtube"></i> Subscribe Now</a>
+          <a href="https://youtube.com/@Drushyasinchana22?sub_confirmation=1" target="_blank" rel="noopener" class="yt-subscribe-btn"><i class="fab fa-youtube"></i> Subscribe Now</a>
         </div>
       </div>
       <p style="font-size:.83rem;color:var(--text-muted);line-height:1.7;margin:12px 0 14px;">
         Subscribe for videos on legal insights, IT tutorials, creative content and more from Drushyasinchana.
       </p>
-      <a href="https://youtube.com/@drushyasinchana-official?sub_confirmation=1" target="_blank" rel="noopener" class="yt-subscribe-btn">
+      <a href="https://youtube.com/@Drushyasinchana22?sub_confirmation=1" target="_blank" rel="noopener" class="yt-subscribe-btn">
         <i class="fab fa-youtube"></i> Subscribe on YouTube
       </a>
     </div>
@@ -469,7 +508,7 @@
   <div class="film-card">
     <!--
       UNLISTED VIDEO FIX:
-      - The video ID is: EtbRfj6_XWU
+      - The video ID is: bNdkmfMRuX8
       - Unlisted videos ARE embeddable using the standard /embed/VIDEO_ID format.
       - Error 153 was caused by using a playlist/channel embed instead of the direct video ID.
       - The direct embed below will work as long as embedding is enabled in the video settings.
@@ -478,7 +517,7 @@
     -->
     <div class="film-embed">
       <iframe
-        src="https://www.youtube.com/embed/EtbRfj6_XWU?rel=0&modestbranding=1"
+       ifra
         title="Drushyasinchana Short Film"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen>
@@ -489,7 +528,7 @@
         <span class="film-badge">Short Film</span>
         <span class="film-title-text">Drushyasinchana Creations</span>
       </div>
-      <a href="https://youtu.be/EtbRfj6_XWU" target="_blank" rel="noopener" class="film-watch-btn">
+      <a href="https://youtu.be/bNdkmfMRuX8?sub_confirmation=1" target="_blank" rel="noopener" class="film-watch-btn">
         <i class="fas fa-external-link-alt"></i> Watch on YouTube
       </a>
     </div>
@@ -599,6 +638,24 @@
 </section>
 
 <!-- ── CONTACT ── -->
+<!-- ── BOOK NOW (EMBEDDED) ── -->
+<section id="book-now" style="padding:92px 5%; background:var(--bg-alt);">
+  <div class="section-header">
+    <div class="section-overline">Schedule a Meeting</div>
+    <h2 class="section-title">Book a <span>Consultation</span></h2>
+    <p class="section-desc">Choose a convenient time slot for your virtual legal consultation with SNV Murthy — Advocate &amp; Multiservice Professional.</p>
+  </div>
+  <div style="width:100%; height:700px; border-radius:14px; overflow:hidden; border:1px solid var(--border); box-shadow:var(--shadow-md);">
+    <iframe
+      src="https://drushyasinchana.zohobookings.in/portal-embed#/432160000000028045"
+      width="100%" height="100%"
+      frameborder="0"
+      allowfullscreen
+      title="Book a Virtual Legal Consultation">
+    </iframe>
+  </div>
+</section>
+
 <section id="contact" class="contact-section">
   <div class="section-header">
     <div class="section-overline">Reach Out</div>
@@ -651,14 +708,14 @@
       </a>
       <p>Your trusted partner for Legal, IT, Tech &amp; Creative Solutions. Bridging technology and law with 27+ years of expertise in Karnataka Judiciary.</p>
       <div class="footer-social">
-        <a href="https://youtube.com/@drushyasinchana-official?sub_confirmation=1" target="_blank" rel="noopener" class="social-icon si-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
+        <a href="https://youtube.com/@Drushyasinchana22?sub_confirmation=1" target="_blank" rel="noopener" class="social-icon si-yt" title="YouTube"><i class="fab fa-youtube"></i></a>
         <a href="https://whatsapp.com/channel/0029VbBlCamDeONGAxLQ4o1o" target="_blank" rel="noopener" class="social-icon si-wa" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
         <a href="https://www.instagram.com/" target="_blank" rel="noopener" class="social-icon si-ig" title="Instagram"><i class="fab fa-instagram"></i></a>
       </div>
     </div>
     <div class="footer-col">
       <h4>Quick Links</h4>
-      <a href="#home">Home</a><a href="#services">Services</a><a href="#media">Media</a><a href="#about">About</a><a href="#contact">Contact</a>
+      <a href="#home">Home</a><a href="#services">Services</a><a href="#media">Media</a><a href="#about">About</a><a href="#book-now">Book Consultation</a><a href="#contact">Contact</a>
     </div>
     <div class="footer-col">
       <h4>Our Services</h4>
@@ -669,7 +726,7 @@
       <a href="/cdn-cgi/l/email-protection#66021413150e1f07150f08050e07080726010b070f0a4805090b"><span class="__cf_email__" data-cfemail="f89c8a8d8b9081998b91969b90999699b89f95999194d69b9795">[email&#160;protected]</span></a>
       <a href="https://drushyasinchana.in" target="_blank">drushyasinchana.in</a>
       <a href="https://whatsapp.com/channel/0029VbBlCamDeONGAxLQ4o1o" target="_blank">WhatsApp Channel</a>
-      <a href="https://youtube.com/@drushyasinchana-official" target="_blank">YouTube Channel</a>
+      <a href="https://youtube.com/@Drushyasinchana22" target="_blank">YouTube Channel</a>
     </div>
   </div>
   <div class="footer-bottom">
@@ -678,6 +735,26 @@
     <p>Registered Advocate · Karnataka</p>
   </div>
 </footer>
+
+<!-- ── BOOKING MODAL ── -->
+<div id="booking-overlay">
+  <div id="booking-modal">
+    <div class="booking-modal-header">
+      <div class="booking-modal-title">
+        <i class="fas fa-balance-scale"></i> Virtual Legal Consultation — Book a Slot
+      </div>
+      <button id="close-booking" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <iframe
+      id="booking-iframe"
+      src=""
+      data-src="https://drushyasinchana.zohobookings.in/portal-embed#/432160000000028045"
+      title="Book Virtual Legal Consultation"
+      loading="lazy"
+      allow="payment">
+    </iframe>
+  </div>
+</div>
 
 <div id="popup-overlay"></div>
 <div id="thank-you-popup">
@@ -697,6 +774,31 @@
     }
   });
 
+  /* ── BOOKING MODAL ── */
+  function openBookingModal() {
+    var overlay = document.getElementById('booking-overlay');
+    var iframe  = document.getElementById('booking-iframe');
+    // Lazy-load: only set src on first open
+    if (!iframe.src || iframe.src === window.location.href) {
+      iframe.src = iframe.getAttribute('data-src');
+    }
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeBookingModal() {
+    document.getElementById('booking-overlay').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('nav-book-btn').addEventListener('click', openBookingModal);
+  document.getElementById('hero-book-btn').addEventListener('click', openBookingModal);
+  document.getElementById('close-booking').addEventListener('click', closeBookingModal);
+  document.getElementById('booking-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeBookingModal();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeBookingModal();
+  });
+
   /* Header shrink */
   window.addEventListener('scroll', function () {
     document.getElementById('site-header').style.padding = window.scrollY > 55 ? '9px 6%' : '15px 6%';
@@ -707,4 +809,32 @@
     btn.addEventListener('click', function () {
       var hidden   = this.parentElement.querySelectorAll('.hidden');
       var expanded = this.dataset.expanded === '1';
-      hidden.forEach(function (el) { expanded ? el.classList.remove('show') : el.classList
+      hidden.forEach(function (el) { expanded ? el.classList.remove('show') : el.classList.add('show'); });
+      this.dataset.expanded = expanded ? '0' : '1';
+      this.innerHTML = expanded
+        ? 'View All <i class="fas fa-chevron-down" style="font-size:.58rem"></i>'
+        : 'View Less <i class="fas fa-chevron-up" style="font-size:.58rem"></i>';
+    });
+  });
+
+  /* Contact form popup */
+  var form = document.getElementById('contact-form');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var overlay = document.getElementById('popup-overlay');
+      var popup   = document.getElementById('thank-you-popup');
+      overlay.style.display = 'block';
+      popup.style.display   = 'block';
+      setTimeout(function () { popup.style.opacity = '1'; popup.style.transform = 'translate(-50%,-50%) scale(1)'; }, 10);
+    });
+  }
+  document.getElementById('close-popup').addEventListener('click', function () {
+    document.getElementById('popup-overlay').style.display = 'none';
+    var popup = document.getElementById('thank-you-popup');
+    popup.style.opacity = '0'; popup.style.transform = 'translate(-50%,-50%) scale(.88)';
+    setTimeout(function () { popup.style.display = 'none'; }, 300);
+  });
+</script>
+</body>
+</html>
