@@ -146,21 +146,30 @@ window.deleteInvoice = async function(id) {
   }
 };
 
-// ✅ Show Modal (Create or Edit) - WITH BILL NO. PREVIEW
+// ✅ Show Modal (Create or Edit) - WITH GST/IGST/NON-GST TOGGLE & BILL NO. PREVIEW
 window.showInvoiceModal = async function(editId = null, editData = null) {
   // Remove old modal if exists
   const oldModal = document.getElementById('invoiceModal');
   if (oldModal) oldModal.remove();
   
-  const custSnap = await window.InvoiceApp.clientDb.collection('customers').where('companyId','==',window.InvoiceApp.companyId).where('isActive','==',true).get();
-  const partSnap = await window.InvoiceApp.clientDb.collection('invoiceParticulars').where('companyId','==',window.InvoiceApp.companyId).where('isActive','==',true).get();
+  const custSnap = await window.InvoiceApp.clientDb.collection('customers')
+    .where('companyId','==',window.InvoiceApp.companyId)
+    .where('isActive','==',true).get();
+    
+  const partSnap = await window.InvoiceApp.clientDb.collection('invoiceParticulars')
+    .where('companyId','==',window.InvoiceApp.companyId)
+    .where('isActive','==',true).get();
+    
   const today = new Date().toISOString().split('T')[0];
+  
+  // Default values for GST toggles
+  const isNonGstDefault = editData && editData.isNonGst === true;
+  const isIgstDefault = editData && editData.isIgst === true;
   
   const modal = document.createElement('div');
   modal.id = 'invoiceModal';
   modal.className = 'modal';
   
-  // Form HTML
   modal.innerHTML = `
     <div class="modal-content" style="max-width:1100px; width:95%; padding:32px; max-height:90vh; overflow-y:auto;">
       <div id="invoiceFormContainer">
@@ -173,13 +182,14 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
           <input type="hidden" id="editDocId" value="${editId || ''}">
           
           <div class="form-grid" style="grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px;">
-            <!-- ✅ Bill No. Preview Field -->
+            <!-- Bill No. Preview -->
             <div class="fg">
               <label>Bill No. (Preview)</label>
               <input type="text" id="invBillNoPreview" readonly value="Loading..." style="padding:12px;font-size:1rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;"/>
               <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">This number will be assigned on save</div>
             </div>
             
+            <!-- Customer -->
             <div class="fg"><label>Customer *</label><select id="invCustomer" required style="padding:12px;font-size:1rem;">
               <option value="">Select Customer</option>
               ${custSnap.docs.map(d=>{
@@ -188,9 +198,28 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
                 return `<option value="${d.id}" data-gstn="${c.gstn||''}" data-pan="${c.pan||''}" data-address="${c.address||''}" ${selected}>${c.customerName}</option>`;
               }).join('')}
             </select></div>
+            
+            <!-- Invoice Date -->
             <div class="fg"><label>Invoice Date *</label><input type="date" id="invDate" required value="${editData ? (editData.invoiceDate?.toDate ? editData.invoiceDate.toDate().toISOString().split('T')[0] : new Date(editData.invoiceDate).toISOString().split('T')[0]) : today}" style="padding:12px;font-size:1rem;"/></div>
+            
+            <!-- PO Number -->
             <div class="fg"><label>PO Number</label><input type="text" id="invPONumber" value="${editData ? editData.poNumber || '' : ''}" style="padding:12px;font-size:1rem;"/></div>
+            
+            <!-- PO Date -->
             <div class="fg"><label>PO Date</label><input type="date" id="invPODate" value="${editData ? (editData.poDate?.toDate ? editData.poDate.toDate().toISOString().split('T')[0] : editData.poDate ? new Date(editData.poDate).toISOString().split('T')[0] : '') : today}" style="padding:12px;font-size:1rem;"/></div>
+          </div>
+          
+          <!-- ✅ GST Type Toggle (Non-GST / IGST / CGST+SGST) -->
+          <div style="margin:16px 0; padding:15px; border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+               <input type="checkbox" id="isNonGst" ${isNonGstDefault ? 'checked' : ''} style="width:18px;height:18px;">
+               <span style="font-weight:600;">Non-GST (Tax = 0%)</span>
+             </label>
+             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+               <input type="checkbox" id="isIgst" ${isIgstDefault ? 'checked' : ''} style="width:18px;height:18px;">
+               <span style="font-weight:600;">IGST (Inter-State)</span>
+             </label>
+             <span style="font-size:0.8rem;color:var(--muted);margin-left:auto;">Default: CGST+SGST (Intra-State)</span>
           </div>
           
           <div style="background:var(--bg);padding:20px;border-radius:10px;margin:20px 0;">
@@ -205,8 +234,8 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
             <div class="fg"><label>Remarks</label><textarea id="invRemarks" rows="3" style="padding:12px;font-size:1rem;">${editData ? editData.remarks || '' : ''}</textarea></div>
             <div style="background:var(--teal-s);padding:20px;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;">
               <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Subtotal:</span><strong id="calcSubtotal" style="font-size:1.1rem;">₹${editData ? editData.subtotal.toFixed(2) : '0.00'}</strong></div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>CGST:</span><strong id="calcCgst" style="font-size:1.1rem;">₹${editData ? editData.totalCgst.toFixed(2) : '0.00'}</strong></div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>SGST:</span><strong id="calcSgst" style="font-size:1.1rem;">₹${editData ? editData.totalSgst.toFixed(2) : '0.00'}</strong></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span id="taxLabel1">CGST:</span><strong id="calcCgst" style="font-size:1.1rem;">₹${editData ? editData.totalCgst.toFixed(2) : '0.00'}</strong></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span id="taxLabel2">SGST:</span><strong id="calcSgst" style="font-size:1.1rem;">₹${editData ? editData.totalSgst.toFixed(2) : '0.00'}</strong></div>
               <div style="display:flex;justify-content:space-between;padding-top:12px;border-top:2px solid var(--teal);margin-top:8px;">
                 <span style="font-size:1.2rem;font-weight:700;">Grand Total:</span><strong id="calcGrandTotal" style="font-size:1.3rem;color:var(--teal-d);">₹${editData ? editData.grandTotal.toFixed(2) : '0.00'}</strong>
               </div>
@@ -244,7 +273,7 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   document.body.appendChild(modal);
   modal.style.display = 'flex';
   
-  // ✅ Load Bill No. Preview
+  // Load Bill No. Preview
   getPreviewInvoiceNumber().then(num => {
     const previewInput = document.getElementById('invBillNoPreview');
     if (previewInput) previewInput.value = num;
@@ -255,6 +284,19 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
     editData.items.forEach(item => addInvoiceItem(item));
   } else {
     addInvoiceItem();
+  }
+  
+  // ✅ Add event listeners for GST toggles to recalculate totals
+  document.getElementById('isNonGst')?.addEventListener('change', calcTotal);
+  document.getElementById('isIgst')?.addEventListener('change', calcTotal);
+  
+  // ✅ Initialize tax labels based on edit data
+  if (isNonGstDefault) {
+    document.getElementById('taxLabel1').textContent = 'Tax:';
+    document.getElementById('taxLabel2').style.display = 'none';
+  } else if (isIgstDefault) {
+    document.getElementById('taxLabel1').textContent = 'IGST:';
+    document.getElementById('taxLabel2').style.display = 'none';
   }
 };
 
@@ -331,130 +373,140 @@ window.calcItem = function(idx) {
   calcTotal();
 };
 
+// ✅ Calculate Totals (Handles GST vs Non-GST)
 window.calcTotal = function() {
-  let sub=0, rawCgst=0, rawSgst=0;
+  let sub=0, rawCgst=0, rawSgst=0, rawIgst=0;
+  const isNonGst = document.getElementById('isNonGst')?.checked === true;
+  const isIgst = document.getElementById('isIgst')?.checked === true;
+  
   document.querySelectorAll('#invoiceItems > div').forEach(row => {
     const amt = parseFloat(row.querySelector('.item-amount')?.value) || 0;
     const select = row.querySelector('.item-particular');
     const opt = select.options[select.selectedIndex];
-    const gst = parseFloat(opt.dataset.gst) || 0;
+    const gstRate = parseFloat(opt.dataset.gst) || 0;
+    
     sub += amt;
-    rawCgst += amt * (gst/2)/100;
-    rawSgst += amt * (gst/2)/100;
+    
+    if (isNonGst) {
+      // No tax
+    } else if (isIgst) {
+      // IGST = full rate
+      rawIgst += amt * gstRate / 100;
+    } else {
+      // CGST + SGST = half rate each
+      rawCgst += amt * (gstRate/2) / 100;
+      rawSgst += amt * (gstRate/2) / 100;
+    }
   });
   
-  // ✅ Section 170 CGST Act: Round CGST & SGST individually to nearest rupee
+  // Round taxes to nearest rupee (Section 170)
   const cgst = Math.round(rawCgst);
   const sgst = Math.round(rawSgst);
+  const igst = Math.round(rawIgst);
+  
+  // Update UI labels
+  const label1 = document.getElementById('taxLabel1');
+  const label2 = document.getElementById('taxLabel2');
+  
+  if (isNonGst) {
+    label1.textContent = 'Tax:';
+    label2.style.display = 'none';
+    document.getElementById('calcCgst').textContent = '₹0.00';
+    document.getElementById('calcSgst').textContent = '₹0.00';
+  } else if (isIgst) {
+    label1.textContent = 'IGST:';
+    label2.style.display = 'none';
+    document.getElementById('calcCgst').textContent = '₹' + igst.toFixed(2);
+    document.getElementById('calcSgst').textContent = '₹0.00';
+  } else {
+    label1.textContent = 'CGST:';
+    label2.style.display = 'block';
+    label2.textContent = 'SGST:';
+    document.getElementById('calcCgst').textContent = '₹' + cgst.toFixed(2);
+    document.getElementById('calcSgst').textContent = '₹' + sgst.toFixed(2);
+  }
 
   document.getElementById('calcSubtotal').textContent = '₹'+sub.toFixed(2);
-  document.getElementById('calcCgst').textContent = '₹'+cgst.toFixed(2);
-  document.getElementById('calcSgst').textContent = '₹'+sgst.toFixed(2);
-  document.getElementById('calcGrandTotal').textContent = '₹'+(sub+cgst+sgst).toFixed(2);
+  document.getElementById('calcGrandTotal').textContent = '₹'+(sub + (isIgst ? igst : cgst + sgst)).toFixed(2);
 };
 
-// ✅ Save Invoice (With Preview Logic & GST-Compliant Numbering)
+
+// ✅ Save Invoice (With GST/Non-GST & Preview Logic)
 window.saveInvoice = async function(e) {
   e.preventDefault();
-  
   const cSel = document.getElementById('invCustomer');
   const cOpt = cSel.options[cSel.selectedIndex];
   if (!cSel.value) { alert('Please select a customer'); return; }
   
   const editId = document.getElementById('editDocId').value;
   const includeSignature = document.getElementById('includeSignature')?.checked !== false;
+  const isNonGst = document.getElementById('isNonGst')?.checked === true;
+  const isIgst = document.getElementById('isIgst')?.checked === true;
   
   let invNum = '';
-  
   const items = [];
+  
   document.querySelectorAll('#invoiceItems > div').forEach(row => {
     const ps = row.querySelector('.item-particular');
     const opt = ps.options[ps.selectedIndex];
     if (!ps.value) return;
-    const gst = parseFloat(opt.dataset.gst)||0;
+    const gstRate = isNonGst ? 0 : (parseFloat(opt.dataset.gst)||0);
     const amt = parseFloat(row.querySelector('.item-amount').value)||0;
     items.push({
       particular:ps.value, itemName:opt.text, sacCode:row.querySelector('.item-sac').value, 
       rate:parseFloat(row.querySelector('.item-rate').value)||0, 
       quantity:parseFloat(row.querySelector('.item-qty').value)||0, 
-      amount:amt, gstRate:gst, cgstAmount:amt*(gst/2)/100, sgstAmount:amt*(gst/2)/100
+      amount:amt, gstRate:gstRate, 
+      cgstAmount: isIgst ? 0 : (amt*(gstRate/2)/100), 
+      sgstAmount: isIgst ? 0 : (amt*(gstRate/2)/100),
+      igstAmount: isIgst ? (amt*gstRate/100) : 0
     });
   });
   
   if (items.length === 0) { alert('Please add at least one item'); return; }
   
-  // ✅ Read rounded values from UI (already rounded by calcTotal)
   const sub = parseFloat(document.getElementById('calcSubtotal').textContent.replace('₹',''));
   const cgst = parseFloat(document.getElementById('calcCgst').textContent.replace('₹',''));
   const sgst = parseFloat(document.getElementById('calcSgst').textContent.replace('₹',''));
+  const igst = isIgst ? cgst : 0; // Reuse calcCgst field for IGST display
   
   try {
     if (editId) {
-      // ✅ UPDATE EXISTING INVOICE
       await window.InvoiceApp.clientDb.collection('invoices').doc(editId).set({
         invoiceDate: new Date(document.getElementById('invDate').value),
         customerId: cSel.value, customerName: cOpt.text,
         customerGstn: cOpt.dataset.gstn||'', customerPan: cOpt.dataset.pan||'', customerAddress: cOpt.dataset.address||'',
         poNumber: document.getElementById('invPONumber').value,
         poDate: document.getElementById('invPODate').value ? new Date(document.getElementById('invPODate').value) : null,
-        items, subtotal:sub, totalCgst:cgst, totalSgst:sgst, grandTotal:sub+cgst+sgst,
+        items, subtotal:sub, totalCgst:cgst, totalSgst:sgst, totalIgst:igst, grandTotal:sub+cgst+sgst+igst,
         remarks: document.getElementById('invRemarks').value,
         signatureIncluded: includeSignature,
+        isNonGst: isNonGst,
+        isIgst: isIgst,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, {merge:true});
-      
       const doc = await window.InvoiceApp.clientDb.collection('invoices').doc(editId).get();
       invNum = doc.data().invoiceNumber;
-      
     } else {
-      // ✅ CREATE NEW INVOICE - GST Compliant Numbering
-      
-      // 1. Get company profile for prefix, FY, start number
-      const profile = await window.InvoiceApp.clientDb.collection('companyProfile')
-        .doc(window.InvoiceApp.companyId).get();
+      const profile = await window.InvoiceApp.clientDb.collection('companyProfile').doc(window.InvoiceApp.companyId).get();
       const profileData = profile.data() || {};
-      
       const prefix = profileData.invoicePrefix || window.InvoiceApp.companyId.slice(0,3).toUpperCase();
       const financialYear = profileData.financialYear || getCurrentFinancialYear();
       const startNumber = profileData.invoiceStartNumber || 1;
-      
-      // 2. Get or create sequence document
       const seqRef = window.InvoiceApp.clientDb.collection('sequences').doc(prefix);
       const seqDoc = await seqRef.get();
       
       let nextNum;
       if (seqDoc.exists) {
         const seqData = seqDoc.data();
-        // ✅ Reset counter if financial year changed
-        if (seqData.financialYear !== financialYear) {
-          nextNum = startNumber;
-        } else {
-          nextNum = seqData.currentNumber;
-        }
-      } else {
-        // First invoice for this series
-        nextNum = startNumber;
-      }
+        if (seqData.financialYear !== financialYear) { nextNum = startNumber; } else { nextNum = seqData.currentNumber; }
+      } else { nextNum = startNumber; }
       
-      // 3. Format invoice number with GST rules
       const formattedNum = String(nextNum).padStart(3, '0');
-      
-      // Primary format: PREFIX/FY/NNN (e.g., KAR/2026-27/001)
       let invoiceNumber = `${prefix}/${financialYear}/${formattedNum}`;
-      
-      // ✅ Enforce 16-character max (GST rule)
-      if (invoiceNumber.length > 16) {
-        // Fallback format: PREFIX-NNN (e.g., KAR-001)
-        invoiceNumber = `${prefix}-${formattedNum}`;
-        if (invoiceNumber.length > 16) {
-          // Last resort: PREFIX + number only
-          invoiceNumber = `${prefix}${nextNum}`;
-        }
-      }
-      
+      if (invoiceNumber.length > 16) { invoiceNumber = `${prefix}-${formattedNum}`; if (invoiceNumber.length > 16) { invoiceNumber = `${prefix}${nextNum}`; } }
       invNum = invoiceNumber;
       
-      // 4. Save invoice with GST-compliant number
       await window.InvoiceApp.clientDb.collection('invoices').add({
         companyId: window.InvoiceApp.companyId,
         invoiceNumber: invNum,
@@ -463,59 +515,30 @@ window.saveInvoice = async function(e) {
         customerGstn: cOpt.dataset.gstn||'', customerPan: cOpt.dataset.pan||'', customerAddress: cOpt.dataset.address||'',
         poNumber: document.getElementById('invPONumber').value,
         poDate: document.getElementById('invPODate').value ? new Date(document.getElementById('invPODate').value) : null,
-        items, subtotal:sub, totalCgst:cgst, totalSgst:sgst, grandTotal:sub+cgst+sgst,
+        items, subtotal:sub, totalCgst:cgst, totalSgst:sgst, totalIgst:igst, grandTotal:sub+cgst+sgst+igst,
         remarks: document.getElementById('invRemarks').value, status: 'draft',
         signatureIncluded: includeSignature,
-        seriesId: prefix,
-        financialYear: financialYear,
+        isNonGst: isNonGst,
+        isIgst: isIgst,
+        seriesId: prefix, financialYear: financialYear,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       
-      // 5. Update sequence for next invoice
-      await seqRef.set({
-        seriesId: prefix,
-        prefix: prefix,
-        financialYear: financialYear,
-        currentNumber: nextNum + 1,
-        maxLength: 16,
-        branchName: profileData.branchName || 'Default',
-        supplyType: profileData.supplyType || 'domestic',
-        isActive: true,
-        lastResetDate: seqDoc.exists && seqDoc.data().financialYear !== financialYear 
-          ? firebase.firestore.FieldValue.serverTimestamp() 
-          : (seqDoc.exists ? seqDoc.data().lastResetDate : null),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+      await seqRef.set({ seriesId: prefix, prefix: prefix, financialYear: financialYear, currentNumber: nextNum + 1, maxLength: 16, branchName: profileData.branchName || 'Default', supplyType: profileData.supplyType || 'domestic', isActive: true, lastResetDate: seqDoc.exists && seqDoc.data().financialYear !== financialYear ? firebase.firestore.FieldValue.serverTimestamp() : (seqDoc.exists ? seqDoc.data().lastResetDate : null), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
     }
     
-    // ✅ Show Preview after save
-    const docSnap = await window.InvoiceApp.clientDb.collection('invoices')
-      .where('invoiceNumber','==',invNum).get();
-    
+    const docSnap = await window.InvoiceApp.clientDb.collection('invoices').where('invoiceNumber','==',invNum).get();
     if (!docSnap.empty) {
       const docId = docSnap.docs[0].id;
       const pdfBlobUrl = await generateInvoicePDFBlob(docId, includeSignature);
-      
       document.getElementById('invoiceFormContainer').style.display = 'none';
       document.getElementById('invoicePreviewContainer').style.display = 'block';
       document.getElementById('pdfPreviewFrame').src = pdfBlobUrl;
-      
-      document.getElementById('btnDownloadPreview').onclick = () => {
-        const a = document.createElement('a');
-        a.href = pdfBlobUrl;
-        a.download = `${invNum}.pdf`;
-        a.click();
-      };
+      document.getElementById('btnDownloadPreview').onclick = () => { const a = document.createElement('a'); a.href = pdfBlobUrl; a.download = `${invNum}.pdf`; a.click(); };
     }
-    
-    // Refresh invoice list in background
     window.loadInvoices();
-    
-  } catch (err) {
-    console.error('Save error:', err);
-    alert('❌ Error saving invoice: ' + err.message);
-  }
+  } catch (err) { console.error('Save error:', err); alert('❌ Error saving invoice: ' + err.message); }
 };
 
 // ✅ Generate PDF Blob for Preview
@@ -540,38 +563,11 @@ window.downloadInvoicePDF = async function(id) {
   await renderInvoicePDF(inv, id, includeSig, 'save');
 };
 
-// ✅ Public View Function (Eye Icon)
-window.showInvoicePreview = async function(id) {
-  const docSnap = await window.InvoiceApp.clientDb.collection('invoices').doc(id).get();
-  if(!docSnap.exists) return;
-  
-  const inv = docSnap.data();
-  const includeSig = inv.signatureIncluded !== false;
-  
-  const modal = document.createElement('div');
-  modal.id = 'viewModal';
-  modal.className = 'modal';
-  
-  const blobUrl = await renderInvoicePDF(inv, id, includeSig, 'bloburl');
-  
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width:1000px; width:95%; padding:20px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-        <h2>${inv.invoiceNumber} Preview</h2>
-        <button class="btn-close" onclick="closeModal('viewModal')">&times;</button>
-      </div>
-      <iframe src="${blobUrl}" style="width:100%;height:75vh;border:none;"></iframe>
-      <div style="text-align:center;margin-top:15px;">
-        <button class="btn btn-teal" onclick="downloadInvoicePDF('${id}'); closeModal('viewModal');">📥 Download</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  modal.style.display = 'flex';
-};
-
 // ==========================================
-// CORE PDF RENDERER
+// CORE PDF RENDERER (Fixed for IGST)
+// ==========================================
+// ==========================================
+// CORE PDF RENDERER (Fixed Column Alignment)
 // ==========================================
 async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   const compSnap = await window.InvoiceApp.clientDb.collection('companyProfile').doc(window.InvoiceApp.companyId).get();
@@ -584,158 +580,92 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   const margin = 15;
   const contentWidth = pageWidth - (margin * 2);
   
-  // 1. HEADER: Logo + Title
+  // 1. HEADER
   let y = 15;
-  
   if (comp.logoUrl) {
     try {
       const logoData = comp.logoUrl.startsWith('') ? comp.logoUrl : `image/jpeg;base64,${comp.logoUrl}`;
-      doc.addImage(logoData, 'JPEG', margin, y, 50, 25); // Increased size
+      doc.addImage(logoData, 'JPEG', margin, y, 60, 30);
     } catch(e) { console.log('Logo error:', e); }
   }
-  
-  doc.setFontSize(22);
-  doc.setFont(undefined, 'bold');
-  doc.setTextColor(40, 80, 140);
-  doc.text('TAX INVOICE', pageWidth - margin, y + 8, { align: 'right' });
-  
-  y += 28;
+  doc.setFontSize(22); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 80, 140);
+  doc.text('TAX INVOICE', pageWidth - margin, y + 10, { align: 'right' });
+  y += 35;
   
   // 2. COMPANY DETAILS
-  doc.setTextColor(40, 80, 140);
-  doc.setFontSize(16); 
-  doc.setFont(undefined, 'bold');
+  doc.setTextColor(40, 80, 140); doc.setFontSize(16); doc.setFont(undefined, 'bold');
   doc.text(comp.companyName || 'Company Name', pageWidth - margin, y, { align: 'right' });
-  y += 7; 
+  y += 7;
+  doc.setTextColor(60, 60, 60); doc.setFontSize(8); doc.setFont(undefined, 'normal');
   
-  doc.setTextColor(60, 60, 60);
-  doc.setFontSize(8);
-  doc.setFont(undefined, 'normal');
-  
-  const fullAddress = comp.address ? comp.address.replace(/\n/g, ', ') : '';
-  const addressParts = fullAddress.split(', ').filter(p => p.trim());
-  const addrLine1 = addressParts[0] || '';
-  const addrLine2 = addressParts.slice(1, 3).join(', ') || '';
-  const addrLine3 = addressParts.slice(3).join(', ') || '';
-  
-  if (addrLine1) { doc.text(addrLine1, pageWidth - margin, y, { align: 'right' }); y += 4; }
-  if (addrLine2) { doc.text(addrLine2, pageWidth - margin, y, { align: 'right' }); y += 4; }
-  if (addrLine3) { doc.text(addrLine3, pageWidth - margin, y, { align: 'right' }); y += 4; }
-  else { y += 2; }
+  if (comp.address) {
+    const lines = comp.address.includes('\n') ? comp.address.split('\n') : doc.splitTextToSize(comp.address, 80);
+    lines.forEach(line => { if (line.trim()) { doc.text(line.trim(), pageWidth - margin, y, { align: 'right' }); y += 4; } });
+  }
   
   let contactLine = '';
   if (comp.phone) contactLine += 'Phone: ' + comp.phone;
   if (comp.email) contactLine += (contactLine ? ' | ' : '') + 'Email: ' + comp.email;
   if (contactLine) { doc.text(contactLine, pageWidth - margin, y, { align: 'right' }); y += 4; }
+  if (comp.gstn) { doc.setTextColor(40, 80, 140); doc.setFont(undefined, 'bold'); doc.text('GSTIN: ' + comp.gstn, pageWidth - margin, y, { align: 'right' }); y += 4; }
+  if (comp.pan) { doc.setTextColor(60, 60, 60); doc.setFont(undefined, 'normal'); doc.text('PAN: ' + comp.pan, pageWidth - margin, y, { align: 'right' }); y += 7; }
   
-  if (comp.gstn) {
-    doc.setTextColor(40, 80, 140); doc.setFont(undefined, 'bold');
-    doc.text('GSTIN: ' + comp.gstn, pageWidth - margin, y, { align: 'right' });
-    y += 4;
-  }
-  if (comp.pan) {
-    doc.setTextColor(60, 60, 60); doc.setFont(undefined, 'normal');
-    doc.text('PAN: ' + comp.pan, pageWidth - margin, y, { align: 'right' });
-    y += 7;
-  }
-  
-  doc.setDrawColor(40, 80, 140);
-  doc.setLineWidth(0.3);
-  doc.line(margin, y, pageWidth - margin, y);
+  doc.setDrawColor(40, 80, 140); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth - margin, y);
   y += 8;
   
-  // 3. INVOICE META
-  doc.setTextColor(60, 60, 60);
-  doc.setFontSize(9);
-  doc.setFont(undefined, 'bold');
-  
-  const invDate = inv.invoiceDate?.toDate ? inv.invoiceDate.toDate().toLocaleDateString('en-IN') : 
-                  inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString('en-IN') : '-';
-  
+  // 3. META - ✅ LEFT ALIGNED
+  doc.setTextColor(60, 60, 60); doc.setFontSize(9); doc.setFont(undefined, 'bold');
+  const invDate = inv.invoiceDate?.toDate ? inv.invoiceDate.toDate().toLocaleDateString('en-IN') : new Date(inv.invoiceDate).toLocaleDateString('en-IN');
   const leftColX = margin;
   const rightColX = pageWidth - margin - 60;
   
-  doc.text('Bill No:', leftColX, y);
-  doc.setFont(undefined, 'normal');
-  doc.text(inv.invoiceNumber || '-', leftColX + 18, y);
-  
-  doc.setFont(undefined, 'bold');
-  doc.text('PO No:', rightColX, y);
-  doc.setFont(undefined, 'normal');
-  doc.text(inv.poNumber || '-', rightColX + 18, y);
-  
-  y += 6; 
-  
-  doc.setFont(undefined, 'bold');
-  doc.text('Date:', leftColX, y);
-  doc.setFont(undefined, 'normal');
-  doc.text(invDate, leftColX + 15, y);
-  
-  doc.setFont(undefined, 'bold');
-  doc.text('PO Date:', rightColX, y);
-  doc.setFont(undefined, 'normal');
-  const poDate = inv.poDate?.toDate ? inv.poDate.toDate().toLocaleDateString('en-IN') : 
-                 inv.poDate ? new Date(inv.poDate).toLocaleDateString('en-IN') : '-';
+  doc.text('Bill No:', leftColX, y); doc.setFont(undefined, 'normal'); doc.text(inv.invoiceNumber || '-', leftColX + 18, y);
+  doc.setFont(undefined, 'bold'); doc.text('PO No:', rightColX, y); doc.setFont(undefined, 'normal'); doc.text(inv.poNumber || '-', rightColX + 18, y);
+  y += 6;
+  doc.setFont(undefined, 'bold'); doc.text('Date:', leftColX, y); doc.setFont(undefined, 'normal'); doc.text(invDate, leftColX + 15, y);
+  doc.setFont(undefined, 'bold'); doc.text('PO Date:', rightColX, y); doc.setFont(undefined, 'normal');
+  const poDate = inv.poDate?.toDate ? inv.poDate.toDate().toLocaleDateString('en-IN') : new Date(inv.poDate).toLocaleDateString('en-IN');
   doc.text(poDate, rightColX + 25, y);
-  
   y += 10;
   
   // 4. BILL TO
-  doc.setFillColor(40, 80, 140);
-  doc.rect(margin, y, 50, 6, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont(undefined, 'bold');
-  doc.setFontSize(9);
-  doc.text('BILL TO', margin + 2, y + 4);
-  
-  y += 9;
-  doc.setTextColor(0, 0, 0);
-  
-  doc.setFont(undefined, 'bold');
-  doc.setFontSize(10);
-  doc.text(inv.customerName || '-', margin, y);
-  doc.setFont(undefined, 'normal');
-  doc.setFontSize(8);
-  y += 5;
-  
+  doc.setFillColor(40, 80, 140); doc.rect(margin, y, 50, 6, 'F'); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.setFontSize(9);
+  doc.text('BILL TO', margin + 2, y + 4); y += 9;
+  doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'bold'); doc.setFontSize(10); doc.text(inv.customerName || '-', margin, y);
+  doc.setFont(undefined, 'normal'); doc.setFontSize(8); y += 5;
   if (inv.customerAddress) {
-    const cAddr = inv.customerAddress.replace(/\n/g, ', ');
-    const cParts = cAddr.split(', ').filter(p => p.trim());
-    const cLine1 = cParts[0] || '';
-    const cLine2 = cParts.slice(1, 3).join(', ') || '';
-    const cLine3 = cParts.slice(3).join(', ') || '';
-    
-    if (cLine1) { doc.text(cLine1, margin, y); y += 4; }
-    if (cLine2) { doc.text(cLine2, margin, y); y += 4; }
-    if (cLine3) { doc.text(cLine3, margin, y); y += 4; }
+    const cLines = inv.customerAddress.includes('\n') ? inv.customerAddress.split('\n') : doc.splitTextToSize(inv.customerAddress, 80);
+    cLines.forEach(line => { if (line.trim()) { doc.text(line.trim(), margin, y); y += 4; } });
   }
+  if (inv.customerGstn) { doc.setTextColor(40, 80, 140); doc.setFont(undefined, 'bold'); doc.text('GSTIN: ' + inv.customerGstn, margin, y); doc.setTextColor(0, 0, 0); y += 4; }
+  if (inv.customerPan) { doc.text('PAN: ' + inv.customerPan, margin, y); y += 4; }
   
-  if (inv.customerGstn) {
-    doc.setTextColor(40, 80, 140); doc.setFont(undefined, 'bold');
-    doc.text('GSTIN: ' + inv.customerGstn, margin, y);
-    doc.setTextColor(0, 0, 0);
-    y += 4;
-  }
-  if (inv.customerPan) {
-    doc.text('PAN: ' + inv.customerPan, margin, y);
-    y += 4;
-  }
-  
-  // 5. ITEMS TABLE
+  // 5. ITEMS TABLE - ✅ FIXED ALIGNMENTS
   y = Math.max(y + 8, 85);
   
+  // ✅ Adjusted column positions
+  const colSlNo = margin + 8;          // Sl.No. position
+  const colParticulars = margin + 25;  // Particulars (left aligned)
+  const colSAC = margin + 95;          // SAC (right aligned)
+  const colRate = margin + 120;        // Rate (right aligned)
+  const colQty = margin + 145;         // Qty (right aligned)
+  const colAmount = margin + 170;      // Amount (right aligned)
+  
+  // ✅ Standard header height (8mm)
   doc.setFillColor(40, 80, 140);
-  doc.rect(margin, y, contentWidth, 8, 'F');
+  doc.rect(margin, y, contentWidth, 10, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont(undefined, 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(10);
+ 
+  doc.text('Sl.No.', colSlNo, y + 3.5, { align: 'center' });
   
-  doc.text('Sl No.', margin + 5, y + 4.5);
-  doc.text('Particulars', margin + 20, y + 4.5);
-  doc.text('SAC', margin + 90, y + 4.5);
-  doc.text('Rate', margin + 115, y + 4.5, { align: 'right' });
-  doc.text('Qty', margin + 135, y + 4.5, { align: 'right' });
-  doc.text('Amount', margin + 175, y + 4.5, { align: 'right' });
+  // ✅ Other headers - Particulars left aligned, others right aligned
+  doc.text('Particulars', colParticulars, y + 3.5, { align: 'left' });
+  doc.text('SAC', colSAC, y + 3.5, { align: 'right' });
+  doc.text('Rate', colRate, y + 3.5, { align: 'right' });
+  doc.text('Qty', colQty, y + 3.5, { align: 'right' });
+  doc.text('Amount', colAmount, y + 3.5, { align: 'right' });
   
   y += 8;
   doc.setTextColor(0, 0, 0);
@@ -750,12 +680,12 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
       doc.rect(margin, y, contentWidth, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
-      doc.text('Sl No.', margin + 5, y + 4.5);
-      doc.text('Particulars', margin + 20, y + 4.5);
-      doc.text('SAC', margin + 90, y + 4.5);
-      doc.text('Rate', margin + 115, y + 4.5, { align: 'right' });
-      doc.text('Qty', margin + 135, y + 4.5, { align: 'right' });
-      doc.text('Amount', margin + 175, y + 4.5, { align: 'right' });
+      doc.text('Sl.No.', colSlNo, y + 4.5, { align: 'center' });
+      doc.text('Particulars', colParticulars, y + 4.5, { align: 'left' });
+      doc.text('SAC', colSAC, y + 4.5, { align: 'right' });
+      doc.text('Rate', colRate, y + 4.5, { align: 'right' });
+      doc.text('Qty', colQty, y + 4.5, { align: 'right' });
+      doc.text('Amount', colAmount, y + 4.5, { align: 'right' });
       y += 8;
       doc.setTextColor(0, 0, 0);
       doc.setFont(undefined, 'normal');
@@ -766,120 +696,144 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
       doc.rect(margin, y - 3, contentWidth, 6, 'F');
     }
     
-    doc.text(String(i+1), margin + 5, y);
+    doc.setFont(undefined, 'bold');
+    doc.text(String(i+1), colSlNo, y, { align: 'center' });
+    doc.setFont(undefined, 'normal');
     
     const itemName = item.itemName || '-';
-    if (itemName.length > 40) {
-      let breakIndex = itemName.lastIndexOf(' ', 40);
-      if (breakIndex === -1) breakIndex = 40;
-      
-      const part1 = itemName.substring(0, breakIndex);
-      const part2 = itemName.substring(breakIndex + 1);
-      
-      doc.text(part1, margin + 20, y);
-      if (part2) {
-        doc.text(part2, margin + 25, y + 3.5);
+    if (itemName.length > 35) { 
+      let b = itemName.lastIndexOf(' ', 35); 
+      if (b === -1) b = 35; 
+      doc.text(itemName.substring(0, b), colParticulars, y, { align: 'left' }); 
+      if (itemName.substring(b+1)) { 
+        doc.text(itemName.substring(b+1), colParticulars, y + 3.5, { align: 'left' }); 
         y += 3.5; 
-      }
-    } else {
-      doc.text(itemName, margin + 20, y);
+      } 
+    } else { 
+      doc.text(itemName, colParticulars, y, { align: 'left' }); 
     }
-    
-    doc.text(item.sacCode || '-', margin + 90, y);
-    doc.text((item.rate || 0).toFixed(2), margin + 115, y, { align: 'right' });
-    doc.text(String(item.quantity || 1), margin + 135, y, { align: 'right' });
-    doc.text((item.amount || 0).toFixed(2), margin + 175, y, { align: 'right' });
-    
+    doc.text(item.sacCode || '-', colSAC, y, { align: 'right' });
+    doc.text((item.rate || 0).toFixed(2), colRate, y, { align: 'right' });
+    doc.text(String(item.quantity || 1), colQty, y, { align: 'right' });
+    doc.text((item.amount || 0).toFixed(2), colAmount, y, { align: 'right' });
     y += 6;
   });
   
-  // 6. TOTALS
-  y += 4;
-  doc.setFont(undefined, 'bold');
+  // 6. TOTALS - ✅ ALIGNED WITH AMOUNT COLUMN
+  y += 4; 
+  doc.setFont(undefined, 'bold'); 
   doc.setFontSize(9);
   
-  doc.text('Subtotal:', margin + 135, y, { align: 'right' });
-  doc.text('Rs. ' + (inv.subtotal || 0).toFixed(2), margin + 175, y, { align: 'right' });
+  // ✅ Align labels and amounts properly
+  doc.text('Subtotal:', colAmount - 40, y, { align: 'right' }); 
+  doc.text('Rs. ' + (inv.subtotal || 0).toFixed(2), colAmount, y, { align: 'right' }); 
   y += 5;
   
   doc.setFont(undefined, 'normal');
-  doc.text('CGST @ 9%:', margin + 135, y, { align: 'right' });
-  doc.text('Rs. ' + (inv.totalCgst || 0).toFixed(2), margin + 175, y, { align: 'right' });
-  y += 5;
   
-  doc.text('SGST @ 9%:', margin + 135, y, { align: 'right' });
-  doc.text('Rs. ' + (inv.totalSgst || 0).toFixed(2), margin + 175, y, { align: 'right' });
-  y += 5;
-  
-  if (inv.roundOff) {
-    doc.text('Round Off:', margin + 135, y, { align: 'right' });
-    doc.text('Rs. ' + (inv.roundOff || 0).toFixed(2), margin + 175, y, { align: 'right' });
+  if (inv.isNonGst) {
+    doc.text('Tax:', colAmount - 40, y, { align: 'right' }); 
+    doc.text('Rs. 0.00', colAmount, y, { align: 'right' }); 
+    y += 5;
+  } else if (inv.isIgst) {
+    doc.text('IGST:', colAmount - 40, y, { align: 'right' }); 
+    const igstAmount = inv.totalIgst || inv.items.reduce((sum, item) => sum + (item.igstAmount || 0), 0);
+    doc.text('Rs. ' + igstAmount.toFixed(2), colAmount, y, { align: 'right' }); 
+    y += 5;
+  } else {
+    doc.text('CGST @ 9%:', colAmount - 40, y, { align: 'right' }); 
+    doc.text('Rs. ' + (inv.totalCgst || 0).toFixed(2), colAmount, y, { align: 'right' }); 
+    y += 5;
+    doc.text('SGST @ 9%:', colAmount - 40, y, { align: 'right' }); 
+    doc.text('Rs. ' + (inv.totalSgst || 0).toFixed(2), colAmount, y, { align: 'right' }); 
     y += 5;
   }
   
-  doc.setFillColor(40, 80, 140);
-  doc.rect(margin + 135, y - 3, 60, 7, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont(undefined, 'bold');
-  doc.text('TOTAL', margin + 145, y + 1);
-  doc.text('Rs. ' + (inv.grandTotal || 0).toFixed(2), margin + 175, y + 1, { align: 'right' });
-  
-  // 7. AMOUNT IN WORDS
-  y += 12;
-  doc.setTextColor(60, 60, 60);
-  doc.setFont(undefined, 'italic');
-  doc.setFontSize(9);
-  doc.text('Amount in words: ( ' + numberToWords(inv.grandTotal) + ' only )', margin, y);
-  
-  // 8. BANK & SIGNATURE
-  y += 10;
-  
-  doc.setDrawColor(150, 150, 150);
-  doc.setLineWidth(0.2);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 6;
-  
-  doc.setFont(undefined, 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(60, 60, 60);
-  
-  if (comp.bankDetails) {
-    doc.text('Bank: ' + (comp.bankDetails.bankName || ''), margin, y); y += 4;
-    doc.text('A/C: ' + (comp.bankDetails.accountNumber || ''), margin, y); y += 4;
-    doc.text('IFSC: ' + (comp.bankDetails.ifscCode || ''), margin, y);
+  if (inv.roundOff) { 
+    doc.text('Round Off:', colAmount - 40, y, { align: 'right' }); 
+    doc.text('Rs. ' + (inv.roundOff || 0).toFixed(2), colAmount, y, { align: 'right' }); 
+    y += 5; 
   }
   
-  // SIGNATURE LOGIC
-  let sigY = y - 8;
+  // ✅ TOTAL box - extended to align with SAC column
+  doc.setFillColor(40, 80, 140); 
+  doc.rect(colSAC - 10, y - 3, colAmount - (colSAC - 5) + 14, 6, 'F'); // Extended box
+  doc.setTextColor(255, 255, 255); 
+  doc.setFont(undefined, 'bold'); 
+  doc.text('TOTAL', colSAC, y + 1, { align: 'left' }); 
+  doc.text('Rs. ' + (inv.grandTotal || 0).toFixed(2), colAmount, y + 1, { align: 'right' });
+  
+  // 7. AMOUNT IN WORDS
+  y += 12; 
+  doc.setTextColor(60, 60, 60); 
+  doc.setFont(undefined, 'bold'); 
+  doc.setFontSize(9);
+  doc.text('Amount in words: ' + numberToWords(inv.grandTotal) + ' only', margin, y);
+  
+  // 8. BANK & ACCOUNT NAME
+  y += 10; 
+  doc.setDrawColor(150, 150, 150); 
+  doc.setLineWidth(0.2); 
+  doc.line(margin, y, pageWidth - margin, y); 
+  y += 6;
+  doc.setFont(undefined, 'normal'); 
+  doc.setFontSize(8); 
+  doc.setTextColor(60, 60, 60);
+  
+  if (comp.accountName) { 
+    doc.text('Account Name: ' + comp.accountName, margin, y); 
+    y += 4; 
+  }
+  if (comp.bankDetails) { 
+    const bankName = (comp.bankDetails.bankName || '').toUpperCase();
+    doc.text('Bank: ' + bankName, margin, y); 
+    y += 4; 
+    doc.text('A/C: ' + (comp.bankDetails.accountNumber || ''), margin, y); 
+    y += 4; 
+    doc.text('IFSC: ' + (comp.bankDetails.ifscCode || ''), margin, y); 
+  }
+  
+  // NOTE / REMARKS
+  const noteY = y + 16;
+  if (inv.remarks) {
+    doc.setFont(undefined, 'italic'); 
+    doc.setFontSize(8);
+    const noteText = 'Note: ' + inv.remarks;
+    const lines = doc.splitTextToSize(noteText, 90);
+    lines.slice(0, 3).forEach((line, idx) => { 
+      doc.text(line, margin, noteY + (idx * 4)); 
+    });
+  }
+  
+  // SIGNATURE
+  const sigStartY = y - 8;
   const sigX = pageWidth - margin;
-  
-  doc.setFont(undefined, 'normal');
-  doc.text('For ' + (comp.companyName || 'Company'), sigX, sigY, { align: 'right' });
-  
+  doc.setFont(undefined, 'normal'); 
+  doc.setFontSize(8);
+  doc.text('For ' + (comp.companyName || 'Company'), sigX, sigStartY, { align: 'right' });
   if (includeSignature && comp.signatureUrl) {
     try {
       const sigData = comp.signatureUrl.startsWith('') ? comp.signatureUrl : `image/png;base64,${comp.signatureUrl}`;
-      doc.addImage(sigData, 'PNG', sigX - 50, sigY + 2, 50, 20);
-      sigY += 22;
+      doc.addImage(sigData, 'PNG', sigX - 50, sigStartY + 2, 50, 20);
+      doc.text('Authorised Signatory', sigX, sigStartY + 24, { align: 'right' });
     } catch(e) { 
       console.log('Signature error:', e); 
-      sigY += 15; 
+      doc.text('Authorised Signatory', sigX, sigStartY + 15, { align: 'right' }); 
     }
   } else {
-    sigY += 15;
+    doc.text('Authorised Signatory', sigX, sigStartY + 15, { align: 'right' });
   }
   
-  doc.text('Authorised Signatory', sigX, sigY, { align: 'right' });
-  
-  doc.setFontSize(7);
+  doc.setFontSize(7); 
   doc.setTextColor(120, 120, 120);
   doc.text('Thank you for your business!', pageWidth / 2, 290, { align: 'center' });
   
-  if (outputMode === 'save') {
-    doc.save(inv.invoiceNumber + '.pdf');
-    return null;
-  } else {
-    return doc.output('bloburl');
+  if (outputMode === 'save') { 
+    const fileName = (inv.invoiceNumber || 'invoice') + '.pdf';
+    doc.save(fileName);
+    return null; 
+  } else { 
+    return doc.output('bloburl'); 
   }
 }
 
@@ -930,3 +884,38 @@ document.addEventListener('keydown', function(e) {
     modals.forEach(m => m.remove());
   }
 });
+
+// ✅ Public View Function (Eye Icon)
+window.showInvoicePreview = async function(id) {
+  const docSnap = await window.InvoiceApp.clientDb.collection('invoices').doc(id).get();
+  if(!docSnap.exists) return;
+  
+  const inv = docSnap.data();
+  const includeSig = inv.signatureIncluded !== false;
+  
+  const modal = document.createElement('div');
+  modal.id = 'viewModal';
+  modal.className = 'modal';
+  
+  try {
+    const blobUrl = await renderInvoicePDF(inv, id, includeSig, 'bloburl');
+    
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width:1000px; width:95%; padding:20px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <h2>${inv.invoiceNumber} Preview</h2>
+          <button class="btn-close" onclick="closeModal('viewModal')">&times;</button>
+        </div>
+        <iframe src="${blobUrl}" style="width:100%;height:75vh;border:none;"></iframe>
+        <div style="text-align:center;margin-top:15px;">
+          <button class="btn btn-teal" onclick="downloadInvoicePDF('${id}'); closeModal('viewModal');">📥 Download</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+  } catch (e) {
+    console.error('Preview error:', e);
+    alert('Error generating preview: ' + e.message);
+  }
+};

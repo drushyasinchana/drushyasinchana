@@ -50,95 +50,94 @@ function blobToBase64(blob) {
   });
 }
 
-/* ══════════════════════════════════════════════════════
-LOAD COMPANY PROFILE
-Fixes: Address width (shortened), 3 lines, City/State/PIN side-by-side
-══════════════════════════════════════════════════════ */
 window.loadCompanyProfile = async function() {
-
-
-window.loadCompanyProfile = async function() {
-  // ... (your existing loading code) ...
-  
-  const data = doc.exists ? doc.data() : {};
-  
-  // ✅ CHECK PLAN BEFORE SHOWING "ADD COMPANY" BUTTON
-  // We assume Plan is stored in Master DB or Company Profile
-  // For now, let's fetch it from session storage or master DB
-  // Simplified: Assume 'invoiceProCompanies' list tells us what plan we are on.
-  // Ideally, check Master DB. For now, we'll add a placeholder button.
-
-  c.innerHTML = `
-    <div class="card">
-      <h3>⚙️ Company Profile & Settings</h3>
-      
-      <!-- ✅ NEW: Add Company Button (Pro Only) -->
-      <div id="addCompanySection" style="display:none; margin-bottom:24px; background:#E3F2FD; padding:16px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <strong style="color:#1565C0;">Pro Plan Feature</strong>
-          <div style="font-size:0.85rem; color:#555;">Manage multiple company profiles under one account.</div>
-        </div>
-        <button class="btn btn-teal" onclick="showAddCompanyModal()">+ Add New Company</button>
-      </div>
-
-      <!-- ... (rest of your profile form code) ... -->
-  `;
-  
-  // Logic to show/hide based on plan (You'll need to pass plan data here)
-  // For demo, I've set display:flex in HTML above, you can toggle it via JS
-};
-
-// ✅ Modal to Add New Company
-window.showAddCompanyModal = async function() {
-  // This function would open a modal to create a NEW company entry in Master DB
-  // and generate a new Client DB config.
-  alert('This will create a new Client Database project. Contact Super Admin to enable.');
-};
   console.log('🏢 Loading company profile...');
   const c = document.getElementById('companyContainer');
   c.innerHTML = '<div style="text-align:center;padding:40px;">Loading profile...</div>';
   
   try {
-    const doc = await window.InvoiceApp.clientDb.collection('companyProfile')
-      .doc(window.InvoiceApp.companyId).get();
-    const data = doc.exists ? doc.data() : {};
+    // ✅ Check user's plan from Master DB
+    const userDoc = await window.db.collection('users').doc(window.InvoiceApp.adminEmail).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const userPlan = userData.plan || 'basic'; // basic, standard, premium
+    
+    // ✅ Load all company profiles (company1, company2, company3)
+    const companies = {};
+    const companyDocs = await window.InvoiceApp.clientDb.collection('companyProfile').get();
+    
+    companyDocs.forEach(doc => {
+      const id = doc.id;
+      if (id === window.InvoiceApp.companyId || id.startsWith('company')) {
+        companies[id] = doc.data();
+      }
+    });
+    
+    // Determine which tabs to show based on plan
+    const maxCompanies = userPlan === 'premium' ? 3 : (userPlan === 'standard' ? 2 : 1);
+    const availableSlots = [];
+    for (let i = 1; i <= maxCompanies; i++) {
+      const companyId = i === 1 ? window.InvoiceApp.companyId : `company${i}`;
+      availableSlots.push({
+        id: companyId,
+        name: companies[companyId]?.companyName || `Company ${i}`,
+        exists: !!companies[companyId]
+      });
+    }
+    
+    // Get active company (default to first available)
+    const activeCompanyId = companies[window.InvoiceApp.companyId] ? window.InvoiceApp.companyId : availableSlots[0]?.id;
+    const activeData = companies[activeCompanyId] || {};
     
     // ✅ FIXED: Ensure 'data:' prefix for image display
-    const logoSrc = (data.logoUrl && data.logoUrl.length > 0) 
-        ? (data.logoUrl.startsWith('data:') ? data.logoUrl : `data:image/jpeg;base64,${data.logoUrl}`) 
+    const logoSrc = (activeData.logoUrl && activeData.logoUrl.length > 0) 
+        ? (activeData.logoUrl.startsWith('data:') ? activeData.logoUrl : `data:image/jpeg;base64,${activeData.logoUrl}`) 
         : '';
-    const sigSrc = (data.signatureUrl && data.signatureUrl.length > 0) 
-        ? (data.signatureUrl.startsWith('data:') ? data.signatureUrl : `data:image/png;base64,${data.signatureUrl}`) 
+    const sigSrc = (activeData.signatureUrl && activeData.signatureUrl.length > 0) 
+        ? (activeData.signatureUrl.startsWith('data:') ? activeData.signatureUrl : `data:image/png;base64,${activeData.signatureUrl}`) 
         : '';
     
-    const currentFY = data.financialYear || getCurrentFinancialYear();
-    const startNum = data.invoiceStartNumber || 1;
+    const currentFY = activeData.financialYear || getCurrentFinancialYear();
+    const startNum = activeData.invoiceStartNumber || 1;
+    const accountName = activeData.accountName || activeData.companyName || '';
     
-    // Generate FY dropdown options
     const now = new Date();
     const currentYear = now.getFullYear();
     const month = now.getMonth() + 1;
     
-    const fyCurrent = month >= 4 
-      ? `${currentYear}-${(currentYear+1).toString().slice(-2)}`
-      : `${currentYear-1}-${currentYear.toString().slice(-2)}`;
+    const fyCurrent = month >= 4 ? `${currentYear}-${(currentYear+1).toString().slice(-2)}` : `${currentYear-1}-${currentYear.toString().slice(-2)}`;
+    const fyPrevious = month >= 4 ? `${currentYear-1}-${currentYear.toString().slice(-2)}` : `${currentYear-2}-${(currentYear-1).toString().slice(-2)}`;
+    const fyNext = month >= 4 ? `${currentYear+1}-${(currentYear+2).toString().slice(-2)}` : `${currentYear}-${(currentYear+1).toString().slice(-2)}`;
     
-    const fyPrevious = month >= 4 
-      ? `${currentYear-1}-${currentYear.toString().slice(-2)}`
-      : `${currentYear-2}-${(currentYear-1).toString().slice(-2)}`;
+    // Build tabs HTML
+    let tabsHTML = '<div style="margin-bottom:20px;">';
+    tabsHTML += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">';
     
-    const fyNext = month >= 4 
-      ? `${currentYear+1}-${(currentYear+2).toString().slice(-2)}`
-      : `${currentYear}-${(currentYear+1).toString().slice(-2)}`;
+    availableSlots.forEach((slot, idx) => {
+      const isActive = slot.id === activeCompanyId;
+      const isLocked = !slot.exists && idx >= maxCompanies;
+      const tabClass = isActive ? 'active' : '';
+      const lockIcon = isLocked ? '🔒' : (slot.exists ? '✓' : '+');
+      
+      tabsHTML += `
+        <button type="button" onclick="switchCompanyTab('${slot.id}')" 
+          style="padding:10px 20px;border:2px solid ${isActive ? 'var(--teal)' : 'var(--border)'};
+          background:${isActive ? 'var(--teal)' : '#fff'};color:${isActive ? '#fff' : 'var(--ink)'};
+          border-radius:8px;cursor:${isLocked ? 'not-allowed' : 'pointer'};
+          font-weight:600;font-size:0.9rem;opacity:${isLocked ? 0.5 : 1};"
+          ${isLocked ? 'disabled' : ''}>
+          ${lockIcon} ${slot.name}
+        </button>
+      `;
+    });
+    
+    tabsHTML += '</div></div>';
     
     c.innerHTML = `
       <div class="card" style="max-height:calc(100vh - 100px); overflow-y:auto; padding:16px;">
-        <h3 style="margin-bottom:16px;">⚙️ Company Profile & Settings</h3>
+        ${tabsHTML}
         
-        <!-- Logo & Signature Side-by-Side -->
+        <!-- Logo & Signature -->
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; background:var(--bg); padding:16px; border-radius:8px; margin-bottom:16px;">
-          
-          <!-- Logo Box -->
           <div style="display:flex; align-items:center; gap:16px;">
             <div id="logoPreview" style="width:70px;height:70px;border:2px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0;">
               ${logoSrc ? `<img src="${logoSrc}" style="width:100%;height:100%;object-fit:contain;">` : '<span style="color:var(--muted);font-size:.7rem;">No Logo</span>'}
@@ -146,12 +145,10 @@ window.showAddCompanyModal = async function() {
             <div style="flex:1; min-width:0;">
               <input type="file" id="logoUpload" accept="image/*" style="display:none;">
               <button type="button" class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px;" onclick="document.getElementById('logoUpload').click()">📁 Choose Logo</button>
-              <button type="button" id="btnSaveLogo" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveLogo()">Save</button>
-              ${data.logoUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeLogo()">Remove</button>` : ''}
+              <button type="button" id="btnSaveLogo" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveLogo('${activeCompanyId}')">Save</button>
+              ${activeData.logoUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeLogo('${activeCompanyId}')">Remove</button>` : ''}
             </div>
           </div>
-          
-          <!-- Signature Box -->
           <div style="display:flex; align-items:center; gap:16px;">
             <div id="signaturePreview" style="width:120px;height:60px;border:2px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0;">
               ${sigSrc ? `<img src="${sigSrc}" style="width:100%;height:100%;object-fit:contain;">` : '<span style="color:var(--muted);font-size:.7rem;">No Signature</span>'}
@@ -159,113 +156,67 @@ window.showAddCompanyModal = async function() {
             <div style="flex:1; min-width:0;">
               <input type="file" id="signatureUpload" accept="image/*" style="display:none;">
               <button type="button" class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px;" onclick="document.getElementById('signatureUpload').click()">✍️ Choose Signature</button>
-              <button type="button" id="btnSaveSignature" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveSignature()">Save</button>
-              ${data.signatureUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeSignature()">Remove</button>` : ''}
+              <button type="button" id="btnSaveSignature" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveSignature('${activeCompanyId}')">Save</button>
+              ${activeData.signatureUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeSignature('${activeCompanyId}')">Remove</button>` : ''}
             </div>
           </div>
         </div>
         
-        <form onsubmit="saveCompanyProfile(event)">
+        <form onsubmit="saveCompanyProfile(event, '${activeCompanyId}')">
           <!-- Row 1: Company Name, GSTN, PAN, Prefix -->
-          <div class="form-grid" style="grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:12px;">
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Company Name *</label>
-              <input id="cpName" required value="${data.companyName||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">GSTN</label>
-              <input id="cpGstn" value="${data.gstn||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">PAN</label>
-              <input id="cpPan" value="${data.pan||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Invoice Prefix</label>
-              <input id="cpPrefix" value="${data.invoicePrefix||'KAR'}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
+          <div class="form-grid" style="grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Company Name *</label><input id="cpName" required value="${activeData.companyName||''}" style="padding:8px;font-size:0.9rem;"/></div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">GSTN</label><input id="cpGstn" value="${activeData.gstn||''}" style="padding:8px;font-size:0.9rem;"/></div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">PAN</label><input id="cpPan" value="${activeData.pan||''}" style="padding:8px;font-size:0.9rem;"/></div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Invoice Prefix</label><input id="cpPrefix" value="${activeData.invoicePrefix||'KAR'}" style="padding:8px;font-size:0.9rem;"/></div>
           </div>
           
-          <!-- Row 2: FY Dropdown & Start Number -->
-          <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:12px; background:var(--teal-s);padding:12px;border-radius:8px; margin-bottom:16px;">
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Financial Year</label>
-              <select id="cpFinancialYear" style="padding:8px;font-size:0.9rem;width:100%;border:1.5px solid var(--border);border-radius:6px;">
-                <option value="${fyPrevious}" ${currentFY === fyPrevious ? 'selected' : ''}>${fyPrevious}</option>
-                <option value="${fyCurrent}" ${currentFY === fyCurrent ? 'selected' : ''}>${fyCurrent} (Current)</option>
-                <option value="${fyNext}" ${currentFY === fyNext ? 'selected' : ''}>${fyNext}</option>
-              </select>
-            </div>
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Start Number</label>
-              <input type="number" id="cpStartNumber" min="1" value="${startNum}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
+          <!-- Row 2: Financial Settings -->
+          <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:12px; background:var(--teal-s);padding:12px;border-radius:8px; margin-bottom:12px;">
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Financial Year</label><select id="cpFinancialYear" style="padding:8px;font-size:0.9rem;width:100%;border:1.5px solid var(--border);border-radius:6px;"><option value="${fyPrevious}" ${currentFY===fyPrevious?'selected':''}>${fyPrevious}</option><option value="${fyCurrent}" ${currentFY===fyCurrent?'selected':''}>${fyCurrent} (Current)</option><option value="${fyNext}" ${currentFY===fyNext?'selected':''}>${fyNext}</option></select></div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Start Number</label><input type="number" id="cpStartNumber" min="1" value="${startNum}" style="padding:8px;font-size:0.9rem;"/></div>
           </div>
           
-          <!-- Row 3: Email & Phone -->
+          <!-- Row 3: Email & Phone (Fixed width) -->
           <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Email</label>
-              <input id="cpEmail" type="email" value="${data.email||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Phone</label>
-              <input id="cpPhone" value="${data.phone||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Email</label><input id="cpEmail" type="email" value="${activeData.email||''}" style="padding:8px;font-size:0.9rem;"/></div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Phone</label><input id="cpPhone" value="${activeData.phone||''}" style="padding:8px;font-size:0.9rem;"/></div>
           </div>
           
-          <!-- ✅ Row 4: Address (Left, Shortened) + City/State/PIN (Right) -->
-          <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:16px; margin-bottom:16px;">
-            <!-- Address Block (Shorter Width, 3 Lines) -->
+          <!-- Row 4: Address & City/State/PIN -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:12px;">
             <div class="fg" style="margin-bottom:0;">
               <label style="font-size:0.8rem;">Address (3 Lines)</label>
-              <textarea id="cpAddress" rows="3" style="resize:vertical; padding:8px;font-size:0.9rem;">${data.address||''}</textarea>
+              <textarea id="cpAddress" rows="3" style="resize:vertical; padding:8px;font-size:0.9rem;width:100%;">${activeData.address||''}</textarea>
             </div>
-            
-            <!-- City, State, PIN Stacked -->
-            <div style="display:flex; flex-direction:column; gap:12px;">
-              <div class="fg" style="margin-bottom:0;">
-                <label style="font-size:0.8rem;">City</label>
-                <input id="cpCity" value="${data.city||''}" style="padding:8px;font-size:0.9rem;"/>
-              </div>
-              <div class="fg" style="margin-bottom:0;">
-                <label style="font-size:0.8rem;">State</label>
-                <input id="cpState" value="${data.state||''}" style="padding:8px;font-size:0.9rem;"/>
-              </div>
-              <div class="fg" style="margin-bottom:0;">
-                <label style="font-size:0.8rem;">PIN Code</label>
-                <input id="cpPin" value="${data.pincode||''}" style="padding:8px;font-size:0.9rem;"/>
-              </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+              <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">City</label><input id="cpCity" value="${activeData.city||''}" style="padding:8px;font-size:0.9rem;"/></div>
+              <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">State</label><input id="cpState" value="${activeData.state||''}" style="padding:8px;font-size:0.9rem;"/></div>
+              <div class="fg" style="margin-bottom:0; grid-column: span 2;"><label style="font-size:0.8rem;">PIN Code</label><input id="cpPin" value="${activeData.pincode||''}" style="padding:8px;font-size:0.9rem;"/></div>
             </div>
           </div>
           
-          <!-- Row 5: Bank Details -->
+          <!-- Row 5: Account Name -->
+          <div class="fg" style="margin-bottom:12px;">
+            <label style="font-size:0.8rem;">Account Name</label>
+            <input id="cpAccountName" value="${accountName}" style="padding:8px;font-size:0.9rem;width:100%;"/>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Auto-filled with Company Name. Change if different.</div>
+          </div>
+          
+          <!-- Row 6: Bank Details -->
           <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px;">
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Bank Name</label>
-              <input id="cpBank" value="${data.bankDetails?.bankName||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">Account Number</label>
-              <input id="cpAcc" value="${data.bankDetails?.accountNumber||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
-            <div class="fg" style="margin-bottom:0;">
-              <label style="font-size:0.8rem;">IFSC Code</label>
-              <input id="cpIfsc" value="${data.bankDetails?.ifscCode||''}" style="padding:8px;font-size:0.9rem;"/>
-            </div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Bank Name</label><input id="cpBank" value="${activeData.bankDetails?.bankName||''}" style="padding:8px;font-size:0.9rem;"/></div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Account Number</label><input id="cpAcc" value="${activeData.bankDetails?.accountNumber||''}" style="padding:8px;font-size:0.9rem;"/></div>
+            <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">IFSC Code</label><input id="cpIfsc" value="${activeData.bankDetails?.ifscCode||''}" style="padding:8px;font-size:0.9rem;"/></div>
           </div>
           
-          <!-- Save Button -->
-          <div style="display:flex;justify-content:flex-end;">
-            <button type="submit" class="btn btn-teal" style="padding:10px 24px;font-size:0.95rem;">💾 Save Profile</button>
-          </div>
+          <div style="display:flex;justify-content:flex-end;"><button type="submit" class="btn btn-teal" style="padding:10px 24px;font-size:0.95rem;">💾 Save Profile</button></div>
         </form>
       </div>`;
     
-    // Attach event listeners AFTER DOM is rendered
     setTimeout(() => {
-      document.getElementById('logoUpload')?.addEventListener('change', (e) => previewLogo(e.target));
-      document.getElementById('signatureUpload')?.addEventListener('change', (e) => previewSignature(e.target));
+      document.getElementById('logoUpload')?.addEventListener('change', (e) => previewLogo(e.target, activeCompanyId));
+      document.getElementById('signatureUpload')?.addEventListener('change', (e) => previewSignature(e.target, activeCompanyId));
     }, 100);
     
   } catch(e) {
@@ -274,7 +225,186 @@ window.showAddCompanyModal = async function() {
   }
 };
 
-// ✅ Helper: Get current financial year (April-March)
+// ✅ Switch between company tabs
+window.switchCompanyTab = async function(companyId) {
+  sessionStorage.setItem('activeCompanyId', companyId);
+  await loadCompanyProfile();
+};
+
+// ✅ Show Add Company Modal (Premium only)
+window.showAddCompanyModal = async function() {
+  const companyName = prompt('Enter new company name:');
+  if (!companyName) return;
+  
+  try {
+    const companyDocs = await window.InvoiceApp.clientDb.collection('companyProfile').get();
+    let nextNum = 1;
+    companyDocs.forEach(doc => {
+      if (doc.id.startsWith('company')) {
+        const num = parseInt(doc.id.replace('company', ''));
+        if (num >= nextNum) nextNum = num + 1;
+      }
+    });
+    
+    const newCompanyId = `company${nextNum}`;
+    
+    await window.InvoiceApp.clientDb.collection('companyProfile').doc(newCompanyId).set({
+      companyId: newCompanyId,
+      companyName: companyName,
+      gstn: '',
+      pan: '',
+      invoicePrefix: companyName.slice(0, 3).toUpperCase(),
+      financialYear: getCurrentFinancialYear(),
+      invoiceStartNumber: 1,
+      accountName: companyName,
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      pincode: '',
+      bankDetails: { bankName: '', accountNumber: '', ifscCode: '' },
+      logoUrl: '',
+      signatureUrl: '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    alert(`✅ ${companyName} created successfully!`);
+    await loadCompanyProfile();
+  } catch (e) {
+    console.error('Add company error:', e);
+    alert('❌ Error creating company: ' + e.message);
+  }
+};
+
+// ✅ Updated saveCompanyProfile
+window.saveCompanyProfile = async function(e, companyId) {
+  e.preventDefault();
+  const financialYear = document.getElementById('cpFinancialYear').value.trim();
+  const startNumber = parseInt(document.getElementById('cpStartNumber').value) || 1;
+  
+  if (financialYear && !/^\d{4}-\d{2}$/.test(financialYear)) { alert('Financial Year must be YYYY-YY'); return; }
+  
+  await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId).set({
+    companyId: companyId,
+    companyName: document.getElementById('cpName').value,
+    gstn: document.getElementById('cpGstn').value,
+    pan: document.getElementById('cpPan').value,
+    invoicePrefix: document.getElementById('cpPrefix').value,
+    financialYear: financialYear || getCurrentFinancialYear(),
+    invoiceStartNumber: startNumber,
+    accountName: document.getElementById('cpAccountName').value,
+    email: document.getElementById('cpEmail').value,
+    phone: document.getElementById('cpPhone').value,
+    address: document.getElementById('cpAddress').value,
+    city: document.getElementById('cpCity').value,
+    state: document.getElementById('cpState').value,
+    pincode: document.getElementById('cpPin').value,
+    bankDetails: { 
+      bankName: document.getElementById('cpBank').value, 
+      accountNumber: document.getElementById('cpAcc').value, 
+      ifscCode: document.getElementById('cpIfsc').value 
+    },
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, {merge:true});
+  
+  const prefix = document.getElementById('cpPrefix').value || 'KAR';
+  await window.InvoiceApp.clientDb.collection('sequences').doc(prefix).set({
+    seriesId: prefix, prefix: prefix, financialYear: financialYear || getCurrentFinancialYear(),
+    currentNumber: startNumber, maxLength: 16, branchName: "Default", supplyType: "domestic",
+    isActive: true, lastResetDate: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+  
+  alert('✅ Company profile saved!');
+};
+
+// Logo and Signature functions
+window.previewLogo = async function(input, companyId) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const preview = document.getElementById('logoPreview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;">`;
+    document.getElementById('btnSaveLogo').style.display = 'inline-flex';
+    window.tempLogoFile = file;
+    window.tempLogoCompanyId = companyId;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.saveLogo = async function(companyId) {
+  if (!window.tempLogoFile) return;
+  
+  try {
+    const compressedBlob = await compressImage(window.tempLogoFile, 300, 0.8, 'image/jpeg');
+    const base64String = await blobToBase64(compressedBlob);
+    const cleanBase64 = base64String.replace(/^image\/jpeg;base64,/, '');
+    
+    await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
+      .set({ logoUrl: cleanBase64, logoType: 'image/jpeg', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    
+    alert('✅ Logo saved!');
+    document.getElementById('btnSaveLogo').style.display = 'none';
+    await loadCompanyProfile();
+  } catch (e) {
+    console.error('Logo save error:', e);
+    alert('❌ Error saving logo: ' + e.message);
+  }
+};
+
+window.removeLogo = async function(companyId) {
+  if (!confirm('Remove logo?')) return;
+  await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
+    .set({ logoUrl: '', logoType: '' }, { merge: true });
+  await loadCompanyProfile();
+};
+
+window.previewSignature = async function(input, companyId) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const preview = document.getElementById('signaturePreview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;">`;
+    document.getElementById('btnSaveSignature').style.display = 'inline-flex';
+    window.tempSignatureFile = file;
+    window.tempSignatureCompanyId = companyId;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.saveSignature = async function(companyId) {
+  if (!window.tempSignatureFile) return;
+  
+  try {
+    const compressedBlob = await compressImage(window.tempSignatureFile, 400, 0.85, 'image/png');
+    const base64String = await blobToBase64(compressedBlob);
+    const cleanBase64 = base64String.replace(/^data:image\/png;base64,/, '');
+    
+    await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
+      .set({ signatureUrl: cleanBase64, signatureType: 'image/png', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    
+    alert('✅ Signature saved!');
+    document.getElementById('btnSaveSignature').style.display = 'none';
+    await loadCompanyProfile();
+  } catch (e) {
+    console.error('Signature save error:', e);
+    alert('❌ Error saving signature: ' + e.message);
+  }
+};
+
+window.removeSignature = async function(companyId) {
+  if (!confirm('Remove signature?')) return;
+  await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
+    .set({ signatureUrl: '', signatureType: '' }, { merge: true });
+  await loadCompanyProfile();
+};
+
+// Helper functions
 function getCurrentFinancialYear() {
   const now = new Date();
   const year = now.getFullYear();
@@ -286,66 +416,49 @@ function getCurrentFinancialYear() {
   }
 }
 
-/* ══════════════════════════════════════════════════════
-SAVE COMPANY PROFILE
-Fixes: Ensures Start Number is saved to Firestore
-══════════════════════════════════════════════════════ */
-window.saveCompanyProfile = async function(e) {
-  e.preventDefault();
-  
-  const financialYear = document.getElementById('cpFinancialYear').value.trim();
-  const startNumInput = document.getElementById('cpStartNumber').value;
-  const startNumber = parseInt(startNumInput) || 1; // ✅ Safely parse integer
-  
-  // Validate FY format
-  if (financialYear && !/^\d{4}-\d{2}$/.test(financialYear)) {
-    alert('Financial Year must be in format YYYY-YY (e.g., 2026-27)');
-    return;
-  }
-  
-  // ✅ 1. Save to Company Profile Document
-  await window.InvoiceApp.clientDb.collection('companyProfile')
-    .doc(window.InvoiceApp.companyId).set({
-      companyId: window.InvoiceApp.companyId,
-      companyName: document.getElementById('cpName').value,
-      gstn: document.getElementById('cpGstn').value,
-      pan: document.getElementById('cpPan').value,
-      invoicePrefix: document.getElementById('cpPrefix').value,
-      financialYear: financialYear || getCurrentFinancialYear(),
-      invoiceStartNumber: startNumber, // ✅ Explicitly saving Start Number
-      email: document.getElementById('cpEmail').value,
-      phone: document.getElementById('cpPhone').value,
-      address: document.getElementById('cpAddress').value,
-      city: document.getElementById('cpCity').value,
-      state: document.getElementById('cpState').value,
-      pincode: document.getElementById('cpPin').value,
-      bankDetails: {
-        bankName: document.getElementById('cpBank').value,
-        accountNumber: document.getElementById('cpAcc').value,
-        ifscCode: document.getElementById('cpIfsc').value
-      },
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
-  
-  // ✅ 2. Update the Sequence Document (Crucial for next invoice)
-  const prefix = document.getElementById('cpPrefix').value || 'KAR';
-  const seqRef = window.InvoiceApp.clientDb.collection('sequences').doc(prefix);
-  
-  await seqRef.set({
-    seriesId: prefix,
-    prefix: prefix,
-    financialYear: financialYear || getCurrentFinancialYear(),
-    currentNumber: startNumber, // ✅ Reset sequence to the new start number
-    maxLength: 16,
-    branchName: "Default",
-    supplyType: "domestic",
-    isActive: true,
-    lastResetDate: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge: true });
-  
-  alert('✅ Company profile and invoice numbering saved!');
-};
+function compressImage(file, maxSize = 300, quality = 0.8, outputFormat = 'image/jpeg') {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        let width = img.width, height = img.height;
+        if (width > height) {
+          if (width > maxSize) { height = Math.round(height * maxSize / width); width = maxSize; }
+        } else {
+          if (height > maxSize) { width = Math.round(width * maxSize / height); height = maxSize; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        if (outputFormat === 'image/jpeg') { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, width, height); }
+        ctx.drawImage(img, 0, 0, width, height);
+        const tryCompress = (q) => {
+          canvas.toBlob((blob) => {
+            if (!blob) { reject(new Error('Compression failed')); return; }
+            if (blob.size > 100 * 1024 && q > 0.3) { tryCompress(q - 0.1); }
+            else { resolve(blob); }
+          }, outputFormat, q);
+        };
+        tryCompress(quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 /* ══════════════════════════════════════════════════════
 LOGO UPLOAD FUNCTIONS
