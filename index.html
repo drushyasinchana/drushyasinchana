@@ -965,7 +965,7 @@
         referrerpolicy="strict-origin-when-cross-origin">
       </iframe>
       
-      <!-- Fallback Content (Shows if embed fails) -->
+      <!-- Fallback Content (Hidden by default - only shows if truly needed) -->
       <div class="embed-fallback" id="embed-fallback" style="display: none;">
         <div class="fallback-icon">🎬</div>
         <h3>Video Not Loading?</h3>
@@ -1007,74 +1007,25 @@
   </div>
 </section>
 
-<!-- Error Detection Script -->
+<!-- Simplified Error Detection Script - Won't show false positives -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const iframe = document.getElementById('youtube-short-film');
   const fallback = document.getElementById('embed-fallback');
-  let errorDetected = false;
   
-  // Check for embed errors after load
-  iframe.addEventListener('load', function() {
-    setTimeout(function() {
-      try {
-        // Try to access iframe content (will fail if cross-origin blocked)
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        
-        // Check for YouTube error messages in the iframe
-        if (iframeDoc.querySelector('.yt-player-error') || 
-            iframeDoc.body.innerHTML.includes('Error 153') ||
-            iframeDoc.body.innerHTML.includes('configuration error')) {
-          showError();
-        }
-      } catch(e) {
-        // Cross-origin restriction - check if iframe is actually loaded
-        // by checking if src attribute is valid
-        if (!iframe.src || iframe.src === '') {
-          showError();
-        }
-      }
-    }, 3000); // Wait 3 seconds for load
-  });
-  
-  // Detect if iframe fails to load entirely
-  iframe.addEventListener('error', function() {
-    showError();
-  });
-  
-  // Alternative detection: Check for YouTube error after delay
-  setTimeout(function() {
-    if (iframe && !errorDetected) {
-      // Try to detect if iframe has loaded properly
-      try {
-        const iframeWindow = iframe.contentWindow;
-        if (!iframeWindow || iframeWindow.location.href === 'about:blank') {
-          showError();
-        }
-      } catch(e) {
-        // If we can't access it at all after 5 seconds, show fallback
-        if (!errorDetected) {
-          showError();
-        }
-      }
-    }
-  }, 5000);
-  
-  function showError() {
-    if (errorDetected) return;
-    errorDetected = true;
-    
+  // Only show fallback if iframe src is truly empty or missing
+  if (!iframe || !iframe.src || iframe.src === '') {
     if (fallback) {
       fallback.style.display = 'flex';
-      // Optionally hide the iframe
-      // iframe.style.display = 'none';
     }
-    
-    console.warn('YouTube embed failed - showing fallback. Video ID: bNdkmfMRuX8');
+    console.warn('YouTube iframe src is missing');
   }
+  
+  // Optional: Add a manual check button for users to report issues
+  // The fallback will remain hidden if video loads successfully
 });
 </script>
-
+  
 <!-- ── ABOUT ── -->
 <style>
   .about-photo-wrap { width:190px; height:190px; border-radius:50%; overflow:hidden; margin:0 auto 18px; border:4px solid var(--gold-light); box-shadow:0 4px 22px rgba(184,137,42,.2),0 0 0 8px rgba(184,137,42,.07); }
