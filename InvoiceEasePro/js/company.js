@@ -1,10 +1,13 @@
 /* ══════════════════════════════════════════════════════
 INVOICEEASE PRO - COMPANY PROFILE
-Fixes: Layout adjustments, Start Number saving
+Modified: COMP001-COMP005 as fixed doc names; companyId field = fixed login ID
 ══════════════════════════════════════════════════════ */
 
+// Global: Current active profile ID (COMP001 to COMP005) - document name
+window.currentCompanyId = 'COMP001';
+
 /* ══════════════════════════════════════════════════════
-HELPER: Compress image
+HELPER: Compress image (UNCHANGED)
 ══════════════════════════════════════════════════════ */
 function compressImage(file, maxSize = 300, quality = 0.8, outputFormat = 'image/jpeg') {
   return new Promise((resolve, reject) => {
@@ -50,43 +53,18 @@ function blobToBase64(blob) {
   });
 }
 
-window.loadCompanyProfile = async function() {
-  console.log('🏢 Loading company profile...');
+/* ══════════════════════════════════════════════════════
+LOAD COMPANY PROFILE - Loads COMP001-COMP005 docs
+══════════════════════════════════════════════════════ */
+window.loadCompanyProfile = async function(companyId = window.currentCompanyId) {
+  console.log('🏢 Loading company profile:', companyId);
   const c = document.getElementById('companyContainer');
   c.innerHTML = '<div style="text-align:center;padding:40px;">Loading profile...</div>';
   
   try {
-    // ✅ Check user's plan from Master DB
-    const userDoc = await window.db.collection('users').doc(window.InvoiceApp.adminEmail).get();
-    const userData = userDoc.exists ? userDoc.data() : {};
-    const userPlan = userData.plan || 'basic'; // basic, standard, premium
-    
-    // ✅ Load all company profiles (company1, company2, company3)
-    const companies = {};
-    const companyDocs = await window.InvoiceApp.clientDb.collection('companyProfile').get();
-    
-    companyDocs.forEach(doc => {
-      const id = doc.id;
-      if (id === window.InvoiceApp.companyId || id.startsWith('company')) {
-        companies[id] = doc.data();
-      }
-    });
-    
-    // Determine which tabs to show based on plan
-    const maxCompanies = userPlan === 'premium' ? 3 : (userPlan === 'standard' ? 2 : 1);
-    const availableSlots = [];
-    for (let i = 1; i <= maxCompanies; i++) {
-      const companyId = i === 1 ? window.InvoiceApp.companyId : `company${i}`;
-      availableSlots.push({
-        id: companyId,
-        name: companies[companyId]?.companyName || `Company ${i}`,
-        exists: !!companies[companyId]
-      });
-    }
-    
-    // Get active company (default to first available)
-    const activeCompanyId = companies[window.InvoiceApp.companyId] ? window.InvoiceApp.companyId : availableSlots[0]?.id;
-    const activeData = companies[activeCompanyId] || {};
+    // ✅ Load profile document: COMP001, COMP002, etc. (fixed doc names)
+    const doc = await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId).get();
+    const activeData = doc.exists ? doc.data() : {};
     
     // ✅ FIXED: Ensure 'data:' prefix for image display
     const logoSrc = (activeData.logoUrl && activeData.logoUrl.length > 0) 
@@ -108,35 +86,34 @@ window.loadCompanyProfile = async function() {
     const fyPrevious = month >= 4 ? `${currentYear-1}-${currentYear.toString().slice(-2)}` : `${currentYear-2}-${(currentYear-1).toString().slice(-2)}`;
     const fyNext = month >= 4 ? `${currentYear+1}-${(currentYear+2).toString().slice(-2)}` : `${currentYear}-${(currentYear+1).toString().slice(-2)}`;
     
-    // Build tabs HTML
+    // Build 5 Profile Tabs HTML (COMP001-COMP005) - fixed document names
     let tabsHTML = '<div style="margin-bottom:20px;">';
     tabsHTML += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">';
     
-    availableSlots.forEach((slot, idx) => {
-      const isActive = slot.id === activeCompanyId;
-      const isLocked = !slot.exists && idx >= maxCompanies;
-      const tabClass = isActive ? 'active' : '';
-      const lockIcon = isLocked ? '🔒' : (slot.exists ? '✓' : '+');
+    for (let i = 1; i <= 5; i++) {
+      const compId = `COMP00${i}`;
+      const isActive = compId === companyId;
+      const compName = activeData.companyName && companyId === compId ? activeData.companyName : `Company ${i}`;
+      const hasData = activeData.companyName && companyId === compId ? '✓' : '○';
       
       tabsHTML += `
-        <button type="button" onclick="switchCompanyTab('${slot.id}')" 
+        <button type="button" onclick="switchCompanyTab('${compId}')" 
           style="padding:10px 20px;border:2px solid ${isActive ? 'var(--teal)' : 'var(--border)'};
           background:${isActive ? 'var(--teal)' : '#fff'};color:${isActive ? '#fff' : 'var(--ink)'};
-          border-radius:8px;cursor:${isLocked ? 'not-allowed' : 'pointer'};
-          font-weight:600;font-size:0.9rem;opacity:${isLocked ? 0.5 : 1};"
-          ${isLocked ? 'disabled' : ''}>
-          ${lockIcon} ${slot.name}
+          border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem;">
+          ${hasData} ${compName}
         </button>
       `;
-    });
+    }
     
     tabsHTML += '</div></div>';
     
+    // ✅ EXACT SAME FORM LAYOUT AS ORIGINAL - NO CHANGES TO FIELDS, WIDTHS, PLACEMENT
     c.innerHTML = `
       <div class="card" style="max-height:calc(100vh - 100px); overflow-y:auto; padding:16px;">
         ${tabsHTML}
         
-        <!-- Logo & Signature -->
+        <!-- Logo & Signature - EXACT SAME STRUCTURE -->
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; background:var(--bg); padding:16px; border-radius:8px; margin-bottom:16px;">
           <div style="display:flex; align-items:center; gap:16px;">
             <div id="logoPreview" style="width:70px;height:70px;border:2px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0;">
@@ -145,8 +122,8 @@ window.loadCompanyProfile = async function() {
             <div style="flex:1; min-width:0;">
               <input type="file" id="logoUpload" accept="image/*" style="display:none;">
               <button type="button" class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px;" onclick="document.getElementById('logoUpload').click()">📁 Choose Logo</button>
-              <button type="button" id="btnSaveLogo" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveLogo('${activeCompanyId}')">Save</button>
-              ${activeData.logoUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeLogo('${activeCompanyId}')">Remove</button>` : ''}
+              <button type="button" id="btnSaveLogo" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveLogo('${companyId}')">Save</button>
+              ${activeData.logoUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeLogo('${companyId}')">Remove</button>` : ''}
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:16px;">
@@ -156,13 +133,14 @@ window.loadCompanyProfile = async function() {
             <div style="flex:1; min-width:0;">
               <input type="file" id="signatureUpload" accept="image/*" style="display:none;">
               <button type="button" class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px;" onclick="document.getElementById('signatureUpload').click()">✍️ Choose Signature</button>
-              <button type="button" id="btnSaveSignature" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveSignature('${activeCompanyId}')">Save</button>
-              ${activeData.signatureUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeSignature('${activeCompanyId}')">Remove</button>` : ''}
+              <button type="button" id="btnSaveSignature" class="btn btn-teal" style="display:none;margin-left:8px;font-size:0.8rem;padding:6px 12px;" onclick="saveSignature('${companyId}')">Save</button>
+              ${activeData.signatureUrl ? `<button type="button" class="btn btn-outline" style="margin-left:8px;font-size:0.8rem;padding:6px 12px;color:var(--red);" onclick="removeSignature('${companyId}')">Remove</button>` : ''}
             </div>
           </div>
         </div>
         
-        <form onsubmit="saveCompanyProfile(event, '${activeCompanyId}')">
+        <!-- FORM - EXACT SAME FIELDS, GRID LAYOUT, WIDTHS, PLACEMENT -->
+        <form onsubmit="saveCompanyProfile(event, '${companyId}')">
           <!-- Row 1: Company Name, GSTN, PAN, Prefix -->
           <div class="form-grid" style="grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
             <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Company Name *</label><input id="cpName" required value="${activeData.companyName||''}" style="padding:8px;font-size:0.9rem;"/></div>
@@ -177,7 +155,7 @@ window.loadCompanyProfile = async function() {
             <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Start Number</label><input type="number" id="cpStartNumber" min="1" value="${startNum}" style="padding:8px;font-size:0.9rem;"/></div>
           </div>
           
-          <!-- Row 3: Email & Phone (Fixed width) -->
+          <!-- Row 3: Email & Phone -->
           <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
             <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Email</label><input id="cpEmail" type="email" value="${activeData.email||''}" style="padding:8px;font-size:0.9rem;"/></div>
             <div class="fg" style="margin-bottom:0;"><label style="font-size:0.8rem;">Phone</label><input id="cpPhone" value="${activeData.phone||''}" style="padding:8px;font-size:0.9rem;"/></div>
@@ -215,8 +193,8 @@ window.loadCompanyProfile = async function() {
       </div>`;
     
     setTimeout(() => {
-      document.getElementById('logoUpload')?.addEventListener('change', (e) => previewLogo(e.target, activeCompanyId));
-      document.getElementById('signatureUpload')?.addEventListener('change', (e) => previewSignature(e.target, activeCompanyId));
+      document.getElementById('logoUpload')?.addEventListener('change', (e) => previewLogo(e.target));
+      document.getElementById('signatureUpload')?.addEventListener('change', (e) => previewSignature(e.target));
     }, 100);
     
   } catch(e) {
@@ -225,60 +203,17 @@ window.loadCompanyProfile = async function() {
   }
 };
 
-// ✅ Switch between company tabs
+/* ══════════════════════════════════════════════════════
+SWITCH COMPANY TAB - Switches between COMP001-COMP005
+══════════════════════════════════════════════════════ */
 window.switchCompanyTab = async function(companyId) {
-  sessionStorage.setItem('activeCompanyId', companyId);
-  await loadCompanyProfile();
+  window.currentCompanyId = companyId;
+  await loadCompanyProfile(companyId);
 };
 
-// ✅ Show Add Company Modal (Premium only)
-window.showAddCompanyModal = async function() {
-  const companyName = prompt('Enter new company name:');
-  if (!companyName) return;
-  
-  try {
-    const companyDocs = await window.InvoiceApp.clientDb.collection('companyProfile').get();
-    let nextNum = 1;
-    companyDocs.forEach(doc => {
-      if (doc.id.startsWith('company')) {
-        const num = parseInt(doc.id.replace('company', ''));
-        if (num >= nextNum) nextNum = num + 1;
-      }
-    });
-    
-    const newCompanyId = `company${nextNum}`;
-    
-    await window.InvoiceApp.clientDb.collection('companyProfile').doc(newCompanyId).set({
-      companyId: newCompanyId,
-      companyName: companyName,
-      gstn: '',
-      pan: '',
-      invoicePrefix: companyName.slice(0, 3).toUpperCase(),
-      financialYear: getCurrentFinancialYear(),
-      invoiceStartNumber: 1,
-      accountName: companyName,
-      email: '',
-      phone: '',
-      address: '',
-      city: '',
-      state: '',
-      pincode: '',
-      bankDetails: { bankName: '', accountNumber: '', ifscCode: '' },
-      logoUrl: '',
-      signatureUrl: '',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    
-    alert(`✅ ${companyName} created successfully!`);
-    await loadCompanyProfile();
-  } catch (e) {
-    console.error('Add company error:', e);
-    alert('❌ Error creating company: ' + e.message);
-  }
-};
-
-// ✅ Updated saveCompanyProfile
+/* ══════════════════════════════════════════════════════
+SAVE COMPANY PROFILE - MODIFIED: companyId field = fixed login ID
+══════════════════════════════════════════════════════ */
 window.saveCompanyProfile = async function(e, companyId) {
   e.preventDefault();
   const financialYear = document.getElementById('cpFinancialYear').value.trim();
@@ -286,8 +221,12 @@ window.saveCompanyProfile = async function(e, companyId) {
   
   if (financialYear && !/^\d{4}-\d{2}$/.test(financialYear)) { alert('Financial Year must be YYYY-YY'); return; }
   
+  // ✅ Save to profile document (COMP001-COMP005)
+  // ✅ companyId field = FIXED login ID (e.g., TEST001) for ALL profiles
+  // ✅ profileId field = document name (COMP001-COMP005) for identification
   await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId).set({
-    companyId: companyId,
+    companyId: window.InvoiceApp.companyId,  // ✅ FIXED: Login ID same for all 5 profiles
+    profileId: companyId,                     // ✅ Profile document name (COMP001-COMP005)
     companyName: document.getElementById('cpName').value,
     gstn: document.getElementById('cpGstn').value,
     pan: document.getElementById('cpPan').value,
@@ -318,147 +257,6 @@ window.saveCompanyProfile = async function(e, companyId) {
   
   alert('✅ Company profile saved!');
 };
-
-// Logo and Signature functions
-window.previewLogo = async function(input, companyId) {
-  const file = input.files[0];
-  if (!file) return;
-  
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    const preview = document.getElementById('logoPreview');
-    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;">`;
-    document.getElementById('btnSaveLogo').style.display = 'inline-flex';
-    window.tempLogoFile = file;
-    window.tempLogoCompanyId = companyId;
-  };
-  reader.readAsDataURL(file);
-};
-
-window.saveLogo = async function(companyId) {
-  if (!window.tempLogoFile) return;
-  
-  try {
-    const compressedBlob = await compressImage(window.tempLogoFile, 300, 0.8, 'image/jpeg');
-    const base64String = await blobToBase64(compressedBlob);
-    const cleanBase64 = base64String.replace(/^image\/jpeg;base64,/, '');
-    
-    await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
-      .set({ logoUrl: cleanBase64, logoType: 'image/jpeg', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    
-    alert('✅ Logo saved!');
-    document.getElementById('btnSaveLogo').style.display = 'none';
-    await loadCompanyProfile();
-  } catch (e) {
-    console.error('Logo save error:', e);
-    alert('❌ Error saving logo: ' + e.message);
-  }
-};
-
-window.removeLogo = async function(companyId) {
-  if (!confirm('Remove logo?')) return;
-  await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
-    .set({ logoUrl: '', logoType: '' }, { merge: true });
-  await loadCompanyProfile();
-};
-
-window.previewSignature = async function(input, companyId) {
-  const file = input.files[0];
-  if (!file) return;
-  
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    const preview = document.getElementById('signaturePreview');
-    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;">`;
-    document.getElementById('btnSaveSignature').style.display = 'inline-flex';
-    window.tempSignatureFile = file;
-    window.tempSignatureCompanyId = companyId;
-  };
-  reader.readAsDataURL(file);
-};
-
-window.saveSignature = async function(companyId) {
-  if (!window.tempSignatureFile) return;
-  
-  try {
-    const compressedBlob = await compressImage(window.tempSignatureFile, 400, 0.85, 'image/png');
-    const base64String = await blobToBase64(compressedBlob);
-    const cleanBase64 = base64String.replace(/^data:image\/png;base64,/, '');
-    
-    await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
-      .set({ signatureUrl: cleanBase64, signatureType: 'image/png', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    
-    alert('✅ Signature saved!');
-    document.getElementById('btnSaveSignature').style.display = 'none';
-    await loadCompanyProfile();
-  } catch (e) {
-    console.error('Signature save error:', e);
-    alert('❌ Error saving signature: ' + e.message);
-  }
-};
-
-window.removeSignature = async function(companyId) {
-  if (!confirm('Remove signature?')) return;
-  await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId)
-    .set({ signatureUrl: '', signatureType: '' }, { merge: true });
-  await loadCompanyProfile();
-};
-
-// Helper functions
-function getCurrentFinancialYear() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  if (month >= 4) {
-    return `${year}-${(year+1).toString().slice(-2)}`;
-  } else {
-    return `${year-1}-${year.toString().slice(-2)}`;
-  }
-}
-
-function compressImage(file, maxSize = 300, quality = 0.8, outputFormat = 'image/jpeg') {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        let width = img.width, height = img.height;
-        if (width > height) {
-          if (width > maxSize) { height = Math.round(height * maxSize / width); width = maxSize; }
-        } else {
-          if (height > maxSize) { width = Math.round(width * maxSize / height); height = maxSize; }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        if (outputFormat === 'image/jpeg') { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, width, height); }
-        ctx.drawImage(img, 0, 0, width, height);
-        const tryCompress = (q) => {
-          canvas.toBlob((blob) => {
-            if (!blob) { reject(new Error('Compression failed')); return; }
-            if (blob.size > 100 * 1024 && q > 0.3) { tryCompress(q - 0.1); }
-            else { resolve(blob); }
-          }, outputFormat, q);
-        };
-        tryCompress(quality);
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
 
 /* ══════════════════════════════════════════════════════
 LOGO UPLOAD FUNCTIONS
@@ -495,7 +293,7 @@ window.previewLogo = function(input) {
   reader.readAsDataURL(file);
 };
 
-window.saveLogo = async function() {
+window.saveLogo = async function(companyId) {
   if (!logoFile) return;
   const btn = document.getElementById('btnSaveLogo');
   const err = document.getElementById('logoErr');
@@ -507,14 +305,21 @@ window.saveLogo = async function() {
     const base64String = await blobToBase64(compressedBlob);
     const cleanBase64 = base64String.replace(/^data:image\/jpeg;base64,/, '');
     
+    // ✅ Save to profile document with FIXED login companyId + profileId
     await window.InvoiceApp.clientDb.collection('companyProfile')
-      .doc(window.InvoiceApp.companyId)
-      .set({ logoUrl: cleanBase64, logoType: 'image/jpeg', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      .doc(companyId)
+      .set({ 
+        logoUrl: cleanBase64, 
+        logoType: 'image/jpeg',
+        companyId: window.InvoiceApp.companyId,  // ✅ FIXED login ID
+        profileId: companyId,                     // ✅ Profile doc name
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+      }, { merge: true });
     
     alert('✅ Logo saved!');
     btn.textContent = '💾 Save Logo'; btn.style.display = 'none';
     logoFile = null;
-    window.loadCompanyProfile();
+    await loadCompanyProfile(companyId);
   } catch (error) {
     console.error('Logo upload failed:', error);
     if(err) { err.textContent = error.message; err.style.display = 'block'; }
@@ -522,10 +327,16 @@ window.saveLogo = async function() {
   }
 };
 
-window.removeLogo = async function() {
+window.removeLogo = async function(companyId) {
   if (!confirm('Remove logo?')) return;
-  await window.InvoiceApp.clientDb.collection('companyProfile').doc(window.InvoiceApp.companyId).set({ logoUrl: '', logoType: '' }, { merge: true });
-  window.loadCompanyProfile();
+  // ✅ Remove logo but preserve companyId/profileId fields
+  await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId).set({ 
+    logoUrl: '', 
+    logoType: '',
+    companyId: window.InvoiceApp.companyId,  // ✅ Preserve fixed login ID
+    profileId: companyId                      // ✅ Preserve profile doc name
+  }, { merge: true });
+  await loadCompanyProfile(companyId);
 };
 
 /* ══════════════════════════════════════════════════════
@@ -563,7 +374,7 @@ window.previewSignature = function(input) {
   reader.readAsDataURL(file);
 };
 
-window.saveSignature = async function() {
+window.saveSignature = async function(companyId) {
   if (!signatureFile) return;
   const btn = document.getElementById('btnSaveSignature');
   const err = document.getElementById('signatureErr');
@@ -575,14 +386,21 @@ window.saveSignature = async function() {
     const base64String = await blobToBase64(compressedBlob);
     const cleanBase64 = base64String.replace(/^data:image\/png;base64,/, '');
     
+    // ✅ Save to profile document with FIXED login companyId + profileId
     await window.InvoiceApp.clientDb.collection('companyProfile')
-      .doc(window.InvoiceApp.companyId)
-      .set({ signatureUrl: cleanBase64, signatureType: 'image/png', updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      .doc(companyId)
+      .set({ 
+        signatureUrl: cleanBase64, 
+        signatureType: 'image/png',
+        companyId: window.InvoiceApp.companyId,  // ✅ FIXED login ID
+        profileId: companyId,                     // ✅ Profile doc name
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+      }, { merge: true });
     
     alert('✅ Signature saved!');
     btn.textContent = '💾 Save Signature'; btn.style.display = 'none';
     signatureFile = null;
-    window.loadCompanyProfile();
+    await loadCompanyProfile(companyId);
   } catch (error) {
     console.error('Signature upload failed:', error);
     if(err) { err.textContent = error.message; err.style.display = 'block'; }
@@ -590,8 +408,38 @@ window.saveSignature = async function() {
   }
 };
 
-window.removeSignature = async function() {
+window.removeSignature = async function(companyId) {
   if (!confirm('Remove signature?')) return;
-  await window.InvoiceApp.clientDb.collection('companyProfile').doc(window.InvoiceApp.companyId).set({ signatureUrl: '', signatureType: '' }, { merge: true });
-  window.loadCompanyProfile();
+  // ✅ Remove signature but preserve companyId/profileId fields
+  await window.InvoiceApp.clientDb.collection('companyProfile').doc(companyId).set({ 
+    signatureUrl: '', 
+    signatureType: '',
+    companyId: window.InvoiceApp.companyId,  // ✅ Preserve fixed login ID
+    profileId: companyId                      // ✅ Preserve profile doc name
+  }, { merge: true });
+  await loadCompanyProfile(companyId);
 };
+
+/* ══════════════════════════════════════════════════════
+HELPER: Get current financial year (UNCHANGED)
+══════════════════════════════════════════════════════ */
+function getCurrentFinancialYear() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  if (month >= 4) {
+    return `${year}-${(year+1).toString().slice(-2)}`;
+  } else {
+    return `${year-1}-${year.toString().slice(-2)}`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+INIT: Load default profile on page load
+══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof window.InvoiceApp !== 'undefined' && window.InvoiceApp.clientDb) {
+    // Load COMP001 by default (fixed document name)
+    window.loadCompanyProfile('COMP001');
+  }
+});

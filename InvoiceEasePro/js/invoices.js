@@ -1,13 +1,36 @@
 /* ══════════════════════════════════════════════════════
 INVOICEEASE PRO - INVOICE MANAGEMENT (Complete Fixed)
 Features: Save, Edit, Delete, Preview, Signature Toggle, Bill No. Preview, SAC/Rate Auto-fill
+Profile-Aware: Filter by dropdown profileId (NO index required)
 ══════════════════════════════════════════════════════ */
+
+// ✅ Helper: Get active profile ID from dropdown or session
+function getActiveProfileId() {
+  return window.selectedProfileId || window.currentCompanyId || sessionStorage.getItem('activeProfileId') || 'COMP001';
+}
+
+// ✅ Helper: Generate short unique ID (6 digits)
+function generateUniqueId() {
+  return Date.now().toString().slice(-6);
+}
+
+// ✅ Helper: Get current financial year (April-March)
+function getCurrentFinancialYear() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  if (month >= 4) {
+    return `${year}-${(year+1).toString().slice(-2)}`;
+  } else {
+    return `${year-1}-${year.toString().slice(-2)}`;
+  }
+}
 
 // ✅ Helper: Generate preview invoice number (for display before save)
 async function getPreviewInvoiceNumber() {
   try {
-    const profile = await window.InvoiceApp.clientDb.collection('companyProfile')
-      .doc(window.InvoiceApp.companyId).get();
+    const profileId = getActiveProfileId();
+    const profile = await window.InvoiceApp.clientDb.collection('companyProfile').doc(profileId).get();
     const profileData = profile.data() || {};
     
     const prefix = profileData.invoicePrefix || window.InvoiceApp.companyId.slice(0,3).toUpperCase();
@@ -47,18 +70,6 @@ async function getPreviewInvoiceNumber() {
   }
 }
 
-// ✅ Helper: Get current financial year (April-March)
-function getCurrentFinancialYear() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  if (month >= 4) {
-    return `${year}-${(year+1).toString().slice(-2)}`;
-  } else {
-    return `${year-1}-${year.toString().slice(-2)}`;
-  }
-}
-
 window.loadInvoices = async function() {
   console.log('📄 Loading invoices...');
   const c = document.getElementById('invoicesContainer');
@@ -68,14 +79,14 @@ window.loadInvoices = async function() {
   
   try {
     const db = window.InvoiceApp.clientDb;
-    const cid = window.InvoiceApp.companyId;
+    const profileId = getActiveProfileId();
     
-    if (!db || !cid) {
-      throw new Error('Database or Company ID not initialized');
+    if (!db || !profileId) {
+      throw new Error('Database or Profile ID not initialized');
     }
     
-    // Fetch without orderBy to avoid index errors, sort in JS
-    const snap = await db.collection('invoices').where('companyId', '==', cid).get();
+    // ✅ Filter by profileId ONLY (no orderBy = no index needed)
+    const snap = await db.collection('invoices').where('profileId', '==', profileId).get();
     
     console.log('📄 Invoices loaded:', snap.size);
     
@@ -84,7 +95,7 @@ window.loadInvoices = async function() {
       return;
     }
     
-    // Sort in JavaScript
+    // ✅ Sort in JavaScript instead of Firestore
     const invoices = [];
     snap.forEach(doc => {
       invoices.push({ id: doc.id, ...doc.data() });
@@ -152,12 +163,15 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   const oldModal = document.getElementById('invoiceModal');
   if (oldModal) oldModal.remove();
   
+  // ✅ Use profile ID for filtering customers/particulars
+  const profileId = getActiveProfileId();
+  
   const custSnap = await window.InvoiceApp.clientDb.collection('customers')
-    .where('companyId','==',window.InvoiceApp.companyId)
+    .where('profileId','==',profileId)
     .where('isActive','==',true).get();
     
   const partSnap = await window.InvoiceApp.clientDb.collection('invoiceParticulars')
-    .where('companyId','==',window.InvoiceApp.companyId)
+    .where('profileId','==',profileId)
     .where('isActive','==',true).get();
     
   const today = new Date().toISOString().split('T')[0];
@@ -305,7 +319,9 @@ window.addInvoiceItem = async function(presetItem = null) {
   const c = document.getElementById('invoiceItems');
   if(!c) return;
   const idx = c.children.length;
-  const snap = await window.InvoiceApp.clientDb.collection('invoiceParticulars').where('companyId','==',window.InvoiceApp.companyId).where('isActive','==',true).get();
+  // ✅ Use profileId for filtering particulars
+  const profileId = getActiveProfileId();
+  const snap = await window.InvoiceApp.clientDb.collection('invoiceParticulars').where('profileId','==',profileId).where('isActive','==',true).get();
   
   const row = document.createElement('div');
   // ✅ Add className for reliable selection
@@ -431,7 +447,7 @@ window.calcTotal = function() {
 };
 
 
-// ✅ Save Invoice (With GST/Non-GST & Preview Logic)
+// ✅ Save Invoice (With GST/Non-GST & Preview Logic) - MODIFIED FOR PROFILE ID
 window.saveInvoice = async function(e) {
   e.preventDefault();
   const cSel = document.getElementById('invCustomer');
@@ -442,6 +458,10 @@ window.saveInvoice = async function(e) {
   const includeSignature = document.getElementById('includeSignature')?.checked !== false;
   const isNonGst = document.getElementById('isNonGst')?.checked === true;
   const isIgst = document.getElementById('isIgst')?.checked === true;
+  
+  // ✅ Get profile ID for this invoice
+  const profileId = getActiveProfileId();
+  const companyId = window.InvoiceApp.companyId;
   
   let invNum = '';
   const items = [];
@@ -472,6 +492,7 @@ window.saveInvoice = async function(e) {
   
   try {
     if (editId) {
+      // ✅ Edit: Update existing invoice doc
       await window.InvoiceApp.clientDb.collection('invoices').doc(editId).set({
         invoiceDate: new Date(document.getElementById('invDate').value),
         customerId: cSel.value, customerName: cOpt.text,
@@ -483,14 +504,17 @@ window.saveInvoice = async function(e) {
         signatureIncluded: includeSignature,
         isNonGst: isNonGst,
         isIgst: isIgst,
+        profileId: profileId,  // ✅ Ensure profileId is set
+        companyId: companyId,  // ✅ Preserve login companyId
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, {merge:true});
       const doc = await window.InvoiceApp.clientDb.collection('invoices').doc(editId).get();
       invNum = doc.data().invoiceNumber;
     } else {
-      const profile = await window.InvoiceApp.clientDb.collection('companyProfile').doc(window.InvoiceApp.companyId).get();
+      // ✅ Create: Generate deterministic doc ID based on profile + invoice number
+      const profile = await window.InvoiceApp.clientDb.collection('companyProfile').doc(profileId).get();
       const profileData = profile.data() || {};
-      const prefix = profileData.invoicePrefix || window.InvoiceApp.companyId.slice(0,3).toUpperCase();
+      const prefix = profileData.invoicePrefix || companyId.slice(0,3).toUpperCase();
       const financialYear = profileData.financialYear || getCurrentFinancialYear();
       const startNumber = profileData.invoiceStartNumber || 1;
       const seqRef = window.InvoiceApp.clientDb.collection('sequences').doc(prefix);
@@ -507,8 +531,13 @@ window.saveInvoice = async function(e) {
       if (invoiceNumber.length > 16) { invoiceNumber = `${prefix}-${formattedNum}`; if (invoiceNumber.length > 16) { invoiceNumber = `${prefix}${nextNum}`; } }
       invNum = invoiceNumber;
       
-      await window.InvoiceApp.clientDb.collection('invoices').add({
-        companyId: window.InvoiceApp.companyId,
+      // ✅ Generate deterministic Firestore doc ID: {companyId}_{profileId}_{invoiceNumber}
+      const safeInvNum = invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_');
+      const docId = `${companyId}_${profileId}_${safeInvNum}`;
+      
+      await window.InvoiceApp.clientDb.collection('invoices').doc(docId).set({
+        profileId: profileId,           // ✅ Profile ID for filtering (COMP001-COMP005)
+        companyId: companyId,           // ✅ Original login ID preserved
         invoiceNumber: invNum,
         invoiceDate: new Date(document.getElementById('invDate').value),
         customerId: cSel.value, customerName: cOpt.text,
@@ -528,7 +557,7 @@ window.saveInvoice = async function(e) {
       await seqRef.set({ seriesId: prefix, prefix: prefix, financialYear: financialYear, currentNumber: nextNum + 1, maxLength: 16, branchName: profileData.branchName || 'Default', supplyType: profileData.supplyType || 'domestic', isActive: true, lastResetDate: seqDoc.exists && seqDoc.data().financialYear !== financialYear ? firebase.firestore.FieldValue.serverTimestamp() : (seqDoc.exists ? seqDoc.data().lastResetDate : null), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
     }
     
-    const docSnap = await window.InvoiceApp.clientDb.collection('invoices').where('invoiceNumber','==',invNum).get();
+    const docSnap = await window.InvoiceApp.clientDb.collection('invoices').where('invoiceNumber','==',invNum).where('profileId','==',profileId).get();
     if (!docSnap.empty) {
       const docId = docSnap.docs[0].id;
       const pdfBlobUrl = await generateInvoicePDFBlob(docId, includeSignature);
@@ -564,13 +593,12 @@ window.downloadInvoicePDF = async function(id) {
 };
 
 // ==========================================
-// CORE PDF RENDERER (Fixed for IGST)
-// ==========================================
-// ==========================================
-// CORE PDF RENDERER (Fixed Column Alignment)
+// CORE PDF RENDERER - FULL VERSION PRESERVED
 // ==========================================
 async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
-  const compSnap = await window.InvoiceApp.clientDb.collection('companyProfile').doc(window.InvoiceApp.companyId).get();
+  // ✅ Use profileId to fetch correct company profile
+  const profileId = inv.profileId || window.InvoiceApp.companyId;
+  const compSnap = await window.InvoiceApp.clientDb.collection('companyProfile').doc(profileId).get();
   const comp = compSnap.exists ? compSnap.data() : {};
   
   const { jsPDF } = window.jspdf;

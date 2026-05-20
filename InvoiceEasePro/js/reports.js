@@ -1,7 +1,13 @@
 /* ══════════════════════════════════════════════════════
-INVOICEEASE PRO - REPORTS & ANALYTICS
+INVOICEEASE PRO - REPORTS & ANALYTICS (Profile-Aware)
 Features: Filter by Year, Month, Customer
+Modified: Uses profileId for filtering (COMP001-COMP005)
 ══════════════════════════════════════════════════════ */
+
+// ✅ Helper: Get active profile ID from dropdown or session
+function getActiveProfileId() {
+  return window.selectedProfileId || window.currentCompanyId || sessionStorage.getItem('activeProfileId') || 'COMP001';
+}
 
 window.loadReports = async function() {
   console.log('📈 Loading reports...');
@@ -9,9 +15,12 @@ window.loadReports = async function() {
   c.innerHTML = '<div style="text-align:center;padding:40px;">Loading report options...</div>';
   
   try {
-    // 1. Fetch Customers for the dropdown
+    // ✅ Use profileId for filtering customers
+    const profileId = getActiveProfileId();
+    
+    // 1. Fetch Customers for the dropdown (filtered by profileId)
     const custSnap = await window.InvoiceApp.clientDb.collection('customers')
-      .where('companyId', '==', window.InvoiceApp.companyId)
+      .where('profileId', '==', profileId)
       .where('isActive', '==', true)
       .get();
       
@@ -89,10 +98,13 @@ window.generateReport = async function() {
   c.innerHTML = '<div style="text-align:center;padding:20px;">Generating report...</div>';
   
   try {
-    // 1. Fetch all invoices for the company
-    // Note: We fetch all and filter in JS to avoid complex Firestore indexes for every variation
+    // ✅ Use profileId for filtering invoices
+    const profileId = getActiveProfileId();
+    
+    // 1. Fetch all invoices for the profile (filtered by profileId)
+    // Note: We fetch all and filter in JS to avoid complex Firestore indexes
     const snap = await window.InvoiceApp.clientDb.collection('invoices')
-      .where('companyId', '==', window.InvoiceApp.companyId)
+      .where('profileId', '==', profileId)
       .get();
     
     let totalRevenue = 0;
@@ -169,7 +181,7 @@ window.generateReport = async function() {
     
     // Store data for export functions
     window.currentReportData = filteredInvoices;
-    window.reportSummary = { year: selectedYear, month: selectedMonth };
+    window.reportSummary = { year: selectedYear, month: selectedMonth, profileId: profileId };
     
   } catch (e) {
     console.error('Report generation error:', e);

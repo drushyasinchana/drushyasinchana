@@ -1,22 +1,31 @@
 /* ══════════════════════════════════════════════════════
-INVOICEEASE PRO - SEQUENCE MANAGER
+INVOICEEASE PRO - SEQUENCE MANAGER (Profile-Aware)
 GST-Compliant Invoice Numbering System
+Modified: Sequences are now profile-aware (COMP001-COMP005)
 ══════════════════════════════════════════════════════ */
 
+// ✅ Helper: Get active profile ID from dropdown or session
+function getActiveProfileId() {
+  return window.selectedProfileId || window.currentCompanyId || sessionStorage.getItem('activeProfileId') || 'COMP001';
+}
+
 window.SequenceManager = {
-  // Generate next invoice number with GST rules
+  // Generate next invoice number with GST rules - PROFILE AWARE
   async getNextInvoiceNumber(seriesId = null) {
     const db = window.InvoiceApp.clientDb;
-    const cid = window.InvoiceApp.companyId;
+    const profileId = getActiveProfileId(); // ✅ Use profile context
+    const companyId = window.InvoiceApp.companyId;
     
     // Default to company prefix if no series specified
     if (!seriesId) {
-      const profile = await db.collection('companyProfile').doc(cid).get();
-      seriesId = profile.data()?.invoicePrefix || cid.slice(0,3).toUpperCase();
+      const profile = await db.collection('companyProfile').doc(profileId).get(); // ✅ Fetch by profileId
+      seriesId = profile.data()?.invoicePrefix || companyId.slice(0,3).toUpperCase();
     }
     
     const currentFY = this.getCurrentFinancialYear();
-    const seqRef = db.collection('sequences').doc(seriesId);
+    // ✅ Sequence doc ID includes profileId for isolation: {companyId}_{profileId}_{prefix}
+    const seqDocId = `${companyId}_${profileId}_${seriesId}`;
+    const seqRef = db.collection('sequences').doc(seqDocId);
     
     return db.runTransaction(async (transaction) => {
       const seqDoc = await transaction.get(seqRef);
@@ -25,7 +34,9 @@ window.SequenceManager = {
       if (!seqDoc.exists) {
         // Create new series if doesn't exist
         seqData = {
-          seriesId,
+          seriesId: seriesId,
+          profileId: profileId,  // ✅ Store profile context
+          companyId: companyId,  // ✅ Store login company for audit
           prefix: seriesId,
           financialYear: currentFY,
           currentNumber: 1,
@@ -73,13 +84,14 @@ window.SequenceManager = {
       return {
         invoiceNumber,
         seriesId,
+        profileId,
         financialYear: currentFY,
         number: nextNum
       };
     });
   },
   
-  // Get current financial year (April-March)
+  // Get current financial year (April-March) - UNCHANGED
   getCurrentFinancialYear() {
     const now = new Date();
     const year = now.getFullYear();
@@ -93,7 +105,7 @@ window.SequenceManager = {
     }
   },
   
-  // Validate invoice number meets GST rules
+  // Validate invoice number meets GST rules - UNCHANGED
   validateInvoiceNumber(invoiceNumber) {
     const errors = [];
     
@@ -118,7 +130,7 @@ window.SequenceManager = {
     };
   },
   
-  // Cancel invoice (instead of delete) for audit trail
+  // Cancel invoice (instead of delete) for audit trail - UNCHANGED
   async cancelInvoice(invoiceId, reason = '') {
     const db = window.InvoiceApp.clientDb;
     
@@ -133,10 +145,14 @@ window.SequenceManager = {
     return true;
   },
   
-  // Get available series for dropdown
+  // Get available series for dropdown - PROFILE AWARE
   async getAvailableSeries() {
     const db = window.InvoiceApp.clientDb;
+    const profileId = getActiveProfileId(); // ✅ Filter by profile
+    const companyId = window.InvoiceApp.companyId;
+    
     const snap = await db.collection('sequences')
+      .where('profileId', '==', profileId) // ✅ Filter by profileId
       .where('isActive', '==', true)
       .get();
     
@@ -146,9 +162,11 @@ window.SequenceManager = {
     }));
   },
   
-  // Create new series (for new branch/type)
+  // Create new series (for new branch/type) - PROFILE AWARE
   async createSeries(seriesId, config) {
     const db = window.InvoiceApp.clientDb;
+    const profileId = getActiveProfileId(); // ✅ Use current profile context
+    const companyId = window.InvoiceApp.companyId;
     const currentFY = this.getCurrentFinancialYear();
     
     const validation = this.validateInvoiceNumber(`${config.prefix || seriesId}/2026-27/001`);
@@ -156,8 +174,13 @@ window.SequenceManager = {
       throw new Error(`Invalid series config: ${validation.errors.join(', ')}`);
     }
     
-    await db.collection('sequences').doc(seriesId).set({
-      seriesId,
+    // ✅ Sequence doc ID includes profileId: {companyId}_{profileId}_{seriesId}
+    const seqDocId = `${companyId}_${profileId}_${seriesId}`;
+    
+    await db.collection('sequences').doc(seqDocId).set({
+      seriesId: seriesId,
+      profileId: profileId,  // ✅ Store profile context
+      companyId: companyId,  // ✅ Store login company for audit
       prefix: config.prefix || seriesId,
       financialYear: currentFY,
       currentNumber: config.startNumber || 1,
