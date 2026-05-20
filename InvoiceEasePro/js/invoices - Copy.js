@@ -1,8 +1,7 @@
 /* ══════════════════════════════════════════════════════
-INVOICEEASE PRO - INVOICE MANAGEMENT (Professional + Themes)
+INVOICEEASE PRO - INVOICE MANAGEMENT (Complete Fixed)
 Features: Save, Edit, Delete, Preview, Signature Toggle, Bill No. Preview, SAC/Rate Auto-fill
 Profile-Aware: Filter by dropdown profileId (NO index required)
-PDF Themes: 6 professional color schemes selectable per invoice
 ══════════════════════════════════════════════════════ */
 
 // ✅ Helper: Get active profile ID from dropdown or session
@@ -26,72 +25,6 @@ function getCurrentFinancialYear() {
     return `${year-1}-${year.toString().slice(-2)}`;
   }
 }
-
-// ✅ Helper: Get company name for active profile (for modal header)
-async function getProfileCompanyName(profileId) {
-  try {
-    const doc = await window.InvoiceApp.clientDb.collection('companyProfile').doc(profileId).get();
-    if (doc.exists) {
-      const data = doc.data();
-      return data.companyName || `Company ${profileId.slice(-1)}`;
-    }
-  } catch (e) {
-    console.warn('Could not fetch company name:', e);
-  }
-  return `Company ${profileId.slice(-1)}`;
-}
-
-// ✅ PDF Color Themes - Professional palettes
-const PDF_THEMES = {
-  teal: {
-    name: 'Teal Professional',
-    primary: [40, 80, 140],    // #28508C - Deep teal-blue
-    secondary: [0, 131, 143],   // #00838F - Original teal
-    accent: [224, 247, 250],    // #E0F7FA - Light teal background
-    text: [13, 31, 34],         // #0D1F22 - Dark text
-    border: [216, 232, 234]     // #D8E8EA - Subtle border
-  },
-  blue: {
-    name: 'Corporate Blue',
-    primary: [25, 118, 210],    // #1976D2 - Material blue
-    secondary: [13, 71, 161],   // #0D47A1 - Deep blue
-    accent: [227, 242, 253],    // #E3F2FD - Light blue bg
-    text: [13, 31, 34],
-    border: [197, 221, 248]
-  },
-  orange: {
-    name: 'Warm Orange',
-    primary: [230, 81, 0],      // #E65100 - Deep orange
-    secondary: [191, 54, 12],   // #BF360C - Darker orange
-    accent: [255, 243, 224],    // #FFF3E0 - Light orange bg
-    text: [13, 31, 34],
-    border: [255, 224, 178]
-  },
-  green: {
-    name: 'Forest Green',
-    primary: [46, 125, 50],     // #2E7D32 - Material green
-    secondary: [27, 94, 32],    // #1B5E20 - Dark green
-    accent: [232, 245, 233],    // #E8F5E9 - Light green bg
-    text: [13, 31, 34],
-    border: [200, 230, 201]
-  },
-  lightbrown: {
-    name: 'Earth Brown',
-    primary: [141, 110, 99],    // #8D6E63 - Light brown
-    secondary: [93, 64, 55],    // #5D4037 - Dark brown
-    accent: [247, 239, 233],    // #F7EF E9 - Warm beige bg
-    text: [13, 31, 34],
-    border: [215, 204, 200]
-  },
-  darkbrown: {
-    name: 'Executive Brown',
-    primary: [62, 39, 35],      // #3E2723 - Very dark brown
-    secondary: [93, 64, 55],    // #5D4037 - Medium brown
-    accent: [239, 235, 233],    // #EFEBE9 - Soft beige
-    text: [13, 31, 34],      // White text for dark header
-    border: [188, 170, 164]
-  }
-};
 
 // ✅ Helper: Generate preview invoice number (for display before save)
 async function getPreviewInvoiceNumber() {
@@ -224,7 +157,7 @@ window.deleteInvoice = async function(id) {
   }
 };
 
-// ✅ Show Modal (Create or Edit) - WITH GST/IGST/NON-GST TOGGLE & BILL NO. PREVIEW & PDF THEME
+// ✅ Show Modal (Create or Edit) - WITH GST/IGST/NON-GST TOGGLE & BILL NO. PREVIEW
 window.showInvoiceModal = async function(editId = null, editData = null) {
   // Remove old modal if exists
   const oldModal = document.getElementById('invoiceModal');
@@ -232,9 +165,6 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   
   // ✅ Use profile ID for filtering customers/particulars
   const profileId = getActiveProfileId();
-  
-  // ✅ Get company name for header display
-  const companyName = await getProfileCompanyName(profileId);
   
   const custSnap = await window.InvoiceApp.clientDb.collection('customers')
     .where('profileId','==',profileId)
@@ -246,15 +176,9 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
     
   const today = new Date().toISOString().split('T')[0];
   
-  // Default values for GST toggles and theme
+  // Default values for GST toggles
   const isNonGstDefault = editData && editData.isNonGst === true;
   const isIgstDefault = editData && editData.isIgst === true;
-  const selectedTheme = editData?.pdfTheme || 'teal'; // Default to teal
-  
-  // Build theme options for dropdown
-  const themeOptions = Object.entries(PDF_THEMES).map(([key, theme]) => 
-    `<option value="${key}" ${key === selectedTheme ? 'selected' : ''}>${theme.name}</option>`
-  ).join('');
   
   const modal = document.createElement('div');
   modal.id = 'invoiceModal';
@@ -263,15 +187,9 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   modal.innerHTML = `
     <div class="modal-content" style="max-width:1100px; width:95%; padding:32px; max-height:90vh; overflow-y:auto;">
       <div id="invoiceFormContainer">
-        <!-- Professional Header with Company Context -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-          <div>
-            <h2 style="margin:0;font-size:1.4rem;font-weight:700;color:var(--ink);">${editId ? 'Edit' : 'Create'} Invoice</h2>
-            <div style="font-size:0.9rem;color:var(--muted);margin-top:4px;">
-              For: <strong style="color:var(--teal-d);">${companyName}</strong>
-            </div>
-          </div>
-          <button class="btn-close" onclick="closeModal('invoiceModal')" style="font-size:2rem;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted);transition:color .2s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">&times;</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2 style="margin:0;font-size:1.4rem;">${editId ? 'Edit' : 'Create'} Invoice</h2>
+          <button class="btn-close" onclick="closeModal('invoiceModal')" style="font-size:2rem;line-height:1;background:none;border:none;cursor:pointer;color:var(--muted);">&times;</button>
         </div>
         
         <form id="invoiceForm" onsubmit="saveInvoice(event)">
@@ -316,15 +234,6 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
                <span style="font-weight:600;">IGST (Inter-State)</span>
              </label>
              <span style="font-size:0.8rem;color:var(--muted);margin-left:auto;">Default: CGST+SGST (Intra-State)</span>
-          </div>
-          
-          <!-- ✅ PDF Theme Selector -->
-          <div style="margin:16px 0; padding:15px; border:1px solid var(--border); border-radius:8px; background:var(--teal-s);">
-            <label style="font-size:0.9rem;font-weight:600;color:var(--ink2);margin-bottom:8px;display:block;">🎨 PDF Color Theme</label>
-            <select id="pdfTheme" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;background:#fff;cursor:pointer;width:100%;max-width:300px;">
-              ${themeOptions}
-            </select>
-            <div style="font-size:0.75rem;color:var(--hint);margin-top:4px;">Select a professional color scheme for your invoice PDF</div>
           </div>
           
           <div style="background:var(--bg);padding:20px;border-radius:10px;margin:20px 0;">
@@ -538,7 +447,7 @@ window.calcTotal = function() {
 };
 
 
-// ✅ Save Invoice (With GST/Non-GST & Preview Logic) - MODIFIED FOR PROFILE ID & PDF THEME
+// ✅ Save Invoice (With GST/Non-GST & Preview Logic) - MODIFIED FOR PROFILE ID
 window.saveInvoice = async function(e) {
   e.preventDefault();
   const cSel = document.getElementById('invCustomer');
@@ -549,7 +458,6 @@ window.saveInvoice = async function(e) {
   const includeSignature = document.getElementById('includeSignature')?.checked !== false;
   const isNonGst = document.getElementById('isNonGst')?.checked === true;
   const isIgst = document.getElementById('isIgst')?.checked === true;
-  const pdfTheme = document.getElementById('pdfTheme')?.value || 'teal'; // Get selected theme
   
   // ✅ Get profile ID for this invoice
   const profileId = getActiveProfileId();
@@ -596,7 +504,6 @@ window.saveInvoice = async function(e) {
         signatureIncluded: includeSignature,
         isNonGst: isNonGst,
         isIgst: isIgst,
-        pdfTheme: pdfTheme,  // ✅ Save selected PDF theme
         profileId: profileId,  // ✅ Ensure profileId is set
         companyId: companyId,  // ✅ Preserve login companyId
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -642,7 +549,6 @@ window.saveInvoice = async function(e) {
         signatureIncluded: includeSignature,
         isNonGst: isNonGst,
         isIgst: isIgst,
-        pdfTheme: pdfTheme,  // ✅ Save selected PDF theme
         seriesId: prefix, financialYear: financialYear,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -687,21 +593,13 @@ window.downloadInvoicePDF = async function(id) {
 };
 
 // ==========================================
-// CORE PDF RENDERER - FULL VERSION WITH THEME SUPPORT
+// CORE PDF RENDERER - FULL VERSION PRESERVED
 // ==========================================
 async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   // ✅ Use profileId to fetch correct company profile
   const profileId = inv.profileId || window.InvoiceApp.companyId;
   const compSnap = await window.InvoiceApp.clientDb.collection('companyProfile').doc(profileId).get();
   const comp = compSnap.exists ? compSnap.data() : {};
-  
-  // ✅ Get theme colors (default to teal if not set)
-  const theme = PDF_THEMES[inv.pdfTheme] || PDF_THEMES.teal;
-  const [primaryR, primaryG, primaryB] = theme.primary;
-  const [secondaryR, secondaryG, secondaryB] = theme.secondary;
-  const [accentR, accentG, accentB] = theme.accent;
-  const [textR, textG, textB] = theme.text;
-  const [borderR, borderG, borderB] = theme.border;
   
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -710,7 +608,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   const margin = 15;
   const contentWidth = pageWidth - (margin * 2);
   
-  // 1. HEADER - THEME COLORS
+  // 1. HEADER
   let y = 15;
   if (comp.logoUrl) {
     try {
@@ -718,16 +616,15 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
       doc.addImage(logoData, 'JPEG', margin, y, 60, 30);
     } catch(e) { console.log('Logo error:', e); }
   }
-  doc.setFontSize(22); doc.setFont(undefined, 'bold'); 
-  doc.setTextColor(primaryR, primaryG, primaryB); // ✅ Theme primary color
+  doc.setFontSize(22); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 80, 140);
   doc.text('TAX INVOICE', pageWidth - margin, y + 10, { align: 'right' });
   y += 35;
   
-  // 2. COMPANY DETAILS - THEME COLORS
-  doc.setTextColor(primaryR, primaryG, primaryB); doc.setFontSize(16); doc.setFont(undefined, 'bold');
+  // 2. COMPANY DETAILS
+  doc.setTextColor(40, 80, 140); doc.setFontSize(16); doc.setFont(undefined, 'bold');
   doc.text(comp.companyName || 'Company Name', pageWidth - margin, y, { align: 'right' });
   y += 7;
-  doc.setTextColor(textR, textG, textB); doc.setFontSize(8); doc.setFont(undefined, 'normal'); // ✅ Theme text color
+  doc.setTextColor(60, 60, 60); doc.setFontSize(8); doc.setFont(undefined, 'normal');
   
   if (comp.address) {
     const lines = comp.address.includes('\n') ? comp.address.split('\n') : doc.splitTextToSize(comp.address, 80);
@@ -738,14 +635,14 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   if (comp.phone) contactLine += 'Phone: ' + comp.phone;
   if (comp.email) contactLine += (contactLine ? ' | ' : '') + 'Email: ' + comp.email;
   if (contactLine) { doc.text(contactLine, pageWidth - margin, y, { align: 'right' }); y += 4; }
-  if (comp.gstn) { doc.setTextColor(primaryR, primaryG, primaryB); doc.setFont(undefined, 'bold'); doc.text('GSTIN: ' + comp.gstn, pageWidth - margin, y, { align: 'right' }); y += 4; }
-  if (comp.pan) { doc.setTextColor(textR, textG, textB); doc.setFont(undefined, 'normal'); doc.text('PAN: ' + comp.pan, pageWidth - margin, y, { align: 'right' }); y += 7; }
+  if (comp.gstn) { doc.setTextColor(40, 80, 140); doc.setFont(undefined, 'bold'); doc.text('GSTIN: ' + comp.gstn, pageWidth - margin, y, { align: 'right' }); y += 4; }
+  if (comp.pan) { doc.setTextColor(60, 60, 60); doc.setFont(undefined, 'normal'); doc.text('PAN: ' + comp.pan, pageWidth - margin, y, { align: 'right' }); y += 7; }
   
-  doc.setDrawColor(primaryR, primaryG, primaryB); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth - margin, y);
+  doc.setDrawColor(40, 80, 140); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth - margin, y);
   y += 8;
   
   // 3. META - ✅ LEFT ALIGNED
-  doc.setTextColor(textR, textG, textB); doc.setFontSize(9); doc.setFont(undefined, 'bold');
+  doc.setTextColor(60, 60, 60); doc.setFontSize(9); doc.setFont(undefined, 'bold');
   const invDate = inv.invoiceDate?.toDate ? inv.invoiceDate.toDate().toLocaleDateString('en-IN') : new Date(inv.invoiceDate).toLocaleDateString('en-IN');
   const leftColX = margin;
   const rightColX = pageWidth - margin - 60;
@@ -759,19 +656,19 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   doc.text(poDate, rightColX + 25, y);
   y += 10;
   
-  // 4. BILL TO - THEME ACCENT BACKGROUND
-  doc.setFillColor(primaryR, primaryG, primaryB); doc.rect(margin, y, 50, 6, 'F'); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.setFontSize(9);
+  // 4. BILL TO
+  doc.setFillColor(40, 80, 140); doc.rect(margin, y, 50, 6, 'F'); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.setFontSize(9);
   doc.text('BILL TO', margin + 2, y + 4); y += 9;
-  doc.setTextColor(textR, textG, textB); doc.setFont(undefined, 'bold'); doc.setFontSize(10); doc.text(inv.customerName || '-', margin, y);
+  doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'bold'); doc.setFontSize(10); doc.text(inv.customerName || '-', margin, y);
   doc.setFont(undefined, 'normal'); doc.setFontSize(8); y += 5;
   if (inv.customerAddress) {
     const cLines = inv.customerAddress.includes('\n') ? inv.customerAddress.split('\n') : doc.splitTextToSize(inv.customerAddress, 80);
     cLines.forEach(line => { if (line.trim()) { doc.text(line.trim(), margin, y); y += 4; } });
   }
-  if (inv.customerGstn) { doc.setTextColor(primaryR, primaryG, primaryB); doc.setFont(undefined, 'bold'); doc.text('GSTIN: ' + inv.customerGstn, margin, y); doc.setTextColor(textR, textG, textB); y += 4; }
+  if (inv.customerGstn) { doc.setTextColor(40, 80, 140); doc.setFont(undefined, 'bold'); doc.text('GSTIN: ' + inv.customerGstn, margin, y); doc.setTextColor(0, 0, 0); y += 4; }
   if (inv.customerPan) { doc.text('PAN: ' + inv.customerPan, margin, y); y += 4; }
   
-  // 5. ITEMS TABLE - ✅ THEME COLORS & FIXED ALIGNMENTS
+  // 5. ITEMS TABLE - ✅ FIXED ALIGNMENTS
   y = Math.max(y + 8, 85);
   
   // ✅ Adjusted column positions
@@ -782,10 +679,10 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   const colQty = margin + 150;         // Qty (center aligned)
   const colAmount = margin + 170;      // Amount (right aligned)
   
-  // ✅ Standard header height (8mm) with theme colors
-  doc.setFillColor(primaryR, primaryG, primaryB); // ✅ Theme primary
+  // ✅ Standard header height (8mm)
+  doc.setFillColor(40, 80, 140);
   doc.rect(margin, y, contentWidth, 10, 'F');
-  doc.setTextColor(255, 255, 255); // White text on dark header
+  doc.setTextColor(255, 255, 255);
   doc.setFont(undefined, 'bold');
   doc.setFontSize(10);
  
@@ -799,7 +696,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   doc.text('Amount', colAmount, y + 3.5, { align: 'right' });
   
   y += 8;
-  doc.setTextColor(textR, textG, textB); // ✅ Theme text color
+  doc.setTextColor(0, 0, 0);
   doc.setFont(undefined, 'normal');
   doc.setFontSize(8);
   
@@ -807,7 +704,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     if (y > 250) { 
       doc.addPage(); 
       y = 20; 
-      doc.setFillColor(primaryR, primaryG, primaryB); // ✅ Theme primary
+      doc.setFillColor(40, 80, 140);
       doc.rect(margin, y, contentWidth, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
@@ -818,12 +715,12 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
       doc.text('Qty', colQty, y + 4.5, { align: 'center' });
       doc.text('Amount', colAmount, y + 4.5, { align: 'right' });
       y += 8;
-      doc.setTextColor(textR, textG, textB);
+      doc.setTextColor(0, 0, 0);
       doc.setFont(undefined, 'normal');
     }
     
     if (i % 2 === 0) {
-      doc.setFillColor(accentR, accentG, accentB); // ✅ Theme accent for row background
+      doc.setFillColor(248, 248, 248);
       doc.rect(margin, y - 3, contentWidth, 6, 'F');
     }
     
@@ -850,7 +747,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     y += 6;
   });
   
-  // 6. TOTALS - ✅ THEME COLORS & ALIGNED WITH AMOUNT COLUMN
+  // 6. TOTALS - ✅ ALIGNED WITH AMOUNT COLUMN
   y += 4; 
   doc.setFont(undefined, 'bold'); 
   doc.setFontSize(9);
@@ -886,30 +783,30 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     y += 5; 
   }
   
-  // ✅ TOTAL box - extended to align with SAC column, with theme colors
-  doc.setFillColor(primaryR, primaryG, primaryB); // ✅ Theme primary
-  doc.rect(colSAC - 10, y - 3, colAmount - (colSAC - 5) + 14, 6, 'F');
-  doc.setTextColor(255, 255, 255); // White text on dark background
+  // ✅ TOTAL box - extended to align with SAC column
+  doc.setFillColor(40, 80, 140); 
+  doc.rect(colSAC - 10, y - 3, colAmount - (colSAC - 5) + 14, 6, 'F'); // Extended box
+  doc.setTextColor(255, 255, 255); 
   doc.setFont(undefined, 'bold'); 
   doc.text('TOTAL', colSAC, y + 1, { align: 'left' }); 
   doc.text('Rs. ' + (inv.grandTotal || 0).toFixed(2), colAmount, y + 1, { align: 'right' });
   
-  // 7. AMOUNT IN WORDS - THEME TEXT COLOR
+  // 7. AMOUNT IN WORDS
   y += 12; 
-  doc.setTextColor(textR, textG, textB); // ✅ Theme text color
+  doc.setTextColor(60, 60, 60); 
   doc.setFont(undefined, 'bold'); 
   doc.setFontSize(9);
   doc.text('Amount in words: ' + numberToWords(inv.grandTotal) + ' only', margin, y);
   
-  // 8. BANK & ACCOUNT NAME - THEME COLORS
+  // 8. BANK & ACCOUNT NAME
   y += 10; 
-  doc.setDrawColor(borderR, borderG, borderB); // ✅ Theme border color
+  doc.setDrawColor(150, 150, 150); 
   doc.setLineWidth(0.2); 
   doc.line(margin, y, pageWidth - margin, y); 
   y += 6;
   doc.setFont(undefined, 'normal'); 
   doc.setFontSize(8); 
-  doc.setTextColor(textR, textG, textB);
+  doc.setTextColor(60, 60, 60);
   
   if (comp.accountName) { 
     doc.text('Account Name: ' + comp.accountName, margin, y); 
@@ -924,43 +821,44 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     doc.text('IFSC: ' + (comp.bankDetails.ifscCode || ''), margin, y); 
   }
   
-  // NOTE / REMARKS - THEME COLORS & 60% WIDTH
-  const noteY = y + 16;
-  if (inv.remarks?.trim()) {
-    doc.setFont(undefined, 'italic'); 
-    doc.setFontSize(8);
-    doc.setTextColor(textR, textG, textB); // ✅ Theme text color
-    
-    const notePrefix = 'Note: ';
-    const noteText = inv.remarks.trim();
-    
-    // ✅ Limit width to 60% of content area
-    const maxWidth = contentWidth * 0.60;
-    const prefixWidth = doc.getTextWidth(notePrefix);
-    const indentX = margin + prefixWidth;
-    
-    // ✅ Split remarks to fit 60% width
-    const availableWidth = maxWidth - prefixWidth - 5;
-    const remarkLines = doc.splitTextToSize(noteText, availableWidth);
-    
-    // ✅ Display up to 5 lines with hanging indent
-    const maxLines = 5;
-    
-    remarkLines.slice(0, maxLines).forEach((line, idx) => {
-      if (idx === 0) {
-        doc.text(notePrefix + line, margin, noteY + (idx * 4));
-      } else {
-        doc.text(line, indentX, noteY + (idx * 4));
-      }
-    });
-  }
+  // NOTE / REMARKS
+// NOTE / REMARKS - FIXED: 60% width + hanging indent + 5 lines max
+const noteY = y + 16;
+if (inv.remarks?.trim()) {
+  doc.setFont(undefined, 'italic'); 
+  doc.setFontSize(8);
   
-  // SIGNATURE - THEME COLORS
+  const notePrefix = 'Note: ';
+  const noteText = inv.remarks.trim();
+  
+  // ✅ Limit width to 60% of content area (not full page width)
+  const maxWidth = contentWidth * 0.60; // 60% of available width
+  const prefixWidth = doc.getTextWidth(notePrefix);
+  const indentX = margin + prefixWidth;
+  
+  // ✅ Split remarks to fit 60% width (excluding prefix width)
+  const availableWidth = maxWidth - prefixWidth - 5;
+  const remarkLines = doc.splitTextToSize(noteText, availableWidth);
+  
+  // ✅ Display up to 5 lines with hanging indent
+  const maxLines = 5;
+  
+  remarkLines.slice(0, maxLines).forEach((line, idx) => {
+    if (idx === 0) {
+      // First line: "Note: " + remarks at left margin
+      doc.text(notePrefix + line, margin, noteY + (idx * 4));
+    } else {
+      // Subsequent lines: indented to align with text after "Note: "
+      doc.text(line, indentX, noteY + (idx * 4));
+    }
+  });
+}
+  
+  // SIGNATURE
   const sigStartY = y - 8;
   const sigX = pageWidth - margin;
   doc.setFont(undefined, 'normal'); 
   doc.setFontSize(8);
-  doc.setTextColor(textR, textG, textB);
   doc.text('For ' + (comp.companyName || 'Company'), sigX, sigStartY, { align: 'right' });
   if (includeSignature && comp.signatureUrl) {
     try {
@@ -976,7 +874,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   }
   
   doc.setFontSize(7); 
-  doc.setTextColor(120, 120, 120); // Neutral gray for footer
+  doc.setTextColor(120, 120, 120);
   doc.text('Thank you for your business!', pageWidth / 2, 290, { align: 'center' });
   
   if (outputMode === 'save') { 
@@ -988,7 +886,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   }
 }
 
-// Number to Words Helper (UNCHANGED)
+// Number to Words Helper
 function numberToWords(num) {
   if (!num) return 'Zero';
   const n = Math.round(num);
