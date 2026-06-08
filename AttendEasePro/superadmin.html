@@ -577,115 +577,122 @@ tbody td{padding:9px 14px;color:var(--ink2);vertical-align:middle;}
         </div>
       </div>
 
-      <!-- ── ADD / EDIT COMPANY ── -->
-      <div id="pgAddCompany" class="page">
-        <div class="card">
-          <div class="card-hdr">
-            <div>
-              <h3 id="compFormTitle">Add New Company</h3>
-              <p>All fields marked * are required</p>
-            </div>
-          </div>
-
-          <div class="form-grid">
-            <div class="fg">
-              <label>Company ID <span>*</span></label>
-              <input id="cId" type="text" placeholder="e.g. COMP002" style="text-transform:uppercase;"/>
-              <span class="hint">Unique identifier — cannot be changed later</span>
-            </div>
-            <div class="fg">
-              <label>Company Name <span>*</span></label>
-              <input id="cName" type="text" placeholder="e.g. ABC Constructions Pvt Ltd"/>
-            </div>
-            <div class="fg">
-              <label>Admin Email <span>*</span></label>
-              <input id="cAdminEmail" type="email" placeholder="admin@company.com"/>
-            </div>
-            <div class="fg">
-              <label>Contact Phone</label>
-              <input id="cPhone" type="tel" placeholder="+91 9876543210"/>
-            </div>
-            <div class="fg">
-              <label>Plan <span>*</span></label>
-              <select id="cPlan">
-                <option value="basic">Basic</option>
-                <option value="standard">Standard</option>
-                <option value="premium">Premium</option>
-              </select>
-            </div>
-            <div class="fg">
-              <label>Max Employees</label>
-              <input id="cMaxEmp" type="number" placeholder="50" value="50" min="1"/>
-            </div>
-            <div class="fg">
-              <label>Start Date <span>*</span></label>
-              <input id="cStartDate" type="date"/>
-            </div>
-            <div class="fg">
-              <label>End Date <span>*</span></label>
-              <input id="cEndDate" type="date"/>
-            </div>
-            <div class="fg">
-              <label>City</label>
-              <input id="cCity" type="text" placeholder="Bengaluru"/>
-            </div>
-            <div class="fg">
-              <label>Status</label>
-              <select id="cIsActive">
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-            
-            <!-- 🔥 NEW FIELD: Client Firebase Config (JSON) -->
-            <div class="fg span2">
-              <label>Client Firebase Config (JSON) <span>*</span></label>
-              <textarea id="cFirebaseConfig" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}' style="min-height:100px;font-family:monospace;font-size:0.8rem;"></textarea>
-              <span class="hint">Paste from Client Firebase → Project Settings → General → Your apps → SDK config</span>
-            </div>
-            
-            <div class="fg span2">
-              <label>Google Sheet ID <span>*</span></label>
-              <input id="cSheetId" type="text" placeholder="Paste the Google Sheet ID here"/>
-              <span class="hint">From the sheet URL: docs.google.com/spreadsheets/d/<strong>SHEET_ID</strong>/edit</span>
-            </div>
-            <div class="fg span2">
-              <label>Apps Script URL <span>*</span></label>
-              <input id="cScriptUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec"/>
-            </div>
-<div class="fg">
-  <label>Company Logo</label>
-  <div style="border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;background:#fff;">
-    <div id="logoPreview" style="width:80px;height:80px;margin:0 auto 10px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;">
-      <span style="color:var(--muted);font-size:.7rem;">No logo</span>
+<!-- ── ADD / EDIT COMPANY ── -->
+<div id="pgAddCompany" class="page">
+  <div class="card">
+    <div class="card-hdr">
+      <div>
+        <h3 id="compFormTitle">Add New Company</h3>
+        <p>All fields marked * are required</p>
+      </div>
     </div>
-    <input type="file" id="cLogoFile" accept="image/png,image/jpeg" onchange="previewLogo(this)" style="font-size:.8rem;"/>
-    <p style="font-size:.7rem;color:var(--muted);margin-top:6px;">PNG/JPG, max 100KB</p>
-  </div>
-</div>
-<div class="fg">
-  <label>GitHub Release</label>
-  <input id="cRelease" type="text" placeholder="v1.0.0 or https://github.com/..."/>
-  <span class="hint">GitHub release version or URL</span>
-</div>
-<div class="fg span2">
-  <label>Notes</label>
-  <textarea id="cNotes" placeholder="Any notes about this company…"></textarea>
-</div>
-          </div>
 
-          <div class="form-actions">
-            <button class="btn btn-teal" id="btnSaveCompany" onclick="saveCompany()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              Save Company
-            </button>
-            <button class="btn btn-outline" onclick="clearCompanyForm()">Clear</button>
-            <div id="companyResult" class="result-ok" style="margin-left:auto;"></div>
-            <div id="companyErr"    class="result-err" style="margin-left:auto;"></div>
-          </div>
-        </div>
+    <div class="form-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: start;">
+      <!-- Row 1: Company ID, Name, Admin Email, Phone -->
+      <div class="fg">
+        <label>Company ID <span>*</span></label>
+        <input id="cId" type="text" placeholder="e.g. COMP002" style="text-transform:uppercase;"/>
+        <span class="hint">Unique identifier</span>
+      </div>
+      <div class="fg">
+        <label>Company Name <span>*</span></label>
+        <input id="cName" type="text" placeholder="e.g. ABC Constructions Pvt Ltd"/>
+      </div>
+      <div class="fg">
+        <label>Admin Email <span>*</span></label>
+        <input id="cAdminEmail" type="email" placeholder="admin@company.com"/>
+      </div>
+      <div class="fg">
+        <label>Contact Phone</label>
+        <input id="cPhone" type="tel" placeholder="+91 9876543210"/>
       </div>
 
+      <!-- Row 2: Plan, Max Employees, Start Date, End Date -->
+      <div class="fg">
+        <label>Plan <span>*</span></label>
+        <select id="cPlan">
+          <option value="basic">Basic</option>
+          <option value="standard">Standard</option>
+          <option value="premium">Premium</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Max Employees</label>
+        <input id="cMaxEmp" type="number" placeholder="50" value="50" min="1"/>
+      </div>
+      <div class="fg">
+        <label>Start Date <span>*</span></label>
+        <input id="cStartDate" type="date"/>
+      </div>
+      <div class="fg">
+        <label>End Date <span>*</span></label>
+        <input id="cEndDate" type="date"/>
+      </div>
+
+      <!-- Row 3: City, Status, Google Sheet ID -->
+      <div class="fg">
+        <label>City</label>
+        <input id="cCity" type="text" placeholder="Bengaluru"/>
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select id="cIsActive">
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+      </div>
+      <div class="fg" style="grid-column: span 2;">
+        <label>Google Sheet ID <span>*</span></label>
+        <input id="cSheetId" type="text" placeholder="SHEET_ID"/>
+        <span class="hint">From docs.google.com/spreadsheets/d/<strong>ID</strong>/edit</span>
+      </div>
+
+      <!-- Row 4: Firebase Config (left) + Script URL (right) -->
+      <div class="fg" style="grid-column: span 2;">
+        <label>Client Firebase Config (JSON) <span>*</span></label>
+        <textarea id="cFirebaseConfig" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}' style="min-height:160px;font-family:monospace;font-size:0.75rem;resize:vertical;"></textarea>
+        <span class="hint">Paste from Firebase Console → Project Settings → SDK config</span>
+      </div>
+      <div class="fg" style="grid-column: span 2;">
+        <label>Apps Script URL <span>*</span></label>
+        <textarea id="cScriptUrl" placeholder="https://script.google.com/macros/s/…/exec" style="min-height:65px;font-size:0.8rem;resize:vertical;"></textarea>
+      </div>
+
+      <!-- Row 5: Logo (left) + GitHub Release & Notes (right) -->
+      <div class="fg" style="grid-column: span 1;">
+        <label>Company Logo</label>
+        <div style="border:2px dashed var(--border);border-radius:8px;padding:12px;text-align:center;background:#fff;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div id="logoPreview" style="width:80px;height:80px;margin-bottom:8px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            <span style="color:var(--muted);font-size:.7rem;">No logo</span>
+          </div>
+          <input type="file" id="cLogoFile" accept="image/png,image/jpeg" onchange="previewLogo(this)" style="font-size:.8rem;"/>
+          <p style="font-size:.7rem;color:var(--muted);margin-top:4px;">PNG/JPG, max 100KB</p>
+        </div>
+      </div>
+      <div style="grid-column: span 3; display: flex; flex-direction: column; gap: 12px;">
+        <div class="fg" style="margin:0;">
+          <label>GitHub Release</label>
+          <input id="cRelease" type="text" placeholder="v1.0.0 or https://github.com/..."/>
+          <span class="hint">Release version or URL</span>
+        </div>
+        <div class="fg" style="margin:0; flex: 1;">
+          <label>Notes</label>
+          <textarea id="cNotes" placeholder="Any notes about this company…" style="min-height:100px;resize:vertical;width:100%;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top:12px;">
+      <button class="btn btn-teal" id="btnSaveCompany" onclick="saveCompany()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Company
+      </button>
+      <button class="btn btn-outline" onclick="clearCompanyForm()">Clear</button>
+      <div id="companyResult" class="result-ok" style="margin-left:auto;"></div>
+      <div id="companyErr" class="result-err" style="margin-left:auto;"></div>
+    </div>
+  </div>
+</div>
 
       <!-- ── ADMINS LIST ── -->
       <div id="pgAdmins" class="page">
@@ -1134,32 +1141,6 @@ function nav(page, btn) {
   if (page === 'admins')     loadAdmins();
   if (page === 'addCompany' && !SA.editingCompanyId) clearCompanyForm();
   if (page === 'addAdmin'   && !SA.editingAdminEmail) clearAdminForm();
-}
-
-
-//   ------------ Logo Preview Functon --------------
-
-let logoBlob = null;
-let logoType = null;
-
-function previewLogo(input) {
-  const file = input.files[0];
-  if (!file) return;
-  
-  if (file.size > 100 * 1024) {
-    toast('Logo must be less than 100KB', 'error');
-    input.value = '';
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const preview = document.getElementById('logoPreview');
-    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;"/>`;
-    logoBlob = e.target.result;
-    logoType = file.type;
-  };
-  reader.readAsDataURL(file);
 }
 
 
