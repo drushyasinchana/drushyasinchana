@@ -12,18 +12,18 @@ const SECTOR_REGISTRY = {
     name: "Construction & Infrastructure",
     designations: {
       "Office/Corporate": [
-        "General Manager", "AGM", "Project Manager", "HR Manager", "HR Executive",
+        "Managing Director","Director","General Manager", "AGM", "Project Manager", "HR Manager", "HR Executive",
         "Admin Manager", "Admin Executive", "Accounts Manager", "Accountant", "CA/Finance Manager",
         "Design Engineer", "Structural Engineer", "Architect", "Estimator", "Quantity Surveyor",
         "Procurement Manager", "Store Manager", "Front Desk Executive", "Receptionist",
-        "Office Assistant", "Peon/Attendant", "Chef/Cook", "Kitchen Helper", "Steward"
+        "Office Assistant", "Peon/Attendant", "Chef/Cook", "Kitchen Helper", "Steward", "Dy.Manager", "Service Manager"
       ],
       "Field/Operations": [
         "Site Engineer", "Site Supervisor", "Safety Officer", "Safety Supervisor",
         "Foreman", "Mason", "Carpenter", "Electrician", "Plumber", "Welder",
         "Heavy Equipment Operator", "Crane Operator", "Surveyor", "Survey Assistant",
         "Laborer", "Helper", "Bar Bender", "Concrete Mixer Operator", "Tile Fitter",
-        "Painter", "Driver", "Security Guard"
+        "Painter", "Driver", "Security Guard", "Field Worker"
       ]
     }
   },

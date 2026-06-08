@@ -1,6 +1,41 @@
-// ══════════════════════════════════════════════════════
-// MANUAL ENTRY
-// ══════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
+   MANUAL.JS - Manual Attendance Entry (Uniform Format)
+   Ensures manual entries match Android app data structure
+══════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════
+   HELPER: Calculate Hours (Shared Utility)
+   ── Added to fix "calcHours is not defined" error
+══════════════════════════════════════════════════════ */
+function calcHours(inTime, outTime) {
+  if (!inTime || !outTime) return '—';
+  try {
+    // If already time strings (HH:mm:ss), parse directly
+    if (typeof inTime === 'string' && typeof outTime === 'string') {
+      const [inH, inM] = inTime.split(':').map(Number);
+      const [outH, outM] = outTime.split(':').map(Number);
+      const diff = (outH * 60 + outM) - (inH * 60 + inM);
+      if (diff <= 0) return '—';
+      const h = Math.floor(diff / 60);
+      const m = diff % 60;
+      return `${h}h ${m}m`;
+    }
+    // If timestamps
+    const inDate = inTime.toDate ? inTime.toDate() : new Date(inTime);
+    const outDate = outTime.toDate ? outDate.toDate() : new Date(outTime);
+    const diffMs = outDate - inDate;
+    if (diffMs <= 0) return '—';
+    const h = Math.floor(diffMs / (1000 * 60 * 60));
+    const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${h}h ${m}m`;
+  } catch(e) {
+    return '—';
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   LOAD MANUAL ENTRY PAGE
+══════════════════════════════════════════════════════ */
 async function loadManual() {
   if (!S.clientDb) { toast('DB not connected', 'error'); return; }
   try {
@@ -14,22 +49,33 @@ async function loadManual() {
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   POPULATE EMPLOYEE DROPDOWN BY SITE
+══════════════════════════════════════════════════════ */
 function onManualSiteChange() {
   const siteId = document.getElementById('mSite')?.value;
   const mEmpId = document.getElementById('mEmpId');
   if (!siteId || !mEmpId) return;
   
-  const siteEmps = S.employees.filter(e => e.Site === siteId);
+  const siteEmps = S.employees.filter(e => e.Site === siteId || e.SiteID === siteId);
   while (mEmpId.options.length > 1) mEmpId.remove(1);
   
   siteEmps.forEach(e => {
     const opt = document.createElement('option');
     opt.value = e.EMPID;
-    opt.textContent = `${e.EMPID} — ${e.EmpName}`;
+    opt.textContent = `${e.EMPID} — ${e.EmpName || e.Name || 'Unknown'}`;
     mEmpId.appendChild(opt);
   });
+  
+  // Auto-fill defaults if enabled
+  if (document.getElementById('mUseDefaults')?.checked) {
+    toggleManualDefaults();
+  }
 }
 
+/* ══════════════════════════════════════════════════════
+   TOGGLE DEFAULT TIMES FROM SITE SETTINGS
+══════════════════════════════════════════════════════ */
 function toggleManualDefaults() {
   const useDefaults = document.getElementById('mUseDefaults')?.checked;
   const mCheckIn = document.getElementById('mCheckIn');
@@ -41,16 +87,16 @@ function toggleManualDefaults() {
   const emp = S.employees.find(e => e.EMPID === mEmpId?.value);
   if (!emp || !emp.Site) return;
   
-  const site = S.sites.find(s => s.SiteID === emp.Site);
+  const site = S.sites.find(s => s.SiteID === emp.Site || s.id === emp.Site);
   if (site) {
-    if (mCheckIn) mCheckIn.value = site.ShiftStart || '09:00';
-    if (mCheckOut) mCheckOut.value = site.ShiftEnd || '18:00';
+    if (mCheckIn) mCheckIn.value = site.ShiftStart || site.shiftStart || '09:00';
+    if (mCheckOut) mCheckOut.value = site.ShiftEnd || site.shiftEnd || '18:00';
   }
 }
 
-//════════════════════════════════════════════════════
-// MANUAL ENTRY - With postLunch Field Support
-//════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
+   SUBMIT MANUAL ENTRY - UNIFORM WITH ANDROID FORMAT
+══════════════════════════════════════════════════════ */
 async function submitManual() {
   const empId   = document.getElementById('mEmpId')?.value;
   const dateStr = document.getElementById('mDate')?.value; // "YYYY-MM-DD"
@@ -71,22 +117,30 @@ async function submitManual() {
   const siteId  = emp.Site || emp.SiteID || 'SITE001';
   
   try {
-    // 1. Format date parts for Doc ID: EMPID_DD-MM-YYYY (matches Android)
+    // ✅ 1. Format date as DD-MM-YYYY STRING (matches Android app)
     const [y, m, d] = dateStr.split('-');
-    const formattedDate = `${d}-${m}-${y}`; // "15-04-2026"
-    const docId = `${empId}_${formattedDate}`;
+    const dateStrAndroid = `${d.padStart(2,'0')}-${m.padStart(2,'0')}-${y}`; // "02-05-2026"
     
-    // 2. Date Timestamp: Midnight 00:00:00 local time
-    const dateTimestamp = new Date(y, m - 1, d);
+    // ✅ 2. Doc ID format: EMPID_DD-MM-YYYY (matches Android)
+    const docId = `${empId}_${dateStrAndroid}`;
     
-    // 3. Normalize Times to HH:MM:SS (App format)
+    // ✅ 3. Date Timestamp for queries (midnight local time)
+    const dateTimestamp = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    
+    // ✅ 4. Normalize Times to HH:MM:SS (Android format)
     if (checkIn && checkIn.length === 5) checkIn += ':00';
     if (checkOut && checkOut.length === 5) checkOut += ':00';
     
-    // 4. STRICT PAYLOAD with postLunch nested map (all nulls for manual entry)
+    // ✅ 5. Current timestamp for audit
+    const nowTimestamp = firebase.firestore.FieldValue.serverTimestamp();
+    
+    // ✅ 6. UNIFIED PAYLOAD - Matches Android app structure exactly
     const payload = {
       companyId:      S.prefs.companyId,
-      Date:           dateTimestamp,
+      
+      // ✅ KEY FIX: Date as STRING (DD-MM-YYYY) - matches Android
+      Date:           dateStrAndroid,
+      
       EMPID:          empId,
       HalfDay:        halfDay,
       InTime:         checkIn,
@@ -97,25 +151,32 @@ async function submitManual() {
       SiteID:         siteId,
       Status:         status,
       
-      // ✅ NEW: postLunch nested map with typed nulls
+      // ✅ postLunch nested map - matches Android structure
       postLunch: {
-        time: null,           // String or null
-        latitude: null,       // Number or null
-        longitude: null,      // Number or null
-        inside: null,         // Boolean or null
-        accuracy: null        // Number or null
-      }
+        time: checkOut || null,
+        latitude: null,
+        longitude: null,
+        inside: null,
+        accuracy: null,
+        timestamp: nowTimestamp
+      },
+      
+      // Audit fields
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
     if (!S.clientDb) throw new Error('Database not connected');
     
-    // Save with merge:true to allow app to add postLunch later
+    // Save with merge:true to allow app to update postLunch later
     await S.clientDb.collection('attendance').doc(docId).set(payload, { merge: true });
     
     toast('✅ Manual attendance saved successfully!');
     clearManual();
-    loadRectifications();
-    loadAttendance();
+    
+    // Refresh dependent views
+    if (typeof loadRectifications === 'function') await loadRectifications();
+    if (typeof loadAttendance === 'function') await loadAttendance();
     
   } catch (e) {
     console.error('Manual entry error:', e);
@@ -123,6 +184,9 @@ async function submitManual() {
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   CLEAR MANUAL FORM
+══════════════════════════════════════════════════════ */
 function clearManual() {
   ['mCheckIn','mCheckOut'].forEach(id => {
     const el = document.getElementById(id);
@@ -146,3 +210,13 @@ function clearManual() {
   if (resEl) resEl.innerHTML = '';
 }
 
+/* ══════════════════════════════════════════════════════
+   UTILITY: Get today's date in YYYY-MM-DD format
+══════════════════════════════════════════════════════ */
+function today() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

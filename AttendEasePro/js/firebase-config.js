@@ -1,4 +1,8 @@
 // js/firebase-config.js
+// ══════════════════════════════════════════════════════
+// FIREBASE CONFIG - Master Database Connection
+// ══════════════════════════════════════════════════════
+
 const firebaseConfig = {
   apiKey:            "AIzaSyCvAyr-4CUAYPXLMBwZ-L9hBlmDcrOjWpA",
   authDomain:        "attendease-963df.firebaseapp.com",
@@ -8,11 +12,20 @@ const firebaseConfig = {
   appId:             "1:107756709284:web:fd8765b97a73f2ce7d8d31",
 };
 
-
-
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+
+// Create instances
 const db = firebase.firestore();
 const auth = firebase.auth();
+
+// ✅ CRITICAL: Expose to GLOBAL window object so other files can access
+window.db = db;
+window.auth = auth;
+window.firebase = firebase;
+
+// Debug log to confirm it ran
+console.log('🔐 firebase-config.js loaded | window.db:', typeof window.db);
 
 // Session Guard
 function requireAuth(redirect = 'index.html') {

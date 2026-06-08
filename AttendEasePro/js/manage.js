@@ -98,14 +98,31 @@ function closeModal(id) {
 // NAVIGATION
 // ══════════════════════════════════════════════════════
 function nav(page, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Hide ALL pages first (force via inline style to override any CSS conflicts)
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none'; // ✅ Force hide
+  });
+  
+  // Show ONLY the selected page
+  const pageId = 'pg' + page.charAt(0).toUpperCase() + page.slice(1);
+  const target = document.getElementById(pageId);
+  
+  if (target) {
+    target.classList.add('active');
+    // Use flex for pages that need flex layout (dashboard, payroll)
+    target.style.display = (page === 'dashboard' || page === 'payroll') ? 'flex' : 'block';
+  }
+  
+  // Update active menu styling
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const pg = document.getElementById('pg' + page.charAt(0).toUpperCase() + page.slice(1));
-  if (pg) pg.classList.add('active');
   if (btn) btn.classList.add('active');
+  
+  // Update topbar title
   const tl = document.getElementById('topbarTitle');
   if (tl) tl.textContent = page.charAt(0).toUpperCase() + page.slice(1);
   
+  // Load page-specific data
   if (page === 'dashboard') loadDashboard();
   if (page === 'employees') loadEmployees();
   if (page === 'sites') loadSites();
@@ -117,39 +134,13 @@ function nav(page, btn) {
   if (page === 'weeklyoff') loadWeeklyOff();
   if (page === 'support') loadSupport();
   if (page === 'rectifications') loadRectifications();
-  
-  // ✅ THIS LINE WAS MISSING:
+  if (page === 'payroll') {
+    // Initialize payroll tab to Edit by default
+    switchPayrollTab('edit');
+  }
   if (page === 'postlunch') initLunchTracking(); 
 }
 
-function toggleAvatarMenu() {
-  const dd = document.getElementById('avatarDropdown');
-  if (dd) dd.classList.toggle('open');
-}
-
-function doLogout() {
-  // Sign out
-  firebase.auth()?.signOut().catch(()=>{});
-  
-  // Clear session
-  sessionStorage.removeItem('companyId');
-  
-  // Delete client app
-  try {
-    firebase.app('client')?.delete();
-  } catch (e) {}
-  
-  // Reset global state
-  S.clientApp = null;
-  S.clientDb = null;
-  S.prefs = { companyId: null, companyName: '', adminEmail: '' };
-  S.employees = [];
-  S.sites = [];
-  S.attRecords = [];
-  
-  // Redirect
-  window.location.href = 'index.html';
-}
 
 // ══════════════════════════════════════════════════════
 // FIREBASE INIT
@@ -737,6 +728,145 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
 
 
 /* ══════════════════════════════════════════════════════
+   CHECK PLAN & ENABLE PREMIUM MENUS (FIXED)
+   - Queries MASTER DB (db), not client DB
+══════════════════════════════════════════════════════ */
+async function checkPlanAndEnableMenus() {
+  const companyId = S.prefs?.companyId;
+  console.log('🔍 Checking plan for company:', companyId);
+  
+  if (!companyId) {
+    console.log('⚠️ No companyId in session');
+    return;
+  }
+
+  try {
+    // ✅ USE MASTER DB (db), NOT S.clientDb
+    // 'db' is the global Firestore instance from firebase-config.js
+    const doc = await db.collection('companies').doc(companyId).get();
+    
+    console.log('📦 Company doc exists:', doc.exists);
+    
+    if (doc.exists) {
+      const plan = doc.data().plan;
+      console.log('✅ Company plan:', plan);
+      
+      const isPremium = (plan === 'premium');
+      
+      // 1. Enable/Disable Payroll Menu
+      const payrollEl = document.getElementById('navPayroll');
+      const payrollBadge = document.getElementById('payrollBadge');
+      
+      if (payrollEl) {
+        payrollEl.style.opacity = isPremium ? '1' : '0.5';
+        payrollEl.style.pointerEvents = isPremium ? 'auto' : 'none';
+        console.log(`🎯 Payroll menu: ${isPremium ? 'ENABLED' : 'DISABLED'}`);
+      }
+      if (payrollBadge) {
+        payrollBadge.style.display = isPremium ? 'inline' : 'none';
+      }
+
+      // 2. Enable/Disable Leave Balances Menu
+      const leaveEl = document.getElementById('navLeaveBalances');
+      if (leaveEl) {
+        leaveEl.style.opacity = isPremium ? '1' : '0.5';
+        leaveEl.style.pointerEvents = isPremium ? 'auto' : 'none';
+        console.log(`🎯 Leave Balances menu: ${isPremium ? 'ENABLED' : 'DISABLED'}`);
+      }
+    } else {
+      console.error('❌ Company document not found in Master DB');
+    }
+  } catch (err) {
+    console.error('❌ Plan check error:', err.code, err.message);
+  }
+}
+
+// ✅ AUTO-ENABLE PREMIUM MENUS
+setTimeout(() => {
+  if (typeof checkPlanAndEnableMenus === 'function') {
+    checkPlanAndEnableMenus();
+  }
+}, 1000); 
+
+
+
+// Auto-enable on page load if session exists
+document.addEventListener('DOMContentLoaded', () => {
+  if (S?.prefs?.companyId && typeof checkPlanAndEnableMenus === 'function') {
+    setTimeout(checkPlanAndEnableMenus, 1500);
+  }
+});
+
+
+/* ══════════════════════════════════════════════════════
+   DEFAULT PAY COMPONENTS TEMPLATE
+══════════════════════════════════════════════════════ */
+function getDefaultPayComponents() {
+  return {
+    allowances: [
+      { id: 'basic', name: 'Basic Salary', type: 'earning', fixed: true, editable: false },
+      { id: 'hra', name: 'House Rent Allowance', type: 'earning', fixed: false, editable: true },
+      { id: 'conveyance', name: 'Conveyance Allowance', type: 'earning', fixed: false, editable: true },
+      { id: 'medical', name: 'Medical Allowance', type: 'earning', fixed: false, editable: true },
+      { id: 'special', name: 'Special Allowance', type: 'earning', fixed: false, editable: true },
+      { id: 'other', name: 'Other Allowances', type: 'earning', fixed: false, editable: true }
+    ],
+    deductions: [
+      { id: 'pf', name: 'Provident Fund', type: 'deduction', fixed: false, editable: true },
+      { id: 'tds', name: 'Tax Deducted at Source', type: 'deduction', fixed: false, editable: true },
+      { id: 'esi', name: 'Employee State Insurance', type: 'deduction', fixed: false, editable: true },
+      { id: 'lop', name: 'Loss of Pay', type: 'deduction', fixed: false, editable: true }
+    ],
+    settings: {
+      currency: 'INR',
+      currencySymbol: '₹',
+      decimalPlaces: 2,
+      calculateLOP: true,
+      proRateSalary: true
+    }
+  };
+}
+
+
+function navigateTo(pageId) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(page => {
+    page.style.display = 'none';
+  });
+  
+  // Show selected page
+  const target = document.getElementById(pageId);
+  if (target) {
+    target.style.display = 'flex';
+  }
+  
+  // Update active menu
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  const activeMenu = document.querySelector(`[onclick="navigateTo('${pageId}')"]`);
+  if (activeMenu) activeMenu.classList.add('active');
+}
+
+
+async function doLogout() {
+  console.log('🔄 Starting logout...');
+  
+  try {
+    console.log('🔐 Attempting Firebase signOut...');
+    await firebase.auth().signOut();
+    console.log('✅ Firebase signOut completed');
+  } catch (error) {
+    console.error('❌ Firebase signOut failed:', error.code, error.message);
+    alert('Sign out error: ' + error.message);
+  }
+  
+  // ... rest of cleanup code ...
+  
+  console.log('🔀 Redirecting to index.html');
+  window.location.replace('index.html');
+}
+
+
+/* ══════════════════════════════════════════════════════
    KEYBOARD SHORTCUTS (Escape Key)
    ══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', function(event) {
@@ -749,3 +879,6 @@ document.addEventListener('keydown', function(event) {
     });
   }
 });
+
+
+

@@ -1,3 +1,30 @@
+/* ══════════════════════════════════════════════════════
+   HELPER: Calculate Hours (Required for rectifications)
+══════════════════════════════════════════════════════ */
+function calcHours(inTime, outTime) {
+  if (!inTime || !outTime) return '—';
+  try {
+    if (typeof inTime === 'string' && typeof outTime === 'string') {
+      const [inH, inM] = inTime.split(':').map(Number);
+      const [outH, outM] = outTime.split(':').map(Number);
+      const diff = (outH * 60 + outM) - (inH * 60 + inM);
+      if (diff <= 0) return '—';
+      const h = Math.floor(diff / 60);
+      const m = diff % 60;
+      return `${h}h ${m}m`;
+    }
+    const inDate = inTime.toDate ? inTime.toDate() : new Date(inTime);
+    const outDate = outTime.toDate ? outDate.toDate() : new Date(outTime);
+    const diffMs = outDate - inDate;
+    if (diffMs <= 0) return '—';
+    const h = Math.floor(diffMs / (1000 * 60 * 60));
+    const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${h}h ${m}m`;
+  } catch(e) {
+    return '—';
+  }
+}
+
 
 // ══════════════════════════════════════════════════════
 // RECTIFICATIONS FUNCTIONS

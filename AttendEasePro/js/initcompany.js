@@ -176,6 +176,82 @@ async function _ensureCollection(clientDb, companyId, colName, docId, docData, i
 }
 
 /* ══════════════════════════════════════════════════════
+   NEW PAYROLL INITIALIZATION (Master + Monthly)
+══════════════════════════════════════════════════════ */
+async function initializePayrollStructure(clientDb, companyId) {
+  try {
+    console.log('📝 Initializing new Payroll Structure...');
+
+    // 1. Create Payroll Master (Static Info)
+    await clientDb.collection('payrollMaster').doc('EMP001').set({
+      companyId: companyId,
+      EMPID: 'EMP001',
+      bankAccount: '123456789012',
+      ifsc: 'HDFC0001234',
+      pan: 'ABCDE1234F',
+      aadhaar: '123456789012',
+      pfAccountNo: 'KA/BLR/12345/000/0001234',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 2. Create Sample Monthly Data (Current Month)
+    const now = new Date();
+    const monthKey = String(now.getMonth() + 1).padStart(2, '0');
+    const yearKey = String(now.getFullYear()).slice(-2);
+    const monthlyCollName = `payroll_${monthKey}_${yearKey}`;
+
+    await clientDb.collection(monthlyCollName).doc('EMP001').set({
+      companyId: companyId,
+      EMPID: 'EMP001',
+      earnings: {
+        basic_salary: 25000,
+        da: 0,
+        hra: 12000,
+        conveyance: 5000,
+        medical: 250,
+        special_allowance: 500,
+        ta: 0,
+        ma: 0,
+        variable_pay: 0,
+        performance: 0,
+        incentives: 0,
+        onsite_allowances: 0,
+        bonus: 0,
+        other_allowances: 0
+      },
+      deductions: {
+        epf: 1500,
+        esi: 0,
+        tds: 2000,
+        mobile_deduction: 0,
+        pt: 200,
+        lop: 0,
+        vpf: 0,
+        fa: 0,
+        advance: 0,
+        recoveries: 0,
+        other_deductions: 0
+      },
+      summary: {
+        gross: 42750,
+        total_deductions: 3700,
+        net_pay: 39050
+      },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log('✅ New Payroll Structure Initialized');
+    return true;
+  } catch (e) {
+    console.error('❌ Payroll Init Error:', e);
+    return false;
+  }
+}
+// Call this in your main init flow: await initializePayrollStructure(clientDb, companyId);
+
+
+
+/* ══════════════════════════════════════════════════════
    CORE: Run company initialization
    ══════════════════════════════════════════════════════ */
 async function runCompanyInitialization(companyId) {
@@ -357,6 +433,88 @@ async function runCompanyInitialization(companyId) {
     if (settingsCreated) created = true;
     
     logToConsole('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    
+    // ══════════════════════════════════════════════════════
+    // ✅ ATTENDEASE PRO - PAYROLL INITIALIZATION
+    // ══════════════════════════════════════════════════════
+    try {
+      const payrollInit = await initializePayrollStructure(clientDb, companyId);
+      if (payrollInit) {
+        logToConsole(`  ✅ AttendEase Pro Payroll collections created`, 'success');
+      }
+    } catch (payErr) {
+      logToConsole(`  ⚠️ Payroll init skipped: ${payErr.message}`, 'warn');
+    }
+    
+    // ══════════════════════════════════════════════════════
+    // ✅ INVOICEEASE PRO - MINIMAL INIT (Same clientDb scope)
+    // ══════════════════════════════════════════════════════
+    try {
+      const prefix = companyId.slice(0,3).toUpperCase();
+      const fy = `${new Date().getFullYear()}-${(new Date().getFullYear()+1).toString().slice(-2)}`;
+      
+      // 1. Company Profile
+      await clientDb.collection('companyProfile').doc(companyId).set({
+        companyId, 
+        companyName, 
+        gstn: '', 
+        pan: '', 
+        address: '', 
+        city: '', 
+        state: '', 
+        pincode: '',
+        phone: companyData.contactPhone || '', 
+        email: adminEmail, 
+        accountName: companyName,
+        bankDetails: { bankName: '', accountNumber: '', ifscCode: '', branch: '' },
+        logoUrl: '', 
+        signatureUrl: '', 
+        logoType: '', 
+        signatureType: '',
+        invoicePrefix: prefix, 
+        invoiceStartNumber: 935, 
+        financialYear: fy,
+        createdAt: new Date(), 
+        updatedAt: new Date()
+      });
+      
+      // 2. Sequences
+      await clientDb.collection('sequences').doc('invoiceNumber').set({
+        prefix, currentNumber: 935, financialYear: fy,
+        lastResetDate: new Date(), updatedAt: new Date()
+      });
+      
+      // 3. Particulars (3 items from PDF)
+      const items = [
+        {itemName:'3 TON 2 MTRS SILLING BELT', sacCode:'997313', rate:859, unit:'NO', gstRate:18, cgstRate:9, sgstRate:9, isActive:true},
+        {itemName:'Installation Charges', sacCode:'995413', rate:1000, unit:'LS', gstRate:18, cgstRate:9, sgstRate:9, isActive:true},
+        {itemName:'Maintenance Service', sacCode:'998713', rate:500, unit:'HRS', gstRate:18, cgstRate:9, sgstRate:9, isActive:true}
+      ];
+      for (const it of items) {
+        await clientDb.collection('invoiceParticulars').add({...it, companyId, createdAt:new Date(), _sample:true});
+      }
+      
+      // 4. Customer (Funder Max from PDF)
+      await clientDb.collection('customers').doc('CUST001').set({
+        customerId:'CUST001', customerName:'INDIA PVT LTD',
+        gstn:'DUMMYGSTN', pan:'ABCD1232Z',
+        address:'Sy No. , Village, Hobli, Bangalore, Karnataka, INDIA',
+        city:'Bangalore', state:'Karnataka', pincode:'560064',
+        contactPerson:'', phone:'', email:'', isActive:true,
+        companyId, createdAt:new Date(), _sample:true
+      });
+      
+      // 5. Invoices template
+      await clientDb.collection('invoices').doc('_template').set({
+        _note:'Template - safe to delete', companyId, createdAt:new Date()
+      });
+      
+      logToConsole(`  ✅ InvoiceEase Pro collections created in CLIENT Firestore`, 'success');
+    } catch (invErr) {
+      logToConsole(`  ⚠️ Invoice init skipped: ${invErr.message}`, 'warn');
+      // Don't throw - allow rest of initialization to complete
+    }
+    
     if (created) {
       logToConsole('🏁 Initialization complete! All collections created.', 'success');
       logToConsole(`\n📋 Initial Admin Credentials:`, 'info');

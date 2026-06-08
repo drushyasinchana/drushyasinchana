@@ -63,24 +63,7 @@ async function populateCompanyDropdown() {
   } catch(e) {}
 }
 
-async function saveCompany() {
-  const data = {
-    companyId: document.getElementById('compId').value,
-    companyName: document.getElementById('compName').value,
-    adminEmail: document.getElementById('compEmail').value,
-    contactPhone: document.getElementById('compPhone').value,
-    plan: document.getElementById('compPlan').value,
-    maxEmp: parseInt(document.getElementById('compMaxEmp').value) || 0,
-    startDate: document.getElementById('compStart').value ? new Date(document.getElementById('compStart').value) : null,
-    endDate: document.getElementById('compEnd').value ? new Date(document.getElementById('compEnd').value) : null,
-    city: document.getElementById('compCity').value,
-    Status: document.getElementById('compStatus').value
-  };
-  await saveDoc('companies', data);
-  loadTable('companies','companyTableBody', renderCompany);
-  populateCompanyDropdown();
-  bootstrap.Modal.getInstance(document.getElementById('companyModal')).hide();
-}
+
 
 async function saveAdmin() {
   const data = {
