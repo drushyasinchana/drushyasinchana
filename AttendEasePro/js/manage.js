@@ -3,19 +3,22 @@
 // ══════════════════════════════════════════════════════
 
 // Global state - companyId will be set after login
-const S = { 
-  employees: [], 
-  sites: [], 
-  attRecords: [], 
+const S = {
+  employees: [],
+  sites: [],
+  attRecords: [],
   holidays: [],
   weeklyOffs: [],
   leaveBalances: [],
-  prefs: { companyId: null, companyName: '', adminEmail: '' },
+  prefs: { companyId: null, companyName: '', adminEmail: '', sectorCode: '' },
   clientApp: null,
   clientDb: null
 };
 
-/* ══════════════════════════════════════════════════════
+// ✅ Make S accessible globally for sectors.js
+window.S = S;
+
+/* ═════════════════════════════════════════════════════
    Get Company ID - sessionStorage ONLY (no URL exposure)
 ══════════════════════════════════════════════════════ */
 function getCompanyId() {
@@ -141,7 +144,6 @@ function nav(page, btn) {
   if (page === 'postlunch') initLunchTracking(); 
 }
 
-
 // ══════════════════════════════════════════════════════
 // FIREBASE INIT
 // ══════════════════════════════════════════════════════
@@ -200,25 +202,25 @@ async function loadDashboard() {
     
     const el = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
     el('stTotalEmp', emp.length);
-    el('stPresent', att.filter(r=>r.Status==='PRESENT').length);
-    el('stAbsent', Math.max(0, emp.length - att.filter(r=>r.Status==='PRESENT').length));
-    el('stSites', sites.filter(s=>!s.Status||s.Status==='ACTIVE').length);
+    el('stPresent', att.filter(r => r.Status==='PRESENT').length);
+    el('stAbsent', Math.max(0, emp.length - att.filter(r => r.Status==='PRESENT').length));
+    el('stSites', sites.filter(s => !s.Status || s.Status==='ACTIVE').length);
     el('stDate', fmtDate(today()));
     el('dashSiteDate', fmtDate(today()));
     
     const grid = document.getElementById('dashSiteCards');
     if (grid) {
-      const active = sites.filter(s=>!s.Status||s.Status==='ACTIVE');
+      const active = sites.filter(s => !s.Status || s.Status==='ACTIVE');
       if (!active.length) {
         grid.innerHTML = '<div class="empty"><p>No active sites</p></div>';
       } else {
-        grid.innerHTML = active.map(s=>{
-          const a = att.filter(r=>r.SiteID===s.SiteID);
-          const p = a.filter(r=>r.Status==='PRESENT').length;
-          const t = emp.filter(e=>e.Site===s.SiteID).length || a.length;
+        grid.innerHTML = active.map(s => {
+          const a = att.filter(r => r.SiteID===s.SiteID);
+          const p = a.filter(r => r.Status==='PRESENT').length;
+          const t = emp.filter(e => e.Site===s.SiteID).length || a.length;
           const ab = Math.max(0,t-p);
-          const pct = t>0?Math.round(p/t*100):0;
-          const bar = pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+          const pct = t > 0 ? Math.round(p/t*100) : 0;
+          const bar = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
           return `<div class="site-card">
             <div class="site-card-bar" style="background:${bar}"></div>
             <div class="site-card-name">${s.SiteName}</div>
@@ -240,7 +242,7 @@ async function loadDashboard() {
     const al = document.getElementById('dashAttendList');
     if (al) {
       al.innerHTML = att.length 
-        ? att.slice(0,5).map(r=>`
+        ? att.slice(0,5).map(r => `
           <div class="mini-row">
             <div><div class="mname">${r.Name||r.EMPID}</div></div>
             <div class="mright">
@@ -255,9 +257,7 @@ async function loadDashboard() {
   }
 }
 
-
-
-// ══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 // POPULATE SELECTS (Sites & Employees)
 // ══════════════════════════════════════════════════════
 function populateSiteSelects() {
@@ -299,8 +299,6 @@ function populateSiteSelects() {
   });
 }
 
-
-
 // ══════════════════════════════════════════════════════
 // LEAVE BALANCES FUNCTIONS
 // ══════════════════════════════════════════════════════
@@ -331,7 +329,6 @@ function addLeaveBalance() {
   
   openModal('leaveBalModal');
 }
-
 
 async function loadLeaveBalances() {
   if (!S.clientDb) { toast('DB not connected', 'error'); return; }
@@ -393,24 +390,6 @@ function renderLeaveBalances(list) {
 function filterLeaveBalances() {
   const q = document.getElementById('leaveSearch')?.value.toLowerCase() || '';
   renderLeaveBalances(q ? S.leaveBalances.filter(lb => (lb.EMPID||'').toLowerCase().includes(q) || (lb.empName||'').toLowerCase().includes(q)) : S.leaveBalances);
-}
-
-// ✅ NEW: Add Leave Balance
-function addLeaveBalance() {
-  if (S.employees.length === 0) fetchEmployees().then(() => populateLeaveEmpDropdown());
-  else populateLeaveEmpDropdown();
-  
-  // Set defaults
-  document.getElementById('lbEmpId').value = '';
-  document.getElementById('lbYear').value = new Date().getFullYear();
-  document.getElementById('lbPlTotal').value = 20; document.getElementById('lbPlUsed').value = 0;
-  document.getElementById('lbClTotal').value = 12; document.getElementById('lbClUsed').value = 0;
-  document.getElementById('lbSlTotal').value = 12; document.getElementById('lbSlUsed').value = 0;
-  document.getElementById('lbCoTotal').value = 0; document.getElementById('lbCoUsed').value = 0;
-  document.getElementById('lbLop').value = 0;
-  
-  document.getElementById('leaveBalModalTitle').textContent = 'Add Leave Balance';
-  openModal('leaveBalModal');
 }
 
 function populateLeaveEmpDropdown() {
@@ -485,9 +464,6 @@ async function saveLeaveBalance() {
     toast('Error: ' + e.message, 'error');
   }
 }
-
-
-
 
 // ══════════════════════════════════════════════════════
 // AUTO-INITIALIZE COMPANY DATA (Creates template docs for new companies)
@@ -605,7 +581,7 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
 
     if (created) {
       console.log('[INIT] 🏁 Template data created for', companyId);
-      toast('✅ Setup complete! Default admin created.', 'success');
+    //  toast('✅ Setup complete! Default admin created.', 'success');
     } else {
       console.log('[INIT] ✅ All collections already exist.');
     }
@@ -616,18 +592,16 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
   }
 }
 
-
-
 // ══════════════════════════════════════════════════════
 // MULTI-TENANT INITIALIZATION
-// ══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 (function init() {
   console.log('🔍 Initializing AttendEase (Multi-Tenant Mode)...');
   
   // 1. Get company ID from login/session
   const companyId = getCompanyId();
   if (!companyId) {
-    toast('❌ Company ID not found. Please login again.', 'error');
+    toast(' Company ID not found. Please login again.', 'error');
     window.location.href = 'index.html';
     return;
   }
@@ -666,12 +640,13 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
       if (!clientCfg || !clientCfg.apiKey) {
         throw new Error('Client Firebase config missing. Update in Super Admin.');
       }
-      
-      console.log('✅ Config fetched:', { 
-        projectId: clientCfg.projectId, 
-        name: companyData.companyName,
-        adminEmail: companyData.adminEmail 
-      });
+
+      // ✅ FIX: Extract Sector Code from Master Firestore
+      // The sector field is in format "CODE-Name" (e.g., "HOTEL_PG-Hotel & PG Management")
+      const rawSector = companyData.sector || 'CONST';
+      const sectorCode = rawSector.split('-')[0].trim();
+      S.prefs.sectorCode = sectorCode;
+      console.log('✅ Sector code stored:', S.prefs.sectorCode);
       
       // Update global state
       S.prefs.companyName = companyData.companyName || companyId;
@@ -693,15 +668,16 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
       document.getElementById('loginFallback')?.classList.remove('active');
       document.getElementById('appScreen')?.classList.add('active');
       
-      const sb = document.getElementById('sbCompanyName');
-      const av = document.getElementById('topbarAvatar');
-      if (sb) sb.textContent = S.prefs.companyName;
-      if (av) av.textContent = S.prefs.companyName.slice(0,2).toUpperCase();
-      
-      const ddName = document.getElementById('ddName');
-      const ddEmail = document.getElementById('ddEmail');
-      if (ddName) ddName.textContent = 'Admin User';
-      if (ddEmail) ddEmail.textContent = S.prefs.adminEmail;
+// ✅ NEW CODE (correct IDs matching your HTML):
+const sb = document.getElementById('sbCompanyName');
+const userAvatar = document.getElementById('userAvatar');      // ✅ Fixed ID
+const userName = document.getElementById('userName');          // ✅ Fixed ID
+const userEmail = document.getElementById('userEmail');        // ✅ Fixed ID
+
+if (sb) sb.textContent = S.prefs.companyName || '—';
+if (userAvatar) userAvatar.textContent = (S.prefs.companyName || '??').slice(0,2).toUpperCase();
+if (userName) userName.textContent = 'Admin User';  // Or fetch from auth if needed
+if (userEmail) userEmail.textContent = S.prefs.adminEmail || '—';
       
       // Set date pickers to today
       ['attDate', 'mDate', 'rptFrom', 'rptTo'].forEach(id => {
@@ -726,17 +702,16 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
     });
 })();
 
-
 /* ══════════════════════════════════════════════════════
    CHECK PLAN & ENABLE PREMIUM MENUS (FIXED)
    - Queries MASTER DB (db), not client DB
 ══════════════════════════════════════════════════════ */
 async function checkPlanAndEnableMenus() {
   const companyId = S.prefs?.companyId;
-  console.log('🔍 Checking plan for company:', companyId);
+  console.log(' Checking plan for company:', companyId);
   
   if (!companyId) {
-    console.log('⚠️ No companyId in session');
+    console.log('️ No companyId in session');
     return;
   }
 
@@ -745,7 +720,7 @@ async function checkPlanAndEnableMenus() {
     // 'db' is the global Firestore instance from firebase-config.js
     const doc = await db.collection('companies').doc(companyId).get();
     
-    console.log('📦 Company doc exists:', doc.exists);
+    console.log(' Company doc exists:', doc.exists);
     
     if (doc.exists) {
       const plan = doc.data().plan;
@@ -760,7 +735,7 @@ async function checkPlanAndEnableMenus() {
       if (payrollEl) {
         payrollEl.style.opacity = isPremium ? '1' : '0.5';
         payrollEl.style.pointerEvents = isPremium ? 'auto' : 'none';
-        console.log(`🎯 Payroll menu: ${isPremium ? 'ENABLED' : 'DISABLED'}`);
+        console.log(` Payroll menu: ${isPremium ? 'ENABLED' : 'DISABLED'}`);
       }
       if (payrollBadge) {
         payrollBadge.style.display = isPremium ? 'inline' : 'none';
@@ -771,10 +746,10 @@ async function checkPlanAndEnableMenus() {
       if (leaveEl) {
         leaveEl.style.opacity = isPremium ? '1' : '0.5';
         leaveEl.style.pointerEvents = isPremium ? 'auto' : 'none';
-        console.log(`🎯 Leave Balances menu: ${isPremium ? 'ENABLED' : 'DISABLED'}`);
+        console.log(` Leave Balances menu: ${isPremium ? 'ENABLED' : 'DISABLED'}`);
       }
     } else {
-      console.error('❌ Company document not found in Master DB');
+      console.error(' Company document not found in Master DB');
     }
   } catch (err) {
     console.error('❌ Plan check error:', err.code, err.message);
@@ -788,15 +763,12 @@ setTimeout(() => {
   }
 }, 1000); 
 
-
-
 // Auto-enable on page load if session exists
 document.addEventListener('DOMContentLoaded', () => {
   if (S?.prefs?.companyId && typeof checkPlanAndEnableMenus === 'function') {
     setTimeout(checkPlanAndEnableMenus, 1500);
   }
 });
-
 
 /* ══════════════════════════════════════════════════════
    DEFAULT PAY COMPONENTS TEMPLATE
@@ -827,7 +799,6 @@ function getDefaultPayComponents() {
   };
 }
 
-
 function navigateTo(pageId) {
   // Hide all pages
   document.querySelectorAll('.page').forEach(page => {
@@ -845,7 +816,6 @@ function navigateTo(pageId) {
   const activeMenu = document.querySelector(`[onclick="navigateTo('${pageId}')"]`);
   if (activeMenu) activeMenu.classList.add('active');
 }
-
 
 async function doLogout() {
   console.log('🔄 Starting logout...');
@@ -865,7 +835,6 @@ async function doLogout() {
   window.location.replace('index.html');
 }
 
-
 /* ══════════════════════════════════════════════════════
    KEYBOARD SHORTCUTS (Escape Key)
    ══════════════════════════════════════════════════════ */
@@ -879,6 +848,3 @@ document.addEventListener('keydown', function(event) {
     });
   }
 });
-
-
-

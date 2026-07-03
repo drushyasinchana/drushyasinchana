@@ -76,7 +76,23 @@ const SECTOR_REGISTRY = {
       "Office/Corporate": ["Section Officer","Under Secretary","Deputy Secretary","Director","HR Manager","HR Executive","Admin Manager","Accounts Manager","Accountant","Audit Officer","IT Officer","Purchase Officer","Store Officer","Liaison Officer","Public Relations Officer","Front Desk Executive","Receptionist","Office Assistant","Peon/Attendant","Driver","Chef/Cook","Kitchen Helper","Canteen Staff"], 
       "Field/Operations": ["Inspector","Sub-Inspector","Constable","Junior Engineer","Assistant Engineer","Technical Assistant","Clerk","Data Entry Operator","Stenographer","Typist","Office Superintendent","Field Assistant","Surveyor","Enumerator","Security Personnel","Security Guard","Housekeeping Staff","Sweeper/Cleaner","Mali/Gardener","Helper"] 
     } 
-  }
+  },
+"CA_LEGAL": {
+    name: "CA & Legal Services",
+    designations: {
+        "Office/Corporate": ["Managing Partner", "Senior Associate", "Junior Associate", "Company Secretary", "Compliance Officer", "Legal Advisor", "Chartered Accountant", "Audit Manager", "Tax Consultant", "Financial Controller", "Accounts Executive", "Office Manager", "HR Manager", "Legal Researcher", "Data Entry Operator", "Front Desk Executive", "Receptionist", "Office Assistant"],
+        "Field/Operations": ["Litigation Associate", "Court Clerk", "Paralegal", "Internal Auditor", "Field Verification Officer", "Recovery Agent", "Documentation Assistant", "IT Support", "Driver", "Office Boy/Attendant"]
+    }
+},
+"HOTEL_PG": {
+    name: "Hotel & PG Management",
+    designations: {
+        "Office/Corporate": ["General Manager", "Operations Manager", "Revenue Manager", "Sales & Marketing Manager", "HR Manager", "Accounts Manager", "Front Office Manager", "Reservation Executive", "Purchase Manager", "Front Desk Executive", "Receptionist", "Admin Executive"],
+        "Field/Operations": ["Paying Guest","Duty Manager", "Guest Relation Executive", "Housekeeping Supervisor", "Room Attendant", "Chef", "Kitchen Helper", "Restaurant Manager", "Waiter/Steward", "Maintenance Supervisor", "Electrician", "Plumber", "Security Guard", "Laundry Staff", "Hostel Warden", "Caretaker", "Gardener", "Driver"]
+    }
+}
+
+
 };
 
 /* ══════════════════════════════════════════════════════

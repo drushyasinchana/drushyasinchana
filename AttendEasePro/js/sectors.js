@@ -196,7 +196,23 @@ const SECTOR_REGISTRY = {
         "Security Guard", "Housekeeping Staff", "Sweeper/Cleaner", "Mali/Gardener", "Helper"
       ]
     }
-  }
+  },
+
+"CA_LEGAL": {
+    name: "CA & Legal Services",
+    designations: {
+        "Office/Corporate": ["Managing Partner", "Senior Associate", "Junior Associate", "Company Secretary", "Compliance Officer", "Legal Advisor", "Chartered Accountant", "Audit Manager", "Tax Consultant", "Financial Controller", "Accounts Executive", "Office Manager", "HR Manager", "Legal Researcher", "Data Entry Operator", "Front Desk Executive", "Receptionist", "Office Assistant"],
+        "Field/Operations": ["Litigation Associate", "Court Clerk", "Paralegal", "Internal Auditor", "Field Verification Officer", "Recovery Agent", "Documentation Assistant", "IT Support", "Driver", "Office Boy/Attendant"]
+    }
+},
+"HOTEL_PG": {
+    name: "Hotel & PG Management",
+    designations: {
+        "Office/Corporate": ["General Manager", "Operations Manager", "Revenue Manager", "Sales & Marketing Manager", "HR Manager", "Accounts Manager", "Front Office Manager", "Reservation Executive", "Purchase Manager", "Front Desk Executive", "Receptionist", "Admin Executive"],
+        "Field/Operations": ["Paying Guest","Duty Manager", "Guest Relation Executive", "Housekeeping Supervisor", "Room Attendant", "Chef", "Kitchen Helper", "Restaurant Manager", "Waiter/Steward", "Maintenance Supervisor", "Electrician", "Plumber", "Security Guard", "Laundry Staff", "Hostel Warden", "Caretaker", "Gardener", "Driver"]
+    }
+}
+
 };
 
 /* ══════════════════════════════════════════════════════
