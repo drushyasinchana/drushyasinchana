@@ -1,8 +1,9 @@
 /* ══════════════════════════════════════════════════════
-INVOICEEASE PRO - INVOICE MANAGEMENT (Professional + Themes)
+INVOICEEASE PRO - INVOICE MANAGEMENT (Editable Particulars + Field Limits)
 Features: Save, Edit, Delete, Preview, Signature Toggle, Bill No. Preview, SAC/Rate Auto-fill
 Profile-Aware: Filter by dropdown profileId (NO index required)
 PDF Themes: 6 professional color schemes selectable per invoice
+Particulars: Editable field with autocomplete from saved items
 ══════════════════════════════════════════════════════ */
 
 // ✅ Helper: Get active profile ID from dropdown or session
@@ -45,50 +46,50 @@ async function getProfileCompanyName(profileId) {
 const PDF_THEMES = {
   teal: {
     name: 'Teal Professional',
-    primary: [40, 80, 140],    // #28508C - Deep teal-blue
-    secondary: [0, 131, 143],   // #00838F - Original teal
-    accent: [224, 247, 250],    // #E0F7FA - Light teal background
-    text: [13, 31, 34],         // #0D1F22 - Dark text
-    border: [216, 232, 234]     // #D8E8EA - Subtle border
+    primary: [40, 80, 140],
+    secondary: [0, 131, 143],
+    accent: [224, 247, 250],
+    text: [13, 31, 34],
+    border: [216, 232, 234]
   },
   blue: {
     name: 'Corporate Blue',
-    primary: [25, 118, 210],    // #1976D2 - Material blue
-    secondary: [13, 71, 161],   // #0D47A1 - Deep blue
-    accent: [227, 242, 253],    // #E3F2FD - Light blue bg
+    primary: [25, 118, 210],
+    secondary: [13, 71, 161],
+    accent: [227, 242, 253],
     text: [13, 31, 34],
     border: [197, 221, 248]
   },
   orange: {
     name: 'Warm Orange',
-    primary: [230, 81, 0],      // #E65100 - Deep orange
-    secondary: [191, 54, 12],   // #BF360C - Darker orange
-    accent: [255, 243, 224],    // #FFF3E0 - Light orange bg
+    primary: [230, 81, 0],
+    secondary: [191, 54, 12],
+    accent: [255, 243, 224],
     text: [13, 31, 34],
     border: [255, 224, 178]
   },
   green: {
     name: 'Forest Green',
-    primary: [46, 125, 50],     // #2E7D32 - Material green
-    secondary: [27, 94, 32],    // #1B5E20 - Dark green
-    accent: [232, 245, 233],    // #E8F5E9 - Light green bg
+    primary: [46, 125, 50],
+    secondary: [27, 94, 32],
+    accent: [232, 245, 233],
     text: [13, 31, 34],
     border: [200, 230, 201]
   },
   lightbrown: {
     name: 'Earth Brown',
-    primary: [141, 110, 99],    // #8D6E63 - Light brown
-    secondary: [93, 64, 55],    // #5D4037 - Dark brown
-    accent: [247, 239, 233],    // #F7EF E9 - Warm beige bg
+    primary: [141, 110, 99],
+    secondary: [93, 64, 55],
+    accent: [247, 239, 233],
     text: [13, 31, 34],
     border: [215, 204, 200]
   },
   darkbrown: {
     name: 'Executive Brown',
-    primary: [62, 39, 35],      // #3E2723 - Very dark brown
-    secondary: [93, 64, 55],    // #5D4037 - Medium brown
-    accent: [239, 235, 233],    // #EFEBE9 - Soft beige
-    text: [13, 31, 34],      // White text for dark header
+    primary: [62, 39, 35],
+    secondary: [93, 64, 55],
+    accent: [239, 235, 233],
+    text: [255, 255, 255],
     border: [188, 170, 164]
   }
 };
@@ -122,7 +123,6 @@ async function getPreviewInvoiceNumber() {
     const formattedNum = String(nextNum).padStart(3, '0');
     let invoiceNumber = `${prefix}/${financialYear}/${formattedNum}`;
     
-    // Enforce 16-char max (GST rule)
     if (invoiceNumber.length > 16) {
       invoiceNumber = `${prefix}-${formattedNum}`;
       if (invoiceNumber.length > 16) {
@@ -133,7 +133,7 @@ async function getPreviewInvoiceNumber() {
     return invoiceNumber;
   } catch (e) {
     console.error('Preview number error:', e);
-    return 'KAR-001'; // Fallback
+    return 'KAR-001';
   }
 }
 
@@ -152,7 +152,6 @@ window.loadInvoices = async function() {
       throw new Error('Database or Profile ID not initialized');
     }
     
-    // ✅ Filter by profileId ONLY (no orderBy = no index needed)
     const snap = await db.collection('invoices').where('profileId', '==', profileId).get();
     
     console.log('📄 Invoices loaded:', snap.size);
@@ -162,7 +161,6 @@ window.loadInvoices = async function() {
       return;
     }
     
-    // ✅ Sort in JavaScript instead of Firestore
     const invoices = [];
     snap.forEach(doc => {
       invoices.push({ id: doc.id, ...doc.data() });
@@ -170,7 +168,7 @@ window.loadInvoices = async function() {
     invoices.sort((a, b) => {
       const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
       const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-      return bDate - aDate; // Descending
+      return bDate - aDate;
     });
     
     let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h2 style="margin:0;">Invoices</h2><button class="btn btn-teal" onclick="showInvoiceModal()">+ Create Invoice</button></div><div class="table-container"><table><thead><tr><th>Invoice No</th><th>Customer</th><th>Date</th><th style="text-align:right;">Amount</th><th style="text-align:center;">Status</th><th style="text-align:center;">Actions</th></tr></thead><tbody>`;
@@ -203,7 +201,6 @@ window.loadInvoices = async function() {
   }
 };
 
-// ✅ Edit Function
 window.editInvoice = async function(id) {
   const doc = await window.InvoiceApp.clientDb.collection('invoices').doc(id).get();
   if (!doc.exists) return alert('Invoice not found');
@@ -212,7 +209,6 @@ window.editInvoice = async function(id) {
   showInvoiceModal(id, inv);
 };
 
-// ✅ Delete Function
 window.deleteInvoice = async function(id) {
   if(!confirm('Are you sure you want to delete this invoice? This cannot be undone.')) return;
   try {
@@ -224,16 +220,11 @@ window.deleteInvoice = async function(id) {
   }
 };
 
-// ✅ Show Modal (Create or Edit) - WITH GST/IGST/NON-GST TOGGLE & BILL NO. PREVIEW & PDF THEME
 window.showInvoiceModal = async function(editId = null, editData = null) {
-  // Remove old modal if exists
   const oldModal = document.getElementById('invoiceModal');
   if (oldModal) oldModal.remove();
   
-  // ✅ Use profile ID for filtering customers/particulars
   const profileId = getActiveProfileId();
-  
-  // ✅ Get company name for header display
   const companyName = await getProfileCompanyName(profileId);
   
   const custSnap = await window.InvoiceApp.clientDb.collection('customers')
@@ -246,12 +237,10 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
     
   const today = new Date().toISOString().split('T')[0];
   
-  // Default values for GST toggles and theme
   const isNonGstDefault = editData && editData.isNonGst === true;
   const isIgstDefault = editData && editData.isIgst === true;
-  const selectedTheme = editData?.pdfTheme || 'teal'; // Default to teal
+  const selectedTheme = editData?.pdfTheme || 'teal';
   
-  // Build theme options for dropdown
   const themeOptions = Object.entries(PDF_THEMES).map(([key, theme]) => 
     `<option value="${key}" ${key === selectedTheme ? 'selected' : ''}>${theme.name}</option>`
   ).join('');
@@ -263,7 +252,6 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   modal.innerHTML = `
     <div class="modal-content" style="max-width:1100px; width:95%; padding:32px; max-height:90vh; overflow-y:auto;">
       <div id="invoiceFormContainer">
-        <!-- Professional Header with Company Context -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);">
           <div>
             <h2 style="margin:0;font-size:1.4rem;font-weight:700;color:var(--ink);">${editId ? 'Edit' : 'Create'} Invoice</h2>
@@ -278,14 +266,12 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
           <input type="hidden" id="editDocId" value="${editId || ''}">
           
           <div class="form-grid" style="grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px;">
-            <!-- Bill No. Preview -->
             <div class="fg">
               <label>Bill No. (Preview)</label>
               <input type="text" id="invBillNoPreview" readonly value="Loading..." style="padding:12px;font-size:1rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;"/>
               <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">This number will be assigned on save</div>
             </div>
             
-            <!-- Customer -->
             <div class="fg"><label>Customer *</label><select id="invCustomer" required style="padding:12px;font-size:1rem;">
               <option value="">Select Customer</option>
               ${custSnap.docs.map(d=>{
@@ -295,17 +281,13 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
               }).join('')}
             </select></div>
             
-            <!-- Invoice Date -->
             <div class="fg"><label>Invoice Date *</label><input type="date" id="invDate" required value="${editData ? (editData.invoiceDate?.toDate ? editData.invoiceDate.toDate().toISOString().split('T')[0] : new Date(editData.invoiceDate).toISOString().split('T')[0]) : today}" style="padding:12px;font-size:1rem;"/></div>
             
-            <!-- PO Number -->
-            <div class="fg"><label>PO Number</label><input type="text" id="invPONumber" value="${editData ? editData.poNumber || '' : ''}" style="padding:12px;font-size:1rem;"/></div>
+            <div class="fg"><label>PO/Ref Number</label><input type="text" id="invPONumber" value="${editData ? editData.poNumber || '' : ''}" style="padding:12px;font-size:1rem;"/></div>
             
-            <!-- PO Date -->
-            <div class="fg"><label>PO Date</label><input type="date" id="invPODate" value="${editData ? (editData.poDate?.toDate ? editData.poDate.toDate().toISOString().split('T')[0] : editData.poDate ? new Date(editData.poDate).toISOString().split('T')[0] : '') : today}" style="padding:12px;font-size:1rem;"/></div>
+            <div class="fg"><label>PO/Ref Date</label><input type="date" id="invPODate" value="${editData ? (editData.poDate?.toDate ? editData.poDate.toDate().toISOString().split('T')[0] : editData.poDate ? new Date(editData.poDate).toISOString().split('T')[0] : '') : today}" style="padding:12px;font-size:1rem;"/></div>
           </div>
           
-          <!-- ✅ GST Type Toggle (Non-GST / IGST / CGST+SGST) -->
           <div style="margin:16px 0; padding:15px; border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                <input type="checkbox" id="isNonGst" ${isNonGstDefault ? 'checked' : ''} style="width:18px;height:18px;">
@@ -318,7 +300,6 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
              <span style="font-size:0.8rem;color:var(--muted);margin-left:auto;">Default: CGST+SGST (Intra-State)</span>
           </div>
           
-          <!-- ✅ PDF Theme Selector -->
           <div style="margin:16px 0; padding:15px; border:1px solid var(--border); border-radius:8px; background:var(--teal-s);">
             <label style="font-size:0.9rem;font-weight:600;color:var(--ink2);margin-bottom:8px;display:block;">🎨 PDF Color Theme</label>
             <select id="pdfTheme" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;background:#fff;cursor:pointer;width:100%;max-width:300px;">
@@ -336,7 +317,8 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
           </div>
           
           <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:20px;">
-            <div class="fg"><label>Remarks</label><textarea id="invRemarks" rows="3" style="padding:12px;font-size:1rem;">${editData ? editData.remarks || '' : ''}</textarea></div>
+            <!-- ✅ Changed "Remarks" to "Note:" -->
+            <div class="fg"><label>Note:</label><textarea id="invRemarks" rows="3" style="padding:12px;font-size:1rem;" placeholder="Add any additional notes here...">${editData ? editData.remarks || '' : ''}</textarea></div>
             <div style="background:var(--teal-s);padding:20px;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;">
               <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Subtotal:</span><strong id="calcSubtotal" style="font-size:1.1rem;">₹${editData ? editData.subtotal.toFixed(2) : '0.00'}</strong></div>
               <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span id="taxLabel1">CGST:</span><strong id="calcCgst" style="font-size:1.1rem;">₹${editData ? editData.totalCgst.toFixed(2) : '0.00'}</strong></div>
@@ -347,7 +329,6 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
             </div>
           </div>
           
-          <!-- Signature Checkbox -->
           <div style="margin:20px 0; padding:15px; border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; gap:12px;">
              <input type="checkbox" id="includeSignature" ${editData && editData.signatureIncluded === false ? '' : 'checked'} style="width:20px; height:20px;">
              <label for="includeSignature" style="font-weight:600; cursor:pointer;">Include Digital Signature on PDF</label>
@@ -360,7 +341,6 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
         </form>
       </div>
       
-      <!-- Preview Section (Hidden initially) -->
       <div id="invoicePreviewContainer" style="display:none;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <h2 style="margin:0;color:var(--green);">✅ Invoice Saved! Review below.</h2>
@@ -378,24 +358,20 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   document.body.appendChild(modal);
   modal.style.display = 'flex';
   
-  // Load Bill No. Preview
   getPreviewInvoiceNumber().then(num => {
     const previewInput = document.getElementById('invBillNoPreview');
     if (previewInput) previewInput.value = num;
   });
   
-  // Add items
   if (editData && editData.items) {
     editData.items.forEach(item => addInvoiceItem(item));
   } else {
     addInvoiceItem();
   }
   
-  // ✅ Add event listeners for GST toggles to recalculate totals
   document.getElementById('isNonGst')?.addEventListener('change', calcTotal);
   document.getElementById('isIgst')?.addEventListener('change', calcTotal);
   
-  // ✅ Initialize tax labels based on edit data
   if (isNonGstDefault) {
     document.getElementById('taxLabel1').textContent = 'Tax:';
     document.getElementById('taxLabel2').style.display = 'none';
@@ -405,68 +381,110 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   }
 };
 
-// ✅ Add Item Row - WITH CLASS NAME FOR RELIABLE SELECTION
+// ✅ Add Item Row - EDITABLE PARTICULARS + FIELD LIMITS + WIDER PARTICULARS COLUMN
 window.addInvoiceItem = async function(presetItem = null) {
   const c = document.getElementById('invoiceItems');
   if(!c) return;
   const idx = c.children.length;
-  // ✅ Use profileId for filtering particulars
   const profileId = getActiveProfileId();
   const snap = await window.InvoiceApp.clientDb.collection('invoiceParticulars').where('profileId','==',profileId).where('isActive','==',true).get();
   
   const row = document.createElement('div');
-  // ✅ Add className for reliable selection
   row.className = 'invoice-item-row';
-  row.style.cssText = 'display:grid;grid-template-columns:2.5fr 1fr 1.2fr 1fr 1.2fr auto;gap:14px;margin-bottom:14px;align-items:end;padding-bottom:14px;border-bottom:1px dashed var(--border);';
+  // ✅ Increased particulars width: 3.5fr instead of 2.5fr
+  row.style.cssText = 'display:grid;grid-template-columns:3.5fr 0.8fr 1fr 0.7fr 1fr auto;gap:12px;margin-bottom:14px;align-items:end;padding-bottom:14px;border-bottom:1px dashed var(--border);';
+  
+  // ✅ Build datalist options for autocomplete
+  const datalistOptions = snap.docs.map(d => {
+    const p = d.data();
+    return `<option value="${p.itemName}" data-id="${d.id}" data-rate="${p.rate||0}" data-gst="${p.gstRate||0}" data-sac="${p.sacCode||''}">`;
+  }).join('');
+  
   row.innerHTML = `
-    <div><label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Particulars</label>
-      <select class="item-particular" onchange="onItemChange(this,${idx})" style="padding:10px;font-size:0.95rem;width:100%;">
-        <option value="">Select Item</option>
-        ${snap.docs.map(d=>{const p=d.data();return `<option value="${d.id}" data-rate="${p.rate||0}" data-gst="${p.gstRate||0}" data-sac="${p.sacCode||''}">${p.itemName}</option>`}).join('')}
-      </select>
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Particulars *</label>
+      <!-- ✅ Editable input with autocomplete from saved particulars -->
+      <input class="item-particular" list="particularsList${idx}" 
+        onchange="onItemChange(this,${idx})" 
+        oninput="calcItem(${idx})"
+        style="padding:10px;font-size:0.95rem;width:100%;border:1.5px solid var(--border);border-radius:6px;"
+        placeholder="Type or select item..."
+        maxlength="124"
+        value="${presetItem ? presetItem.itemName || presetItem.particular : ''}"/>
+      <datalist id="particularsList${idx}">${datalistOptions}</datalist>
     </div>
-    <div><label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">SAC</label><input class="item-sac" readonly style="padding:10px;background:var(--bg);font-size:0.95rem;width:100%;"/></div>
-    <div><label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Rate (₹)</label><input type="number" class="item-rate" step="0.01" onchange="calcItem(${idx})" style="padding:10px;font-size:0.95rem;width:100%;"/></div>
-    <div><label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Qty</label><input type="number" class="item-qty" value="${presetItem ? presetItem.quantity : 1}" min="1" onchange="calcItem(${idx})" style="padding:10px;font-size:0.95rem;width:100%;"/></div>
-    <div><label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Amount</label><input type="number" class="item-amount" readonly style="padding:10px;background:var(--bg);font-size:0.95rem;width:100%;"/></div>
-    <button type="button" onclick="this.parentElement.remove();calcTotal()" style="padding:10px;background:var(--red);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1.2rem;height:42px;">×</button>
+    <!-- ✅ SAC: 10 chars max, auto-capitalize -->
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">SAC</label>
+      <input class="item-sac" 
+        style="padding:10px;background:var(--bg);font-size:0.95rem;width:100%;border:1.5px solid var(--border);border-radius:6px;text-transform:uppercase;"
+        maxlength="10"
+        oninput="this.value=this.value.toUpperCase()"
+        value="${presetItem ? presetItem.sacCode || '' : ''}"/>
+    </div>
+    <!-- ✅ Rate: 10 digits max (including decimals) -->
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Rate (₹)</label>
+      <input type="number" class="item-rate" step="0.01" min="0" 
+        onchange="calcItem(${idx})" 
+        style="padding:10px;font-size:0.95rem;width:100%;border:1.5px solid var(--border);border-radius:6px;"
+        maxlength="10"
+        oninput="if(this.value.length>10)this.value=this.value.slice(0,10)"
+        value="${presetItem ? presetItem.rate || '' : ''}"/>
+    </div>
+    <!-- ✅ Qty: 3 digits max -->
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Qty</label>
+      <input type="number" class="item-qty" min="1" 
+        onchange="calcItem(${idx})" 
+        style="padding:10px;font-size:0.95rem;width:100%;border:1.5px solid var(--border);border-radius:6px;"
+        maxlength="3"
+        oninput="if(this.value.length>3)this.value=this.value.slice(0,3)"
+        value="${presetItem ? presetItem.quantity || 1 : 1}"/>
+    </div>
+    <!-- ✅ Amount: 11 digits max, readonly (calculated) -->
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Amount</label>
+      <input type="text" class="item-amount" readonly 
+        style="padding:10px;background:var(--bg);font-size:0.95rem;width:100%;border:1.5px solid var(--border);border-radius:6px;"
+        maxlength="11"
+        value="${presetItem ? (presetItem.amount || 0).toFixed(2) : '0.00'}"/>
+    </div>
+    <button type="button" onclick="this.parentElement.remove();calcTotal()" style="padding:10px;background:var(--red);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1.2rem;height:42px;margin-bottom:2px;">×</button>
   `;
   c.appendChild(row);
   
   if (presetItem) {
-    const select = row.querySelector('.item-particular');
-    select.value = presetItem.particular;
-    const opt = select.options[select.selectedIndex];
-    row.querySelector('.item-sac').value = presetItem.sacCode || opt?.dataset?.sac || '';
-    row.querySelector('.item-rate').value = presetItem.rate;
-    row.querySelector('.item-amount').value = presetItem.amount;
-    calcTotal();
+    calcItem(idx);
   }
 };
 
-// ✅ FIXED: On Item Change - Use className selector
-window.onItemChange = function(sel, idx) {
-  // ✅ Use class name instead of [style] selector
-  const row = sel.closest('.invoice-item-row');
-  if (!row) {
-    console.error('Row not found for index', idx);
-    return;
-  }
+// ✅ FIXED: On Item Change - Handle editable particulars with datalist
+window.onItemChange = function(input, idx) {
+  const row = input.closest('.invoice-item-row');
+  if (!row) return;
   
-  const opt = sel.options[sel.selectedIndex];
+  // ✅ Find matching option in datalist to auto-fill SAC/rate/GST
+  const datalist = document.getElementById(input.list);
+  if (!datalist) return;
   
-  // ✅ Safely get data attributes with fallbacks
-  const sac = opt.dataset.sac || '';
-  const rate = opt.dataset.rate || '0';
+  const options = datalist.querySelectorAll('option');
+  let matched = false;
   
-  // ✅ Populate fields
-  const sacInput = row.querySelector('.item-sac');
-  const rateInput = row.querySelector('.item-rate');
+  options.forEach(opt => {
+    if (opt.value.toLowerCase() === input.value.toLowerCase()) {
+      // ✅ Auto-fill SAC, rate, GST from selected particular
+      const sacInput = row.querySelector('.item-sac');
+      const rateInput = row.querySelector('.item-rate');
+      
+      if (sacInput && opt.dataset.sac) sacInput.value = opt.dataset.sac.toUpperCase();
+      if (rateInput && opt.dataset.rate) rateInput.value = opt.dataset.rate;
+      
+      matched = true;
+    }
+  });
   
-  if (sacInput) sacInput.value = sac;
-  if (rateInput) rateInput.value = rate;
-  
-  // Recalculate amount
+  // ✅ Recalculate amount
   calcItem(idx);
 };
 
@@ -474,13 +492,22 @@ window.calcItem = function(idx) {
   const rows = document.querySelectorAll('#invoiceItems > div');
   const row = rows[idx];
   if(!row) return;
-  const amt = (parseFloat(row.querySelector('.item-rate').value)||0) * (parseFloat(row.querySelector('.item-qty').value)||0);
-  row.querySelector('.item-amount') || (row.insertAdjacentHTML('beforeend', `<input type="hidden" class="item-amount" value="${amt.toFixed(2)}"/>`));
-  row.querySelector('.item-amount').value = amt.toFixed(2);
+  
+  const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
+  const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+  const amt = rate * qty;
+  
+  const amtInput = row.querySelector('.item-amount');
+  if (amtInput) {
+    // ✅ Format amount with 2 decimals, limit to 11 chars
+    let formatted = amt.toFixed(2);
+    if (formatted.length > 11) formatted = formatted.slice(0, 11);
+    amtInput.value = formatted;
+  }
+  
   calcTotal();
 };
 
-// ✅ Calculate Totals (Handles GST vs Non-GST)
 window.calcTotal = function() {
   let sub=0, rawCgst=0, rawSgst=0, rawIgst=0;
   const isNonGst = document.getElementById('isNonGst')?.checked === true;
@@ -488,30 +515,38 @@ window.calcTotal = function() {
   
   document.querySelectorAll('#invoiceItems > div').forEach(row => {
     const amt = parseFloat(row.querySelector('.item-amount')?.value) || 0;
-    const select = row.querySelector('.item-particular');
-    const opt = select.options[select.selectedIndex];
-    const gstRate = parseFloat(opt.dataset.gst) || 0;
+    const particularInput = row.querySelector('.item-particular');
+    
+    // ✅ Get GST rate from datalist if available, else default to 0
+    let gstRate = 0;
+    if (particularInput && particularInput.list) {
+      const datalist = document.getElementById(particularInput.list);
+      if (datalist) {
+        const options = datalist.querySelectorAll('option');
+        options.forEach(opt => {
+          if (opt.value.toLowerCase() === particularInput.value.toLowerCase()) {
+            gstRate = parseFloat(opt.dataset.gst) || 0;
+          }
+        });
+      }
+    }
     
     sub += amt;
     
     if (isNonGst) {
       // No tax
     } else if (isIgst) {
-      // IGST = full rate
       rawIgst += amt * gstRate / 100;
     } else {
-      // CGST + SGST = half rate each
       rawCgst += amt * (gstRate/2) / 100;
       rawSgst += amt * (gstRate/2) / 100;
     }
   });
   
-  // Round taxes to nearest rupee (Section 170)
   const cgst = Math.round(rawCgst);
   const sgst = Math.round(rawSgst);
   const igst = Math.round(rawIgst);
   
-  // Update UI labels
   const label1 = document.getElementById('taxLabel1');
   const label2 = document.getElementById('taxLabel2');
   
@@ -537,8 +572,6 @@ window.calcTotal = function() {
   document.getElementById('calcGrandTotal').textContent = '₹'+(sub + (isIgst ? igst : cgst + sgst)).toFixed(2);
 };
 
-
-// ✅ Save Invoice (With GST/Non-GST & Preview Logic) - MODIFIED FOR PROFILE ID & PDF THEME
 window.saveInvoice = async function(e) {
   e.preventDefault();
   const cSel = document.getElementById('invCustomer');
@@ -549,9 +582,8 @@ window.saveInvoice = async function(e) {
   const includeSignature = document.getElementById('includeSignature')?.checked !== false;
   const isNonGst = document.getElementById('isNonGst')?.checked === true;
   const isIgst = document.getElementById('isIgst')?.checked === true;
-  const pdfTheme = document.getElementById('pdfTheme')?.value || 'teal'; // Get selected theme
+  const pdfTheme = document.getElementById('pdfTheme')?.value || 'teal';
   
-  // ✅ Get profile ID for this invoice
   const profileId = getActiveProfileId();
   const companyId = window.InvoiceApp.companyId;
   
@@ -559,19 +591,42 @@ window.saveInvoice = async function(e) {
   const items = [];
   
   document.querySelectorAll('#invoiceItems > div').forEach(row => {
-    const ps = row.querySelector('.item-particular');
-    const opt = ps.options[ps.selectedIndex];
-    if (!ps.value) return;
-    const gstRate = isNonGst ? 0 : (parseFloat(opt.dataset.gst)||0);
-    const amt = parseFloat(row.querySelector('.item-amount').value)||0;
+    const particularInput = row.querySelector('.item-particular');
+    if (!particularInput?.value) return;
+    
+    const itemName = particularInput.value.trim();
+    const sacCode = row.querySelector('.item-sac')?.value?.trim().toUpperCase() || '';
+    const rate = parseFloat(row.querySelector('.item-rate')?.value) || 0;
+    const quantity = parseFloat(row.querySelector('.item-qty')?.value) || 1;
+    const amount = parseFloat(row.querySelector('.item-amount')?.value) || 0;
+    
+    // ✅ Get GST rate from datalist if available
+    let gstRate = 0;
+    if (particularInput.list) {
+      const datalist = document.getElementById(particularInput.list);
+      if (datalist) {
+        const options = datalist.querySelectorAll('option');
+        options.forEach(opt => {
+          if (opt.value.toLowerCase() === itemName.toLowerCase()) {
+            gstRate = parseFloat(opt.dataset.gst) || 0;
+          }
+        });
+      }
+    }
+    
+    if (isNonGst) gstRate = 0;
+    
     items.push({
-      particular:ps.value, itemName:opt.text, sacCode:row.querySelector('.item-sac').value, 
-      rate:parseFloat(row.querySelector('.item-rate').value)||0, 
-      quantity:parseFloat(row.querySelector('.item-qty').value)||0, 
-      amount:amt, gstRate:gstRate, 
-      cgstAmount: isIgst ? 0 : (amt*(gstRate/2)/100), 
-      sgstAmount: isIgst ? 0 : (amt*(gstRate/2)/100),
-      igstAmount: isIgst ? (amt*gstRate/100) : 0
+      particular: itemName, // ✅ Save editable particular name
+      itemName: itemName,
+      sacCode: sacCode,
+      rate: rate,
+      quantity: quantity,
+      amount: amount,
+      gstRate: gstRate,
+      cgstAmount: isIgst ? 0 : (amount*(gstRate/2)/100),
+      sgstAmount: isIgst ? 0 : (amount*(gstRate/2)/100),
+      igstAmount: isIgst ? (amount*gstRate/100) : 0
     });
   });
   
@@ -580,11 +635,10 @@ window.saveInvoice = async function(e) {
   const sub = parseFloat(document.getElementById('calcSubtotal').textContent.replace('₹',''));
   const cgst = parseFloat(document.getElementById('calcCgst').textContent.replace('₹',''));
   const sgst = parseFloat(document.getElementById('calcSgst').textContent.replace('₹',''));
-  const igst = isIgst ? cgst : 0; // Reuse calcCgst field for IGST display
+  const igst = isIgst ? cgst : 0;
   
   try {
     if (editId) {
-      // ✅ Edit: Update existing invoice doc
       await window.InvoiceApp.clientDb.collection('invoices').doc(editId).set({
         invoiceDate: new Date(document.getElementById('invDate').value),
         customerId: cSel.value, customerName: cOpt.text,
@@ -592,19 +646,18 @@ window.saveInvoice = async function(e) {
         poNumber: document.getElementById('invPONumber').value,
         poDate: document.getElementById('invPODate').value ? new Date(document.getElementById('invPODate').value) : null,
         items, subtotal:sub, totalCgst:cgst, totalSgst:sgst, totalIgst:igst, grandTotal:sub+cgst+sgst+igst,
-        remarks: document.getElementById('invRemarks').value,
+        remarks: document.getElementById('invRemarks').value, // ✅ Still use 'remarks' field for backward compatibility
         signatureIncluded: includeSignature,
         isNonGst: isNonGst,
         isIgst: isIgst,
-        pdfTheme: pdfTheme,  // ✅ Save selected PDF theme
-        profileId: profileId,  // ✅ Ensure profileId is set
-        companyId: companyId,  // ✅ Preserve login companyId
+        pdfTheme: pdfTheme,
+        profileId: profileId,
+        companyId: companyId,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, {merge:true});
       const doc = await window.InvoiceApp.clientDb.collection('invoices').doc(editId).get();
       invNum = doc.data().invoiceNumber;
     } else {
-      // ✅ Create: Generate deterministic doc ID based on profile + invoice number
       const profile = await window.InvoiceApp.clientDb.collection('companyProfile').doc(profileId).get();
       const profileData = profile.data() || {};
       const prefix = profileData.invoicePrefix || companyId.slice(0,3).toUpperCase();
@@ -624,13 +677,12 @@ window.saveInvoice = async function(e) {
       if (invoiceNumber.length > 16) { invoiceNumber = `${prefix}-${formattedNum}`; if (invoiceNumber.length > 16) { invoiceNumber = `${prefix}${nextNum}`; } }
       invNum = invoiceNumber;
       
-      // ✅ Generate deterministic Firestore doc ID: {companyId}_{profileId}_{invoiceNumber}
       const safeInvNum = invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_');
       const docId = `${companyId}_${profileId}_${safeInvNum}`;
       
       await window.InvoiceApp.clientDb.collection('invoices').doc(docId).set({
-        profileId: profileId,           // ✅ Profile ID for filtering (COMP001-COMP005)
-        companyId: companyId,           // ✅ Original login ID preserved
+        profileId: profileId,
+        companyId: companyId,
         invoiceNumber: invNum,
         invoiceDate: new Date(document.getElementById('invDate').value),
         customerId: cSel.value, customerName: cOpt.text,
@@ -638,11 +690,12 @@ window.saveInvoice = async function(e) {
         poNumber: document.getElementById('invPONumber').value,
         poDate: document.getElementById('invPODate').value ? new Date(document.getElementById('invPODate').value) : null,
         items, subtotal:sub, totalCgst:cgst, totalSgst:sgst, totalIgst:igst, grandTotal:sub+cgst+sgst+igst,
-        remarks: document.getElementById('invRemarks').value, status: 'draft',
+        remarks: document.getElementById('invRemarks').value,
+        status: 'draft',
         signatureIncluded: includeSignature,
         isNonGst: isNonGst,
         isIgst: isIgst,
-        pdfTheme: pdfTheme,  // ✅ Save selected PDF theme
+        pdfTheme: pdfTheme,
         seriesId: prefix, financialYear: financialYear,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -664,7 +717,6 @@ window.saveInvoice = async function(e) {
   } catch (err) { console.error('Save error:', err); alert('❌ Error saving invoice: ' + err.message); }
 };
 
-// ✅ Generate PDF Blob for Preview
 async function generateInvoicePDFBlob(id, includeSignature = true) {
   const docSnap = await window.InvoiceApp.clientDb.collection('invoices').doc(id).get();
   if(!docSnap.exists) return null;
@@ -675,7 +727,6 @@ async function generateInvoicePDFBlob(id, includeSignature = true) {
   return await renderInvoicePDF(docSnap.data(), id, includeSignature, 'bloburl');
 }
 
-// ✅ Public Download Function
 window.downloadInvoicePDF = async function(id) {
   const docSnap = await window.InvoiceApp.clientDb.collection('invoices').doc(id).get();
   if(!docSnap.exists) return;
@@ -687,15 +738,13 @@ window.downloadInvoicePDF = async function(id) {
 };
 
 // ==========================================
-// CORE PDF RENDERER - FULL VERSION WITH THEME SUPPORT
+// CORE PDF RENDERER - WITH "PO/Ref No:" LABEL
 // ==========================================
 async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
-  // ✅ Use profileId to fetch correct company profile
   const profileId = inv.profileId || window.InvoiceApp.companyId;
   const compSnap = await window.InvoiceApp.clientDb.collection('companyProfile').doc(profileId).get();
   const comp = compSnap.exists ? compSnap.data() : {};
   
-  // ✅ Get theme colors (default to teal if not set)
   const theme = PDF_THEMES[inv.pdfTheme] || PDF_THEMES.teal;
   const [primaryR, primaryG, primaryB] = theme.primary;
   const [secondaryR, secondaryG, secondaryB] = theme.secondary;
@@ -710,7 +759,6 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   const margin = 15;
   const contentWidth = pageWidth - (margin * 2);
   
-  // 1. HEADER - THEME COLORS
   let y = 15;
   if (comp.logoUrl) {
     try {
@@ -719,15 +767,14 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     } catch(e) { console.log('Logo error:', e); }
   }
   doc.setFontSize(22); doc.setFont(undefined, 'bold'); 
-  doc.setTextColor(primaryR, primaryG, primaryB); // ✅ Theme primary color
+  doc.setTextColor(primaryR, primaryG, primaryB);
   doc.text('TAX INVOICE', pageWidth - margin, y + 10, { align: 'right' });
   y += 35;
   
-  // 2. COMPANY DETAILS - THEME COLORS
   doc.setTextColor(primaryR, primaryG, primaryB); doc.setFontSize(16); doc.setFont(undefined, 'bold');
   doc.text(comp.companyName || 'Company Name', pageWidth - margin, y, { align: 'right' });
   y += 7;
-  doc.setTextColor(textR, textG, textB); doc.setFontSize(8); doc.setFont(undefined, 'normal'); // ✅ Theme text color
+  doc.setTextColor(textR, textG, textB); doc.setFontSize(8); doc.setFont(undefined, 'normal');
   
   if (comp.address) {
     const lines = comp.address.includes('\n') ? comp.address.split('\n') : doc.splitTextToSize(comp.address, 80);
@@ -744,22 +791,21 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   doc.setDrawColor(primaryR, primaryG, primaryB); doc.setLineWidth(0.3); doc.line(margin, y, pageWidth - margin, y);
   y += 8;
   
-  // 3. META - ✅ LEFT ALIGNED
   doc.setTextColor(textR, textG, textB); doc.setFontSize(9); doc.setFont(undefined, 'bold');
   const invDate = inv.invoiceDate?.toDate ? inv.invoiceDate.toDate().toLocaleDateString('en-IN') : new Date(inv.invoiceDate).toLocaleDateString('en-IN');
   const leftColX = margin;
   const rightColX = pageWidth - margin - 60;
   
   doc.text('Bill No:', leftColX, y); doc.setFont(undefined, 'normal'); doc.text(inv.invoiceNumber || '-', leftColX + 18, y);
-  doc.setFont(undefined, 'bold'); doc.text('PO No:', rightColX, y); doc.setFont(undefined, 'normal'); doc.text(inv.poNumber || '-', rightColX + 18, y);
+  // ✅ Changed "PO No:" to "PO/Ref No:"
+  doc.setFont(undefined, 'bold'); doc.text('PO/Ref No:', rightColX, y); doc.setFont(undefined, 'normal'); doc.text(inv.poNumber || '-', rightColX + 18, y);
   y += 6;
   doc.setFont(undefined, 'bold'); doc.text('Date:', leftColX, y); doc.setFont(undefined, 'normal'); doc.text(invDate, leftColX + 15, y);
-  doc.setFont(undefined, 'bold'); doc.text('PO Date:', rightColX, y); doc.setFont(undefined, 'normal');
+  doc.setFont(undefined, 'bold'); doc.text('PO/Ref Date:', rightColX, y); doc.setFont(undefined, 'normal');
   const poDate = inv.poDate?.toDate ? inv.poDate.toDate().toLocaleDateString('en-IN') : new Date(inv.poDate).toLocaleDateString('en-IN');
   doc.text(poDate, rightColX + 25, y);
   y += 10;
   
-  // 4. BILL TO - THEME ACCENT BACKGROUND
   doc.setFillColor(primaryR, primaryG, primaryB); doc.rect(margin, y, 50, 6, 'F'); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.setFontSize(9);
   doc.text('BILL TO', margin + 2, y + 4); y += 9;
   doc.setTextColor(textR, textG, textB); doc.setFont(undefined, 'bold'); doc.setFontSize(10); doc.text(inv.customerName || '-', margin, y);
@@ -771,27 +817,22 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   if (inv.customerGstn) { doc.setTextColor(primaryR, primaryG, primaryB); doc.setFont(undefined, 'bold'); doc.text('GSTIN: ' + inv.customerGstn, margin, y); doc.setTextColor(textR, textG, textB); y += 4; }
   if (inv.customerPan) { doc.text('PAN: ' + inv.customerPan, margin, y); y += 4; }
   
-  // 5. ITEMS TABLE - ✅ THEME COLORS & FIXED ALIGNMENTS
   y = Math.max(y + 8, 85);
   
-  // ✅ Adjusted column positions
-  const colSlNo = margin + 8;          // Sl.No. position
-  const colParticulars = margin + 20;  // Particulars (left aligned)
-  const colSAC = margin + 115;          // SAC (left aligned)
-  const colRate = margin + 140;        // Rate (right aligned)
-  const colQty = margin + 150;         // Qty (center aligned)
-  const colAmount = margin + 170;      // Amount (right aligned)
+  const colSlNo = margin + 8;
+  const colParticulars = margin + 20;
+  const colSAC = margin + 115;
+  const colRate = margin + 140;
+  const colQty = margin + 150;
+  const colAmount = margin + 170;
   
-  // ✅ Standard header height (8mm) with theme colors
-  doc.setFillColor(primaryR, primaryG, primaryB); // ✅ Theme primary
+  doc.setFillColor(primaryR, primaryG, primaryB);
   doc.rect(margin, y, contentWidth, 10, 'F');
-  doc.setTextColor(255, 255, 255); // White text on dark header
+  doc.setTextColor(255, 255, 255);
   doc.setFont(undefined, 'bold');
   doc.setFontSize(10);
  
   doc.text('Sl.No.', colSlNo, y + 3.5, { align: 'center' });
-  
-  // ✅ Other headers - Particulars left aligned, others right aligned
   doc.text('Particulars', colParticulars, y + 3.5, { align: 'left' });
   doc.text('SAC', colSAC, y + 3.5, { align: 'left' });
   doc.text('Rate', colRate, y + 3.5, { align: 'right' });
@@ -799,7 +840,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   doc.text('Amount', colAmount, y + 3.5, { align: 'right' });
   
   y += 8;
-  doc.setTextColor(textR, textG, textB); // ✅ Theme text color
+  doc.setTextColor(textR, textG, textB);
   doc.setFont(undefined, 'normal');
   doc.setFontSize(8);
   
@@ -807,7 +848,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     if (y > 250) { 
       doc.addPage(); 
       y = 20; 
-      doc.setFillColor(primaryR, primaryG, primaryB); // ✅ Theme primary
+      doc.setFillColor(primaryR, primaryG, primaryB);
       doc.rect(margin, y, contentWidth, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont(undefined, 'bold');
@@ -823,7 +864,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     }
     
     if (i % 2 === 0) {
-      doc.setFillColor(accentR, accentG, accentB); // ✅ Theme accent for row background
+      doc.setFillColor(accentR, accentG, accentB);
       doc.rect(margin, y - 3, contentWidth, 6, 'F');
     }
     
@@ -831,7 +872,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     doc.text(String(i+1), colSlNo, y, { align: 'center' });
     doc.setFont(undefined, 'normal');
     
-    const itemName = item.itemName || '-';
+    const itemName = item.itemName || item.particular || '-';
     if (itemName.length > 70) { 
       let b = itemName.lastIndexOf(' ', 70); 
       if (b === -1) b = 70; 
@@ -850,12 +891,10 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     y += 6;
   });
   
-  // 6. TOTALS - ✅ THEME COLORS & ALIGNED WITH AMOUNT COLUMN
   y += 4; 
   doc.setFont(undefined, 'bold'); 
   doc.setFontSize(9);
   
-  // ✅ Align labels and amounts properly
   doc.text('Subtotal:', colAmount - 40, y, { align: 'right' }); 
   doc.text('Rs. ' + (inv.subtotal || 0).toFixed(2), colAmount, y, { align: 'right' }); 
   y += 5;
@@ -886,24 +925,21 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     y += 5; 
   }
   
-  // ✅ TOTAL box - extended to align with SAC column, with theme colors
-  doc.setFillColor(primaryR, primaryG, primaryB); // ✅ Theme primary
+  doc.setFillColor(primaryR, primaryG, primaryB); 
   doc.rect(colSAC - 10, y - 3, colAmount - (colSAC - 5) + 14, 6, 'F');
-  doc.setTextColor(255, 255, 255); // White text on dark background
+  doc.setTextColor(255, 255, 255); 
   doc.setFont(undefined, 'bold'); 
   doc.text('TOTAL', colSAC, y + 1, { align: 'left' }); 
   doc.text('Rs. ' + (inv.grandTotal || 0).toFixed(2), colAmount, y + 1, { align: 'right' });
   
-  // 7. AMOUNT IN WORDS - THEME TEXT COLOR
   y += 12; 
-  doc.setTextColor(textR, textG, textB); // ✅ Theme text color
+  doc.setTextColor(textR, textG, textB); 
   doc.setFont(undefined, 'bold'); 
   doc.setFontSize(9);
   doc.text('Amount in words: ' + numberToWords(inv.grandTotal) + ' only', margin, y);
   
-  // 8. BANK & ACCOUNT NAME - THEME COLORS
   y += 10; 
-  doc.setDrawColor(borderR, borderG, borderB); // ✅ Theme border color
+  doc.setDrawColor(borderR, borderG, borderB); 
   doc.setLineWidth(0.2); 
   doc.line(margin, y, pageWidth - margin, y); 
   y += 6;
@@ -924,26 +960,23 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     doc.text('IFSC: ' + (comp.bankDetails.ifscCode || ''), margin, y); 
   }
   
-  // NOTE / REMARKS - THEME COLORS & 60% WIDTH
   const noteY = y + 16;
+  // ✅ Use 'remarks' field but label as "Note:" in PDF
   if (inv.remarks?.trim()) {
     doc.setFont(undefined, 'italic'); 
     doc.setFontSize(8);
-    doc.setTextColor(textR, textG, textB); // ✅ Theme text color
+    doc.setTextColor(textR, textG, textB);
     
     const notePrefix = 'Note: ';
     const noteText = inv.remarks.trim();
     
-    // ✅ Limit width to 60% of content area
     const maxWidth = contentWidth * 0.60;
     const prefixWidth = doc.getTextWidth(notePrefix);
     const indentX = margin + prefixWidth;
     
-    // ✅ Split remarks to fit 60% width
     const availableWidth = maxWidth - prefixWidth - 5;
     const remarkLines = doc.splitTextToSize(noteText, availableWidth);
     
-    // ✅ Display up to 5 lines with hanging indent
     const maxLines = 5;
     
     remarkLines.slice(0, maxLines).forEach((line, idx) => {
@@ -955,7 +988,6 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
     });
   }
   
-  // SIGNATURE - THEME COLORS
   const sigStartY = y - 8;
   const sigX = pageWidth - margin;
   doc.setFont(undefined, 'normal'); 
@@ -976,7 +1008,7 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   }
   
   doc.setFontSize(7); 
-  doc.setTextColor(120, 120, 120); // Neutral gray for footer
+  doc.setTextColor(120, 120, 120);
   doc.text('Thank you for your business!', pageWidth / 2, 290, { align: 'center' });
   
   if (outputMode === 'save') { 
@@ -988,7 +1020,6 @@ async function renderInvoicePDF(inv, id, includeSignature, outputMode) {
   }
 }
 
-// Number to Words Helper (UNCHANGED)
 function numberToWords(num) {
   if (!num) return 'Zero';
   const n = Math.round(num);
@@ -1028,7 +1059,6 @@ window.closeModal = function(id) {
   }
 };
 
-// Global ESC handler
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     const modals = document.querySelectorAll('.modal');
@@ -1036,7 +1066,6 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// ✅ Public View Function (Eye Icon)
 window.showInvoicePreview = async function(id) {
   const docSnap = await window.InvoiceApp.clientDb.collection('invoices').doc(id).get();
   if(!docSnap.exists) return;
