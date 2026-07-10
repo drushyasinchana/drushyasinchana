@@ -27,7 +27,7 @@ function getCompanyId() {
   
   if (!companyId) {
     // No company in session - redirect to login with clear message
-    console.warn('⚠️ No company session found - redirecting to login');
+    console.warn('️ No company session found - redirecting to login');
     toast('Session expired. Please login again.', 'error');
     
     // Clear any leftover session data and redirect
@@ -98,9 +98,10 @@ function closeModal(id) {
 }
 
 // ══════════════════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════════════════
-function nav(page, btn) {
+/* ══════════════════════════════════════════════════════
+NAVIGATION - UPDATED to load sites before dropdowns
+══════════════════════════════════════════════════════ */
+async function nav(page, btn) {
   // Hide ALL pages first (force via inline style to override any CSS conflicts)
   document.querySelectorAll('.page').forEach(p => {
     p.classList.remove('active');
@@ -125,25 +126,72 @@ function nav(page, btn) {
   const tl = document.getElementById('topbarTitle');
   if (tl) tl.textContent = page.charAt(0).toUpperCase() + page.slice(1);
   
+  // ✅ Helper: Ensure sites are loaded before page load
+  const ensureSitesLoaded = async () => {
+    if (!S.sites || S.sites.length === 0) {
+      try {
+        S.sites = await fetchSites();
+        console.log(`✅ Sites loaded: ${S.sites.length}`);
+      } catch (e) {
+        console.error('❌ Failed to load sites:', e);
+      }
+    }
+  };
+  
   // Load page-specific data
-  if (page === 'dashboard') loadDashboard();
-  if (page === 'employees') loadEmployees();
-  if (page === 'sites') loadSites();
-  if (page === 'attendance') loadAttendance();
-  if (page === 'reports') loadReports();
-  if (page === 'manual') loadManual();
-  if (page === 'leave') loadLeave();
+  if (page === 'dashboard') {
+    await ensureSitesLoaded();
+    loadDashboard();
+  }
+  if (page === 'employees') {
+    await ensureSitesLoaded();
+    loadEmployees();
+  }
+  if (page === 'sites') {
+    loadSites();
+  }
+  if (page === 'attendance') {
+    // ✅ Load sites first, then populate dropdowns, then load attendance
+    await ensureSitesLoaded();
+    populateSiteSelects();
+    loadAttendance();
+  }
+  if (page === 'reports') {
+    // ✅ Load sites first, then populate dropdowns, then load reports
+    await ensureSitesLoaded();
+    populateSiteSelects();
+    loadReports();
+  }
+  if (page === 'manual') {
+    await ensureSitesLoaded();
+    populateSiteSelects();
+    loadManual();
+  }
+  if (page === 'leave') {
+    await ensureSitesLoaded();
+    populateSiteSelects();
+    loadLeave();
+  }
   if (page === 'holidays') loadHolidays();
   if (page === 'weeklyoff') loadWeeklyOff();
   if (page === 'support') loadSupport();
-  if (page === 'rectifications') loadRectifications();
+  if (page === 'rectifications') {
+    // ✅ Load sites first, then populate dropdowns, then load rectifications
+    await ensureSitesLoaded();
+    populateSiteSelects();
+    loadRectifications();
+  }
   if (page === 'payroll') {
     // Initialize payroll tab to Edit by default
     switchPayrollTab('edit');
   }
-  if (page === 'postlunch') initLunchTracking(); 
+  if (page === 'postlunch') {
+    // ✅ Load sites first, then populate dropdowns, then init lunch tracking
+    await ensureSitesLoaded();
+    populateSiteSelects();
+    initLunchTracking();
+  }
 }
-
 // ══════════════════════════════════════════════════════
 // FIREBASE INIT
 // ══════════════════════════════════════════════════════
@@ -163,7 +211,7 @@ async function initClientFirebase(cfg) {
 
 // ══════════════════════════════════════════════════════
 // DATA FETCHERS
-// ══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 async function fetchEmployees() {
   if (!S.clientDb) return [];
   const snap = await S.clientDb.collection('employees')
@@ -178,13 +226,61 @@ async function fetchSites() {
   return snap.docs.map(d => ({id:d.id,...d.data()}));
 }
 
-async function fetchAttendance(date) {
+/* ══════════════════════════════════════════════════════
+FETCH ATTENDANCE - FIXED: Supports Site Filtering
+══════════════════════════════════════════════════════ */
+async function fetchAttendance(filterDateStr, filterSiteId = null) {
   if (!S.clientDb) return [];
-  const snap = await S.clientDb.collection('attendance')
-    .where('companyId','==',S.prefs.companyId)
-    .where('Date','==',date).get();
-  return snap.docs.map(d => d.data());
+  try {
+    const snap = await S.clientDb.collection('attendance')
+      .where('companyId', '==', S.prefs.companyId)
+      .get();
+    
+    const fParts = filterDateStr.split('-');
+    const targetDate = new Date(
+      parseInt(fParts[0], 10),
+      parseInt(fParts[1], 10) - 1,
+      parseInt(fParts[2], 10)
+    );
+    
+    const filtered = [];
+    for (const doc of snap.docs) {
+      const r = doc.data();
+      
+      let recDate = null;
+      if (r.Date && typeof r.Date === 'string' && r.Date.includes('-')) {
+        const normalized = r.Date.replace(/[–—]/g, '-');
+        const parts = normalized.split('-');
+        if (parts.length === 3) {
+          if (parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+            recDate = new Date(parts[2], parts[1] - 1, parts[0]);
+          } else if (parts[0].length === 4) {
+            recDate = new Date(r.Date);
+          }
+        }
+      } else if (r.Date?.toDate) {
+        recDate = r.Date.toDate();
+      }
+      
+      if (recDate && 
+          recDate.getFullYear() === targetDate.getFullYear() &&
+          recDate.getMonth() === targetDate.getMonth() &&
+          recDate.getDate() === targetDate.getDate()) {
+        
+        // ✅ FIXED: Filter by Site if filterSiteId is provided
+        if (filterSiteId && r.SiteID !== filterSiteId) continue;
+        
+        filtered.push(r);
+      }
+    }
+    
+    return filtered;
+  } catch (e) {
+    console.error('Fetch attendance error:', e);
+    return [];
+  }
 }
+
 
 // ══════════════════════════════════════════════════════
 // DASHBOARD
@@ -260,13 +356,19 @@ async function loadDashboard() {
 // ═════════════════════════════════════════════════════
 // POPULATE SELECTS (Sites & Employees)
 // ══════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
+POPULATE SELECTS (Sites & Employees) - UPDATED
+══════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+POPULATE SELECTS (Sites & Employees) - UPDATED
+══════════════════════════════════════════════════════ */
 function populateSiteSelects() {
-  // 1. Populate Site Dropdowns
-  const siteSelectIds = ['eSite', 'empSiteFilter', 'attSite', 'rptSite', 'mSite', 'leaveSite', 'correctSite', 'revokeSite'];
+  // ✅ Added 'rectSite' and 'lunchSite' to the list
+  const siteSelectIds = ['eSite', 'empSiteFilter', 'attSite', 'rptSite', 'mSite', 'leaveSite', 'correctSite', 'revokeSite', 'rectSite', 'lunchSite'];
   
   siteSelectIds.forEach(id => {
     const sel = document.getElementById(id);
-    if (!sel) return; // Safety check: Element might not exist on current page
+    if (!sel) return;
     
     const first = sel.querySelector('option[value=""]');
     while (sel.options.length > (first ? 1 : 0)) { 
@@ -286,7 +388,7 @@ function populateSiteSelects() {
   
   empSelectIds.forEach(id => {
     const sel = document.getElementById(id);
-    if (!sel) return; // Safety check
+    if (!sel) return;
     
     while (sel.options.length > 1) sel.remove(1);
     
@@ -297,6 +399,321 @@ function populateSiteSelects() {
       sel.appendChild(opt);
     });
   });
+}
+
+
+/* ══════════════════════════════════════════════════════
+LOAD RECTIFICATIONS - Loads Sites First
+══════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+LOAD RECTIFICATIONS - FIXED: Loads Sites & Filters by Site
+══════════════════════════════════════════════════════ */
+async function loadRectifications() {
+  console.log('🔍 loadRectifications() triggered');
+  
+  if (!S.clientDb) { toast('DB not connected', 'error'); return; }
+  const companyId = S.prefs?.companyId;
+  if (!companyId) { toast('Company context missing', 'error'); return; }
+  
+  const tb = document.getElementById('rectTableBody');
+  if (!tb) return;
+
+  // ✅ STEP 1: Load Sites if not already loaded
+  if (!S.sites || S.sites.length === 0) {
+    console.log('📥 Loading sites...');
+    try {
+      const sitesSnap = await S.clientDb.collection('sites')
+        .where('companyId', '==', companyId)
+        .get();
+      S.sites = sitesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log(`✅ Sites loaded: ${S.sites.length}`);
+    } catch (e) { 
+      console.error('❌ Site load failed:', e); 
+    }
+  }
+
+  // ✅ STEP 2: Load Employees if not already loaded
+  if (!S.employees || S.employees.length === 0) {
+    console.log('📥 Loading employees...');
+    try {
+      const empSnap = await S.clientDb.collection('employees')
+        .where('companyId', '==', companyId)
+        .get();
+      S.employees = empSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log(`✅ Employees loaded: ${S.employees.length}`);
+    } catch (e) { 
+      console.error('❌ Employee load failed:', e); 
+    }
+  }
+
+  // ✅ STEP 3: NOW populate site dropdowns
+  populateSiteSelects();
+
+  // Get filter date and site
+  const dateEl = document.getElementById('rectDate');
+  const siteEl = document.getElementById('rectSite');
+  const filterDateStr = dateEl?.value || today();
+  const filterSiteId = siteEl?.value || '';  // ✅ Get selected site
+  
+  // Parse filter date
+  const fParts = filterDateStr.split('-');
+  const currentFilterDate = new Date(
+    parseInt(fParts[0], 10),
+    parseInt(fParts[1], 10) - 1,
+    parseInt(fParts[2], 10)
+  );
+  currentFilterDate.setHours(0, 0, 0, 0);
+  
+  console.log('📅 Filter Date:', filterDateStr, '| Site:', filterSiteId || 'ALL');
+
+  try {
+    const attSnap = await S.clientDb.collection('attendance')
+      .where('companyId', '==', companyId)
+      .get();
+    
+    console.log(`✅ Fetched ${attSnap.size} total records`);
+
+    if (attSnap.empty) {
+      tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
+      updateRectSummary([]);
+      return;
+    }
+    
+    const filtered = [];
+    
+    for (const doc of attSnap.docs) {
+      const r = doc.data();
+      
+      // Parse record date (DD-MM-YYYY format)
+      let recordDate = null;
+      if (r.Date?.toDate) {
+        recordDate = r.Date.toDate();
+      } else if (typeof r.Date === 'string') {
+        const parts = r.Date.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            recordDate = new Date(r.Date);
+          } else {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            recordDate = new Date(year, month, day);
+          }
+        }
+      }
+      
+      if (!recordDate || isNaN(recordDate)) continue;
+      
+      // Check same day
+      const recDateOnly = new Date(recordDate);
+      recDateOnly.setHours(0, 0, 0, 0);
+      
+      if (recDateOnly.getTime() !== currentFilterDate.getTime()) continue;
+      
+      // ✅ Filter by Site if selected
+      if (filterSiteId && r.SiteID !== filterSiteId) continue;
+      
+      // Enrich with employee data
+      const emp = S.employees?.find(e => e.EMPID === r.EMPID);
+      const enriched = {
+        id: doc.id,
+        ...r,
+        Name: (emp?.EmpName || emp?.Name || r.Name || r.EMPID || '—').trim()
+      };
+      
+      filtered.push(enriched);
+    }
+    
+    console.log(`✅ Filtered to ${filtered.length} records`);
+
+    if (filtered.length === 0) {
+      tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">No records for this date</td></tr>';
+    } else {
+      renderRectTable(filtered);
+    }
+
+    updateRectSummary(filtered);
+
+  } catch (e) {
+    console.error('❌ Error:', e);
+    tb.innerHTML = `<tr><td colspan="10" style="color:var(--red);text-align:center;padding:20px;">Error: ${e.message}</td></tr>`;
+  }
+}
+
+
+
+function renderRectTable(list) {
+  const tb = document.getElementById('rectTableBody');
+  if (!tb) return;
+  
+  tb.innerHTML = list.map(r => {
+    const status = r.Status || 'UNKNOWN';
+    const statusClass = status === 'PRESENT' ? 'badge-green' : status === 'ABSENT' ? 'badge-red' : status === 'ON_LEAVE' ? 'badge-blue' : 'badge-gray';
+    const loc = r.LocationStatus || 'UNKNOWN';
+    const locClass = loc === 'INSIDE' || loc === 'VERIFIED' ? 'badge-blue' : 'badge-amber';
+    
+    return `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:10px;"><strong>${r.Name || '—'}</strong></td>
+      <td class="mono" style="padding:10px;">${r.EMPID || '—'}</td>
+      <td style="padding:10px;">${r.SiteID || '—'}</td>
+      <td class="mono" style="padding:10px;color:var(--green);">${r.InTime || '—'}</td>
+      <td class="mono" style="padding:10px;color:var(--red);">${r.OutTime || '—'}</td>
+      <td class="mono" style="padding:10px;">${calcHours(r.InTime, r.OutTime)}</td>
+      <td style="padding:10px;"><span class="badge ${statusClass}">${status}</span></td>
+      <td style="padding:10px;"><span class="badge ${locClass}">${loc}</span></td>
+      <td style="padding:10px;">${r.HalfDay || 'NO'}</td>
+      <td style="padding:10px;">
+        <button class="btn btn-outline btn-sm" onclick="openRectifyModal('${r.id}')">️ Edit</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateRectSummary(list) {
+  const present = list?.filter(r => r.Status === 'PRESENT').length || 0;
+  const absent = list?.filter(r => r.Status === 'ABSENT').length || 0;
+  const leave = list?.filter(r => r.Status === 'ON_LEAVE').length || 0;
+  
+  document.getElementById('rectTotal').textContent = list?.length || 0;
+  document.getElementById('rectPresent').textContent = present;
+  document.getElementById('rectAbsent').textContent = absent;
+  document.getElementById('rectLeave').textContent = leave;
+}
+
+function calcHours(inTime, outTime) {
+  if (!inTime || !outTime) return '—';
+  try {
+    const [inH, inM] = inTime.split(':').map(Number);
+    const [outH, outM] = outTime.split(':').map(Number);
+    const diff = (outH * 60 + outM) - (inH * 60 + inM);
+    if (diff <= 0) return '—';
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return `${h}h ${m}m`;
+  } catch(e) {
+    return '—';
+  }
+}
+
+
+
+/* ══════════════════════════════════════════════════════
+LOAD POST-LUNCH TRACKING - FIXED: Filtering & Columns
+══════════════════════════════════════════════════════ */
+async function loadLunchTracking() {
+  if (!S.clientDb) { toast('DB not connected', 'error'); return; }
+  
+  // Ensure sites and employees are loaded
+  if (!S.sites || S.sites.length === 0) {
+    try { S.sites = await fetchSites(); } catch (e) { console.error(e); }
+  }
+  if (!S.employees || S.employees.length === 0) {
+    try { S.employees = await fetchEmployees(); } catch (e) { console.error(e); }
+  }
+  
+  // Populate site dropdowns (crucial for loading the sites into the select)
+  populateSiteSelects();
+
+  const dateStr = document.getElementById('lunchDate')?.value;
+  const siteId = document.getElementById('lunchSite')?.value;
+  const statusFilter = document.getElementById('lunchFilter')?.value;
+  const tb = document.getElementById('lunchTableBody');
+
+  if (!dateStr) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">Select a date to load records</td></tr>';
+    return;
+  }
+
+  // Parse Date
+  const fParts = dateStr.split('-');
+  const filterDate = new Date(fParts[0], fParts[1] - 1, fParts[2]);
+  filterDate.setHours(0,0,0,0);
+  const nextDate = new Date(filterDate);
+  nextDate.setDate(nextDate.getDate() + 1);
+
+  try {
+    const snap = await S.clientDb.collection('post_lunch_tracking')
+      .where('companyId', '==', S.prefs.companyId)
+      .get();
+
+    let records = [];
+    snap.forEach(doc => {
+      const data = doc.data();
+      let recDate;
+      // Handle date parsing similar to attendance
+      if (data.Date && data.Date.toDate) recDate = data.Date.toDate();
+      else if (data.Date) {
+        const parts = data.Date.split(/[-/]/);
+        if (parts[0].length === 4) recDate = new Date(data.Date);
+        else recDate = new Date(parts[2], parts[1]-1, parts[0]);
+      }
+
+      // Date Filter
+      if (recDate && recDate >= filterDate && recDate < nextDate) {
+        
+        // Site Filter
+        if (siteId && data.SiteID !== siteId) return;
+        
+        // Status Filter
+        const status = data.Status || data.postLunch?.status || 'UNKNOWN';
+        if (statusFilter && status !== statusFilter) return;
+
+        const emp = S.employees.find(e => e.EMPID === data.EMPID);
+        data.Name = emp ? emp.EmpName : data.Name || data.EMPID;
+        
+        records.push(data);
+      }
+    });
+
+    if (records.length === 0) {
+      tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No records found for this date</td></tr>';
+    } else {
+      tb.innerHTML = records.map(r => {
+        // ✅ FIXED: Display Time from nested object or flat field
+        const time = r.Time || r.postLunch?.time || '—';
+        const status = r.Status || r.postLunch?.status || 'UNKNOWN';
+        const coords = (r.Latitude && r.Longitude) ? `${r.Latitude.toFixed(4)}, ${r.Longitude.toFixed(4)}` : '—';
+        const accuracy = r.Accuracy || r.postLunch?.accuracy || '—';
+        
+        const statusClass = status === 'INSIDE' ? 'badge-green' : status === 'OUTSIDE' ? 'badge-red' : 'badge-amber';
+
+        return `
+          <tr>
+            <td style="padding:10px;"><strong>${r.EMPID}</strong></td>
+            <td style="padding:10px;">${r.Name}</td>
+            <td style="padding:10px;">${r.SiteID}</td>
+            <td class="mono" style="padding:10px;">${time}</td>
+            <td style="padding:10px;"><span class="badge ${statusClass}">${status}</span></td>
+            <td class="mono" style="padding:10px;font-size:0.8rem;">${coords}</td>
+            <td style="padding:10px;">${accuracy}m</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Update Summary Chips
+    const summaryEl = document.getElementById('lunchSummary');
+    if (summaryEl) {
+      const inside = records.filter(r => (r.Status || 'UNKNOWN') === 'INSIDE').length;
+      const outside = records.filter(r => (r.Status || 'UNKNOWN') === 'OUTSIDE').length;
+      summaryEl.innerHTML = `
+        <div class="chip" style="color:var(--green);">Inside: ${inside}</div>
+        <div class="chip" style="color:var(--red);">Outside: ${outside}</div>
+        <div class="chip">Total: ${records.length}</div>
+      `;
+    }
+
+  } catch (e) {
+    console.error(e);
+    toast('Error loading lunch tracking', 'error');
+  }
+}
+
+function initLunchTracking() {
+  const dateEl = document.getElementById('lunchDate');
+  if (dateEl && !dateEl.value) dateEl.value = today();
+  loadLunchTracking();
 }
 
 // ══════════════════════════════════════════════════════
@@ -367,7 +784,9 @@ function renderLeaveBalances(list) {
     tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted);">No leave balances found for this year. Click "Add Balance" to create one.</td></tr>';
     return;
   }
+  // ✅ FIXED: Removed space in arrow function 'lb = >' -> 'lb =>'
   tb.innerHTML = list.map(lb => {
+    // ✅ FIXED: Removed space in arrow function 'e = >' -> 'e =>'
     const emp = S.employees.find(e => e.EMPID === lb.EMPID);
     const empName = lb.empName || (emp ? emp.EmpName : 'Unknown');
     return `
@@ -594,7 +1013,7 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
 
 // ══════════════════════════════════════════════════════
 // MULTI-TENANT INITIALIZATION
-// ═════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 (function init() {
   console.log('🔍 Initializing AttendEase (Multi-Tenant Mode)...');
   
@@ -606,7 +1025,7 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
     return;
   }
   
-  console.log('🏢 Target Company:', companyId);
+  console.log(' Target Company:', companyId);
   S.prefs.companyId = companyId;
   
   // 2. Master Firebase config (hardcoded)
@@ -626,7 +1045,7 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
   const masterDb = firebase.firestore();
   
   // 4. Fetch company config and initialize client Firebase
-  console.log('🔐 Fetching config for:', companyId);
+  console.log(' Fetching config for:', companyId);
   
   masterDb.collection('companies').doc(companyId).get()
     .then(snap => {
@@ -668,18 +1087,17 @@ async function initializeCompanyData(companyId, adminEmail, companyName) {
       document.getElementById('loginFallback')?.classList.remove('active');
       document.getElementById('appScreen')?.classList.add('active');
       
-// ✅ NEW CODE (correct IDs matching your HTML):
-const sb = document.getElementById('sbCompanyName');
-const userAvatar = document.getElementById('userAvatar');      // ✅ Fixed ID
-const userName = document.getElementById('userName');          // ✅ Fixed ID
-const userEmail = document.getElementById('userEmail');        // ✅ Fixed ID
+      // ✅ FIXED: Update UI elements with correct IDs
+      const sb = document.getElementById('sbCompanyName');
+      const userAvatar = document.getElementById('userAvatar');
+      const userName = document.getElementById('userName');
+      const userEmail = document.getElementById('userEmail');
 
-if (sb) sb.textContent = S.prefs.companyName || '—';
-if (userAvatar) userAvatar.textContent = (S.prefs.companyName || '??').slice(0,2).toUpperCase();
-if (userName) userName.textContent = 'Admin User';  // Or fetch from auth if needed
-if (userEmail) userEmail.textContent = S.prefs.adminEmail || '—';
+      if (sb) sb.textContent = S.prefs.companyName || '—';
+      if (userAvatar) userAvatar.textContent = (S.prefs.companyName || '??').slice(0,2).toUpperCase();
+      if (userName) userName.textContent = 'Admin User';
+      if (userEmail) userEmail.textContent = S.prefs.adminEmail || '—';
       
-      // Set date pickers to today
       ['attDate', 'mDate', 'rptFrom', 'rptTo'].forEach(id => {
         const el = document.getElementById(id);
         if (el && !el.value) el.value = today();
@@ -703,8 +1121,7 @@ if (userEmail) userEmail.textContent = S.prefs.adminEmail || '—';
 })();
 
 /* ══════════════════════════════════════════════════════
-   CHECK PLAN & ENABLE PREMIUM MENUS (FIXED)
-   - Queries MASTER DB (db), not client DB
+   CHECK PLAN & ENABLE PREMIUM MENUS
 ══════════════════════════════════════════════════════ */
 async function checkPlanAndEnableMenus() {
   const companyId = S.prefs?.companyId;
@@ -716,8 +1133,6 @@ async function checkPlanAndEnableMenus() {
   }
 
   try {
-    // ✅ USE MASTER DB (db), NOT S.clientDb
-    // 'db' is the global Firestore instance from firebase-config.js
     const doc = await db.collection('companies').doc(companyId).get();
     
     console.log(' Company doc exists:', doc.exists);
@@ -728,7 +1143,6 @@ async function checkPlanAndEnableMenus() {
       
       const isPremium = (plan === 'premium');
       
-      // 1. Enable/Disable Payroll Menu
       const payrollEl = document.getElementById('navPayroll');
       const payrollBadge = document.getElementById('payrollBadge');
       
@@ -741,7 +1155,6 @@ async function checkPlanAndEnableMenus() {
         payrollBadge.style.display = isPremium ? 'inline' : 'none';
       }
 
-      // 2. Enable/Disable Leave Balances Menu
       const leaveEl = document.getElementById('navLeaveBalances');
       if (leaveEl) {
         leaveEl.style.opacity = isPremium ? '1' : '0.5';
@@ -752,18 +1165,16 @@ async function checkPlanAndEnableMenus() {
       console.error(' Company document not found in Master DB');
     }
   } catch (err) {
-    console.error('❌ Plan check error:', err.code, err.message);
+    console.error(' Plan check error:', err.code, err.message);
   }
 }
 
-// ✅ AUTO-ENABLE PREMIUM MENUS
 setTimeout(() => {
   if (typeof checkPlanAndEnableMenus === 'function') {
     checkPlanAndEnableMenus();
   }
 }, 1000); 
 
-// Auto-enable on page load if session exists
 document.addEventListener('DOMContentLoaded', () => {
   if (S?.prefs?.companyId && typeof checkPlanAndEnableMenus === 'function') {
     setTimeout(checkPlanAndEnableMenus, 1500);
@@ -791,7 +1202,7 @@ function getDefaultPayComponents() {
     ],
     settings: {
       currency: 'INR',
-      currencySymbol: '₹',
+      currencySymbol: '',
       decimalPlaces: 2,
       calculateLOP: true,
       proRateSalary: true
@@ -818,29 +1229,26 @@ function navigateTo(pageId) {
 }
 
 async function doLogout() {
-  console.log('🔄 Starting logout...');
+  console.log(' Starting logout...');
   
   try {
     console.log('🔐 Attempting Firebase signOut...');
     await firebase.auth().signOut();
     console.log('✅ Firebase signOut completed');
   } catch (error) {
-    console.error('❌ Firebase signOut failed:', error.code, error.message);
+    console.error(' Firebase signOut failed:', error);
     alert('Sign out error: ' + error.message);
   }
-  
-  // ... rest of cleanup code ...
   
   console.log('🔀 Redirecting to index.html');
   window.location.replace('index.html');
 }
 
 /* ══════════════════════════════════════════════════════
-   KEYBOARD SHORTCUTS (Escape Key)
+   KEYBOARD SHORTCUTS
    ══════════════════════════════════════════════════════ */
 document.addEventListener('keydown', function(event) {
   if (event.key === 'Escape' || event.keyCode === 27) {
-    // Close all open modals
     const modals = document.querySelectorAll('.modal-backdrop.open');
     modals.forEach(m => {
       m.classList.remove('open');
@@ -848,3 +1256,285 @@ document.addEventListener('keydown', function(event) {
     });
   }
 });
+
+/* ══════════════════════════════════════════════════════
+   ATTENDANCE PAGE FUNCTIONS (MISSING IN PREVIOUS FILE)
+══════════════════════════════════════════════════════ */
+
+async function loadAttendance() {
+  console.log('🔍 loadAttendance() triggered');
+  
+  if (!S?.clientDb) { toast('DB not connected', 'error'); return; }
+  const companyId = S.prefs?.companyId;
+  if (!companyId) { toast('Company context missing', 'error'); return; }
+  
+  const tb = document.getElementById('attTableBody');
+  if (!tb) return;
+
+  // Load employees for Photo/Name enrichment
+  console.log('📥 Loading employees for Photos...');
+  try {
+    const empSnap = await S.clientDb.collection('employees')
+      .where('companyId', '==', companyId)
+      .get();
+    S.employees = empSnap.docs.map(d => d.data());
+  } catch (e) { console.error('❌ Employee load failed:', e); }
+
+  // Get filter date
+  const dateEl = document.getElementById('attDate');
+  const filterDateStr = dateEl?.value || today();
+  
+  // Parse date - handle both YYYY-MM-DD and MM-DD-YYYY
+  const fParts = filterDateStr.split('-');
+  let year, month, day;
+  
+  if (fParts[0].length === 4) {
+    // YYYY-MM-DD
+    year = parseInt(fParts[0], 10);
+    month = parseInt(fParts[1], 10) - 1;
+    day = parseInt(fParts[2], 10);
+  } else if (fParts[2].length === 4) {
+    // MM-DD-YYYY or DD-MM-YYYY
+    const first = parseInt(fParts[0], 10);
+    const second = parseInt(fParts[1], 10);
+    
+    if (first > 12) {
+      // DD-MM-YYYY
+      day = first;
+      month = second - 1;
+      year = parseInt(fParts[2], 10);
+    } else if (second > 12) {
+      // MM-DD-YYYY
+      month = first - 1;
+      day = second;
+      year = parseInt(fParts[2], 10);
+    } else {
+      // Assume DD-MM-YYYY (Indian format)
+      day = first;
+      month = second - 1;
+      year = parseInt(fParts[2], 10);
+    }
+  } else {
+    year = parseInt(fParts[0], 10);
+    month = parseInt(fParts[1], 10) - 1;
+    day = parseInt(fParts[2], 10);
+  }
+  
+  currentFilterDate = new Date(year, month, day);
+  console.log('📅 Parsed Filter Date:', currentFilterDate);
+
+  try {
+    const attSnap = await S.clientDb.collection('attendance')
+      .where('companyId', '==', companyId)
+      .get();
+    
+    console.log(`✅ Fetched ${attSnap.size} total records`);
+
+    if (attSnap.empty) {
+      tb.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
+      updateLiveStats([], S.employees ? S.employees.length : 0);
+      return;
+    }
+    
+    const filtered = [];
+    
+    for (const doc of attSnap.docs) {
+      const r = doc.data();
+      
+      // Parse record date (handles DD-MM-YYYY from Android)
+      let recordDate = null;
+      if (r.Date?.toDate) {
+        recordDate = r.Date.toDate();
+      } else if (typeof r.Date === 'string') {
+        const parts = r.Date.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            recordDate = new Date(r.Date);
+          } else {
+            const [p1, p2, p3] = parts;
+            if (parseInt(p1, 10) > 12) {
+              recordDate = new Date(p3, p2 - 1, p1); 
+            } else {
+              recordDate = new Date(p1, p2 - 1, p3); 
+            }
+          }
+        }
+      }
+      
+      if (!recordDate || isNaN(recordDate)) continue;
+      
+      // Check same day
+      const recDateOnly = new Date(recordDate);
+      recDateOnly.setHours(0, 0, 0, 0);
+      const filterDateOnly = new Date(currentFilterDate);
+      filterDateOnly.setHours(0, 0, 0, 0);
+      
+      if (recDateOnly.getTime() !== filterDateOnly.getTime()) continue;
+      
+      // Enrich with employee data
+      const emp = S.employees?.find(e => e.EMPID === r.EMPID);
+      const enriched = {
+        ...r,
+        Name: (emp?.EmpName || emp?.Name || r.Name || r.EMPID || '—').trim(),
+        Photo: emp?.Photo || emp?.photoUrl || null
+      };
+      
+      filtered.push(enriched);
+    }
+    
+    console.log(`✅ Filtered to ${filtered.length} records`);
+
+    if (filtered.length === 0) {
+      tb.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--muted);">No records for this date</td></tr>';
+    } else {
+      renderAttTable(filtered);
+    }
+
+    updateAttSummary(filtered);
+    const totalEmp = S.employees ? S.employees.length : await getTotalEmployeesCount();
+    updateLiveStats(filtered, totalEmp);
+    setAttRecords(filtered);
+
+  } catch (e) {
+    console.error('❌ Error:', e);
+    tb.innerHTML = `<tr><td colspan="12" style="color:var(--red);text-align:center;padding:20px;">Error: ${e.message}</td></tr>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+HELPER FUNCTIONS FOR ATTENDANCE
+══════════════════════════════════════════════════════ */
+function renderAttTable(list) {
+  const tb = document.getElementById('attTableBody');
+  if (!tb) return;
+  
+  if (!list || list.length === 0) {
+    tb.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--muted);">No records for this date</td></tr>';
+    return;
+  }
+  
+  tb.innerHTML = list.map(r => {
+    const markedBy = r.MarkedBy || r.markedBy || 'SELF';
+    const loc = r.LocationStatus || 'UNKNOWN';
+    const locClass = loc === 'INSIDE' || loc === 'VERIFIED' ? 'badge-blue' : 'badge-amber';
+    const status = r.Status || 'UNKNOWN';
+    const statusClass = status === 'PRESENT' ? 'badge-green' : 'badge-red';
+    const name = (r.Name || '—').trim();
+    const id = r.EMPID || '—';
+    const site = r.SiteID || '—';
+    
+    const photoHtml = r.Photo 
+      ? `<img src="${r.Photo}" alt="Photo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);background:#fff;">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:var(--teal-s);color:var(--teal);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;">${name.charAt(0).toUpperCase()}</div>`;
+
+    const postLunchTime = r.postLunch?.time || r.PostLunch?.time || r.postLunchTime || '—';
+
+    return `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:10px;text-align:center;vertical-align:middle;">${photoHtml}</td>
+      <td style="padding:10px;vertical-align:middle;"><strong>${name}</strong></td>
+      <td class="mono" style="padding:10px;vertical-align:middle;">${id}</td>
+      <td style="padding:10px;vertical-align:middle;">${site}</td>
+      <td class="mono" style="padding:10px;color:var(--green);vertical-align:middle;">${r.InTime || '—'}</td>
+      <td class="mono" style="padding:10px;color:var(--red);vertical-align:middle;">${r.OutTime || '—'}</td>
+      <td class="mono" style="padding:10px;color:var(--amber);vertical-align:middle;">${postLunchTime}</td>
+      <td class="mono" style="padding:10px;vertical-align:middle;">${calcHours(r.InTime, r.OutTime)}</td>
+      <td style="padding:10px;vertical-align:middle;"><span class="badge ${statusClass}">${status}</span></td>
+      <td style="padding:10px;vertical-align:middle;"><span class="badge ${locClass}">${loc}</span></td>
+      <td style="padding:10px;vertical-align:middle;">${r.HalfDay || 'NO'}</td>
+      <td style="padding:10px;font-size:.75rem;color:var(--muted);vertical-align:middle;">${markedBy}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateLiveStats(list, totalEmployees) {
+  const totalAtt = list?.length || 0;
+  const present = list?.filter(r => r.Status === 'PRESENT').length || 0;
+  const absent = Math.max(0, totalEmployees - present);
+  
+  const elTotal = document.getElementById('liveTotal');
+  const elPresent = document.getElementById('livePresent');
+  const elAbsent = document.getElementById('liveAbsent');
+  
+  if (elTotal) elTotal.textContent = totalEmployees;
+  if (elPresent) elPresent.textContent = present;
+  if (elAbsent) elAbsent.textContent = absent;
+
+  const pPct = totalEmployees > 0 ? (present / totalEmployees * 100) : 0;
+  const aPct = totalEmployees > 0 ? (absent / totalEmployees * 100) : 0;
+  
+  const barP = document.getElementById('barPresent');
+  const barA = document.getElementById('barAbsent');
+  
+  if (barP) barP.style.width = `${pPct}%`;
+  if (barA) barA.style.width = `${aPct}%`;
+
+  const timeEl = document.getElementById('liveTimestamp');
+  if (timeEl) {
+    const now = new Date();
+    timeEl.textContent = `Updated: ${now.toLocaleTimeString()} | Att: ${totalAtt}/${totalEmployees}`;
+  }
+}
+
+function updateAttSummary(list) {
+  const present = list?.filter(r => r.Status === 'PRESENT').length || 0;
+  const inside = list?.filter(r => r.LocationStatus === 'INSIDE' || r.LocationStatus === 'VERIFIED').length || 0;
+  const summary = document.getElementById('attSummary');
+  
+  if (summary && list) {
+    summary.innerHTML = `
+      <div class="chip">Total Att. <span>${list.length}</span></div>
+      <div class="chip" style="color:var(--green);">Present <span>${present}</span></div>
+      <div class="chip" style="color:var(--red);">Absent <span>${list.length - present}</span></div>
+      <div class="chip" style="color:#1565C0;">Inside <span>${inside}</span></div>
+    `;
+  }
+}
+
+function setAttRecords(records) {
+  if (typeof window.S !== 'undefined' && window.S) {
+    window.S.attRecords = records;
+  } else {
+    window.attRecords = records;
+  }
+}
+
+function getAttRecords() {
+  if (typeof window.S !== 'undefined' && window.S?.attRecords) {
+    return window.S.attRecords;
+  }
+  return window.attRecords || [];
+}
+
+async function getTotalEmployeesCount() {
+  if (window.S?.employees?.length > 0) return window.S.employees.length;
+  try {
+    const companyId = S.prefs?.companyId || S.prefs?.companyID;
+    if (!companyId || !S?.clientDb) return 0;
+    const snap = await S.clientDb.collection('employees')
+      .where('companyId', '==', companyId)
+      .get();
+    return snap.size;
+  } catch (e) { 
+    return 0; 
+  }
+}
+
+function calcHours(inTime, outTime) {
+  if (!inTime || !outTime) return '—';
+  try {
+    if (typeof inTime === 'string' && typeof outTime === 'string') {
+      const [inH, inM] = inTime.split(':').map(Number);
+      const [outH, outM] = outTime.split(':').map(Number);
+      const diff = (outH * 60 + outM) - (inH * 60 + inM);
+      if (diff <= 0) return '—';
+      const h = Math.floor(diff / 60);
+      const m = diff % 60;
+      return `${h}h ${m}m`;
+    }
+    return '—';
+  } catch(e) {
+    return '—';
+  }
+}
+

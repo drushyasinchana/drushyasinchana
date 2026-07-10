@@ -21,6 +21,9 @@ async function loadReports() {
 // Global storage for report data
 S.reportData = [];
 
+/* ══════════════════════════════════════════════════════
+GENERATE REPORT - FIXED Date Parsing (DD-MM-YYYY)
+══════════════════════════════════════════════════════ */
 async function generateReport() {
   const fromInput = document.getElementById('rptFrom')?.value;
   const toInput = document.getElementById('rptTo')?.value;
@@ -30,6 +33,7 @@ async function generateReport() {
     return; 
   }
 
+  // Parse Input Dates (YYYY-MM-DD)
   const fromDate = new Date(fromInput);
   const toDate = new Date(toInput);
   toDate.setHours(23, 59, 59, 999);
@@ -65,24 +69,23 @@ async function generateReport() {
     for (const doc of attSnap.docs) {
       const r = doc.data();
       
-      // ✅ Robust date parsing
+      // ✅ FIXED: Robust Date Parsing (DD-MM-YYYY for Android)
       let recordDate = null;
       if (r.Date?.toDate) {
-        recordDate = r.Date.toDate(); // Firestore Timestamp
+        recordDate = r.Date.toDate();
       } else if (typeof r.Date === 'string') {
         const parts = r.Date.split(/[-/]/);
         if (parts.length === 3) {
           if (parts[0].length === 4) {
-            // YYYY-MM-DD
+            // YYYY-MM-DD format
             recordDate = new Date(r.Date);
           } else {
-            // DD-MM-YYYY or MM-DD-YYYY
-            const [p1, p2, p3] = parts;
-            if (parseInt(p1) > 12) {
-              recordDate = new Date(p3, p2 - 1, p1); // DD-MM-YYYY
-            } else {
-              recordDate = new Date(p1, p2 - 1, p3); // MM-DD-YYYY fallback
-            }
+            // DD-MM-YYYY format (Android App)
+            // parts[0] is Day, parts[1] is Month, parts[2] is Year
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            recordDate = new Date(year, month, day);
           }
         }
       }
@@ -90,14 +93,14 @@ async function generateReport() {
       if (!recordDate || isNaN(recordDate)) continue;
       
       // Check date range
-      if (recordDate < fromDate || recordDate > toDate) continue;
-      
-      // Enrich with employee name
-      S.reportData.push({
-        ...r,
-        Name: empMap[r.EMPID] || r.Name || r.EmpName || '—',
-        SiteID: r.SiteID || r.Site || '—'
-      });
+      if (recordDate >= fromDate && recordDate <= toDate) {
+        // Enrich with employee name
+        S.reportData.push({
+          ...r,
+          Name: empMap[r.EMPID] || r.Name || r.EmpName || '—',
+          SiteID: r.SiteID || r.Site || '—'
+        });
+      }
     }
     
     console.log(`✅ Found ${S.reportData.length} records in range`);

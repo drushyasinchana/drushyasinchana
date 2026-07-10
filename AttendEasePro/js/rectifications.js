@@ -1,5 +1,244 @@
 /* ══════════════════════════════════════════════════════
-   HELPER: Calculate Hours (Required for rectifications)
+LOAD RECTIFICATIONS - FIXED Date Parsing (DD-MM-YYYY)
+══════════════════════════════════════════════════════ */
+async function loadRectifications() {
+  console.log(' loadRectifications() triggered');
+  
+  if (!S?.clientDb) { toast('DB not connected', 'error'); return; }
+  const companyId = S.prefs?.companyId;
+  if (!companyId) { toast('Company context missing', 'error'); return; }
+  
+  const tb = document.getElementById('rectTableBody');
+  if (!tb) return;
+
+  // Load employees for enrichment
+  try {
+    const empSnap = await S.clientDb.collection('employees')
+      .where('companyId', '==', companyId)
+      .get();
+    S.employees = empSnap.docs.map(d => d.data());
+  } catch (e) { console.error('❌ Employee load failed:', e); }
+
+  // Get filter date
+  const dateEl = document.getElementById('rectDate');
+  const filterDateStr = dateEl?.value || today();
+  
+  // Parse filter date (YYYY-MM-DD from HTML input)
+  const fParts = filterDateStr.split('-');
+  currentFilterDate = new Date(
+    parseInt(fParts[0], 10),
+    parseInt(fParts[1], 10) - 1,
+    parseInt(fParts[2], 10)
+  );
+  currentFilterDate.setHours(0, 0, 0, 0);
+  console.log('📅 Parsed Filter Date:', currentFilterDate);
+
+  try {
+    const attSnap = await S.clientDb.collection('attendance')
+      .where('companyId', '==', companyId)
+      .get();
+    
+    console.log(`✅ Fetched ${attSnap.size} total records`);
+
+    if (attSnap.empty) {
+      tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
+      updateRectSummary([]);
+      return;
+    }
+    
+    const filtered = [];
+    
+    for (const doc of attSnap.docs) {
+      const r = doc.data();
+      
+      // ✅ FIXED: Robust Date Parsing (DD-MM-YYYY for Android)
+      let recordDate = null;
+      if (r.Date?.toDate) {
+        recordDate = r.Date.toDate();
+      } else if (typeof r.Date === 'string') {
+        const parts = r.Date.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            // YYYY-MM-DD format
+            recordDate = new Date(r.Date);
+          } else {
+            // DD-MM-YYYY format (Android App)
+            // parts[0] is Day, parts[1] is Month, parts[2] is Year
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // JS months are 0-based
+            const year = parseInt(parts[2], 10);
+            recordDate = new Date(year, month, day);
+          }
+        }
+      }
+      
+      if (!recordDate || isNaN(recordDate)) continue;
+      
+      // Check same day
+      const recDateOnly = new Date(recordDate);
+      recDateOnly.setHours(0, 0, 0, 0);
+      
+      if (recDateOnly.getTime() !== currentFilterDate.getTime()) continue;
+      
+      // Enrich with employee data
+      const emp = S.employees?.find(e => e.EMPID === r.EMPID);
+      const enriched = {
+        id: doc.id,
+        ...r,
+        Name: (emp?.EmpName || emp?.Name || r.Name || r.EMPID || '—').trim(),
+        Photo: emp?.Photo || emp?.photoUrl || null
+      };
+      
+      filtered.push(enriched);
+    }
+    
+    console.log(`✅ Filtered to ${filtered.length} records for display`);
+
+    if (filtered.length === 0) {
+      tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted);">No records for this date</td></tr>';
+    } else {
+      renderRectTable(filtered);
+    }
+
+    updateRectSummary(filtered);
+
+  } catch (e) {
+    console.error('❌ Error:', e);
+    tb.innerHTML = `<tr><td colspan="11" style="color:var(--red);text-align:center;padding:20px;">Error: ${e.message}</td></tr>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+RENDER RECTIFICATIONS TABLE
+══════════════════════════════════════════════════════ */
+function renderRectTable(list) {
+  const tb = document.getElementById('rectTableBody');
+  if (!tb) return;
+  
+  if (!list || list.length === 0) {
+    tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted);">No records for this date</td></tr>';
+    return;
+  }
+  
+  tb.innerHTML = list.map(r => {
+    const status = r.Status || 'UNKNOWN';
+    const statusClass = status === 'PRESENT' ? 'badge-green' : status === 'ABSENT' ? 'badge-red' : status === 'ON_LEAVE' ? 'badge-blue' : 'badge-gray';
+    const loc = r.LocationStatus || 'UNKNOWN';
+    const locClass = loc === 'INSIDE' || loc === 'VERIFIED' ? 'badge-blue' : 'badge-amber';
+    const name = (r.Name || '—').trim();
+    const id = r.EMPID || '—';
+    const site = r.SiteID || '—';
+    
+    return `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:10px;vertical-align:middle;"><strong>${name}</strong></td>
+      <td class="mono" style="padding:10px;vertical-align:middle;">${id}</td>
+      <td style="padding:10px;vertical-align:middle;">${site}</td>
+      <td class="mono" style="padding:10px;color:var(--green);vertical-align:middle;">${r.InTime || '—'}</td>
+      <td class="mono" style="padding:10px;color:var(--red);vertical-align:middle;">${r.OutTime || '—'}</td>
+      <td class="mono" style="padding:10px;vertical-align:middle;">${calcHours(r.InTime, r.OutTime)}</td>
+      <td style="padding:10px;vertical-align:middle;"><span class="badge ${statusClass}">${status}</span></td>
+      <td style="padding:10px;vertical-align:middle;"><span class="badge ${locClass}">${loc}</span></td>
+      <td style="padding:10px;vertical-align:middle;">${r.HalfDay || 'NO'}</td>
+      <td style="padding:10px;vertical-align:middle;">
+        <button class="btn btn-outline btn-sm" onclick='openRectifyModal(${JSON.stringify(r).replace(/"/g, '&quot;')})'>✏️ Rectify</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+UPDATE RECTIFICATION SUMMARY
+══════════════════════════════════════════════════════ */
+function updateRectSummary(list) {
+  const present = list?.filter(r => r.Status === 'PRESENT').length || 0;
+  const absent = list?.filter(r => r.Status === 'ABSENT').length || 0;
+  const leave = list?.filter(r => r.Status === 'ON_LEAVE').length || 0;
+  
+  const elTotal = document.getElementById('rectTotal');
+  const elPresent = document.getElementById('rectPresent');
+  const elAbsent = document.getElementById('rectAbsent');
+  const elLeave = document.getElementById('rectLeave');
+  
+  if (elTotal) elTotal.textContent = list?.length || 0;
+  if (elPresent) elPresent.textContent = present;
+  if (elAbsent) elAbsent.textContent = absent;
+  if (elLeave) elLeave.textContent = leave;
+}
+
+/* ══════════════════════════════════════════════════════
+OPEN RECTIFY MODAL
+══════════════════════════════════════════════════════ */
+function openRectifyModal(r) {
+  document.getElementById('rectEmpId').value = r.EMPID || '';
+  document.getElementById('rectEmpName').textContent = r.Name || r.EMPID || '—';
+  document.getElementById('rectDate').value = r.Date || today();
+  document.getElementById('rectStatus').value = r.Status || 'PRESENT';
+  document.getElementById('rectLocation').value = r.LocationStatus || 'INSIDE';
+  document.getElementById('rectInTime').value = r.InTime || '';
+  document.getElementById('rectOutTime').value = r.OutTime || '';
+  document.getElementById('rectHalfDay').value = r.HalfDay || 'NO';
+  document.getElementById('rectRemarks').value = r.Remarks || '';
+  
+  // Store original doc ID for update
+  document.getElementById('rectDocId').value = r.id || '';
+  
+  openModal('rectifyModal');
+}
+
+/* ══════════════════════════════════════════════════════
+SAVE RECTIFICATION
+══════════════════════════════════════════════════════ */
+async function saveRectification() {
+  const docId = document.getElementById('rectDocId').value;
+  const empId = document.getElementById('rectEmpId').value;
+  const date = document.getElementById('rectDate').value;
+  const status = document.getElementById('rectStatus').value;
+  const location = document.getElementById('rectLocation').value;
+  const inTime = document.getElementById('rectInTime').value;
+  const outTime = document.getElementById('rectOutTime').value;
+  const halfDay = document.getElementById('rectHalfDay').value;
+  const remarks = document.getElementById('rectRemarks').value;
+  
+  if (!empId || !date) {
+    toast('Employee ID and Date are required', 'error');
+    return;
+  }
+  
+  try {
+    const payload = {
+      Status: status,
+      LocationStatus: location,
+      InTime: inTime,
+      OutTime: outTime,
+      HalfDay: halfDay,
+      Remarks: remarks,
+      RectifiedBy: 'ADMIN',
+      RectifiedAt: new Date().toISOString(),
+      UpdatedAt: new Date().toISOString()
+    };
+    
+    if (docId) {
+      // Update existing record
+      await S.clientDb.collection('attendance').doc(docId).update(payload);
+      toast('✅ Record rectified successfully!');
+    } else {
+      // Create new record (shouldn't happen in rectifications)
+      toast('No record ID found', 'error');
+      return;
+    }
+    
+    closeModal('rectifyModal');
+    loadRectifications();
+    
+  } catch (e) {
+    console.error('Save rectification error:', e);
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+CALCULATE HOURS (Helper)
 ══════════════════════════════════════════════════════ */
 function calcHours(inTime, outTime) {
   if (!inTime || !outTime) return '—';
@@ -13,327 +252,8 @@ function calcHours(inTime, outTime) {
       const m = diff % 60;
       return `${h}h ${m}m`;
     }
-    const inDate = inTime.toDate ? inTime.toDate() : new Date(inTime);
-    const outDate = outTime.toDate ? outDate.toDate() : new Date(outTime);
-    const diffMs = outDate - inDate;
-    if (diffMs <= 0) return '—';
-    const h = Math.floor(diffMs / (1000 * 60 * 60));
-    const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    return `${h}h ${m}m`;
+    return '—';
   } catch(e) {
     return '—';
   }
 }
-
-
-// ══════════════════════════════════════════════════════
-// RECTIFICATIONS FUNCTIONS
-// ══════════════════════════════════════════════════════
-
-S.rectRecords = []; // Initialize storage
-
-async function loadRectifications() {
-  console.log('🔍 loadRectifications() called');
-  
-  // 1. Safety checks
-  if (!S.clientDb) { 
-    console.error('❌ S.clientDb not ready');
-    toast('Database not connected', 'error'); 
-    return; 
-  }
-  
-  const dateEl = document.getElementById('rectDate');
-  const siteEl = document.getElementById('rectSite');
-  const tb = document.getElementById('rectTableBody');
-  
-  if (!dateEl || !siteEl || !tb) {
-    console.error('❌ Missing HTML elements');
-    return;
-  }
-  
-  // 2. Get filter values
-  if (!dateEl.value) dateEl.value = today();
-  const filterDateStr = dateEl.value; // "YYYY-MM-DD"
-  const filterSiteId = siteEl.value || '';
-  
-  console.log(`📅 Filtering → Date: ${filterDateStr} | Site: ${filterSiteId || 'ALL'}`);
-  
-  try {
-    // 3. Fetch ALL attendance for company (no query filters to avoid index errors)
-    console.log('📥 Fetching attendance from Firestore...');
-    const snap = await S.clientDb.collection('attendance')
-      .where('companyId', '==', S.prefs.companyId)
-      .get();
-    
-    console.log(`✅ Fetched ${snap.size} total records`);
-    
-    if (snap.empty) {
-      tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
-      return;
-    }
-    
-    // 4. Parse filter date for comparison (midnight local time)
-    const [fy, fm, fd] = filterDateStr.split('-').map(Number);
-    const filterDate = new Date(fy, fm - 1, fd); // Month is 0-indexed
-    
-    // 5. Filter in JavaScript (handles Timestamp, string, or Date object)
-    const filtered = [];
-    
-    for (const doc of snap.docs) {
-      const r = doc.data();
-      
-      // Parse record date robustly
-      let recDate = null;
-      
-      if (r.Date?.toDate) {
-        // Firestore Timestamp
-        recDate = r.Date.toDate();
-      } else if (typeof r.Date === 'string') {
-        // String: "YYYY-MM-DD" or "DD-MM-YYYY"
-        const parts = r.Date.split(/[-/]/);
-        if (parts.length === 3) {
-          if (parts[0].length === 4) {
-            // YYYY-MM-DD
-            recDate = new Date(parts[0], parts[1] - 1, parts[2]);
-          } else {
-            // DD-MM-YYYY or MM-DD-YYYY
-            const [p1, p2, p3] = parts;
-            if (parseInt(p1) > 12) {
-              recDate = new Date(p3, p2 - 1, p1); // DD-MM-YYYY
-            } else {
-              recDate = new Date(p1, p2 - 1, p3); // MM-DD-YYYY fallback
-            }
-          }
-        }
-      } else if (r.Date instanceof Date) {
-        recDate = r.Date;
-      }
-      
-      // Skip if date couldn't be parsed
-      if (!recDate || isNaN(recDate)) {
-        console.warn('⚠️ Skipping record with invalid date:', r.EMPID, r.Date);
-        continue;
-      }
-      
-      // Compare ONLY Year, Month, Day (ignore time/timezone)
-      const sameDay = 
-        recDate.getFullYear() === filterDate.getFullYear() &&
-        recDate.getMonth() === filterDate.getMonth() &&
-        recDate.getDate() === filterDate.getDate();
-      
-      if (!sameDay) continue;
-      
-      // Site filter
-      if (filterSiteId && r.SiteID !== filterSiteId && r.Site !== filterSiteId) continue;
-      
-      // Add to results
-      filtered.push({ id: doc.id, ...r });
-    }
-    
-    console.log(`✅ Filtered to ${filtered.length} records for display`);
-    
-    // 6. Sort by InTime (newest first)
-    filtered.sort((a, b) => {
-      const timeA = a.InTime || '00:00:00';
-      const timeB = b.InTime || '00:00:00';
-      return timeB.localeCompare(timeA);
-    });
-    
-    // 7. Render
-    renderRectTable(filtered);
-    updateRectSummary(filtered);
-    
-    if (filtered.length === 0) {
-      toast('No records found for selected date', 'warn');
-    }
-    
-  } catch (e) {
-    console.error('❌ Rect load error:', e);
-    toast('Failed to load: ' + e.message, 'error');
-    
-    // Show error in table
-    if (tb) {
-      tb.innerHTML = `<tr><td colspan="10" style="color:var(--red);text-align:center;padding:20px;">Error: ${e.message}</td></tr>`;
-    }
-  }
-}
-
-
-//════════════════════════════════════════════════════
-// RECTIFICATIONS - Render Table with postLunch Column
-//════════════════════════════════════════════════════
-function renderRectTable(list) {
-  const tb = document.getElementById('rectTableBody');
-  if (!tb) return;
-  
-  if (!list.length) {
-    tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted);">No records found</td></tr>';
-    return;
-  }
-  
-  tb.innerHTML = list.map(r => {
-    // Status badge
-    const status = r.Status || 'UNKNOWN';
-    let statusClass = 'badge-gray';
-    if (status === 'PRESENT') statusClass = 'badge-green';
-    else if (status === 'ABSENT') statusClass = 'badge-red';
-    else if (status === 'ON_LEAVE') statusClass = 'badge-amber';
-    
-    // Location badge
-    const location = r.LocationStatus || r.Location || 'UNKNOWN';
-    let locClass = 'badge-gray';
-    if (location === 'INSIDE') locClass = 'badge-green';
-    else if (location === 'MANUAL' || location === 'OUTSIDE') locClass = 'badge-amber';
-    
-    // ✅ Post-Lunch Status Badge
-    const pl = r.postLunch || {};
-    let plStatus = '—';
-    let plClass = 'badge-gray';
-    if (pl.time) {
-      plStatus = pl.inside === true ? '✅ INSIDE' : '❌ OUTSIDE';
-      plClass = pl.inside ? 'badge-green' : 'badge-red';
-    } else {
-      plStatus = '⏳ PENDING';
-      plClass = 'badge-amber';
-    }
-    
-    // ✅ Safe modal data with postLunch
-    const modalData = encodeURIComponent(JSON.stringify({
-      id: r.id,
-      EMPID: r.EMPID,
-      Name: r.Name,
-      SiteID: r.SiteID || r.Site,
-      InTime: r.InTime,
-      OutTime: r.OutTime,
-      Status: r.Status,
-      LocationStatus: location,
-      HalfDay: r.HalfDay || 'NO',
-      Remarks: r.Remarks || '',
-      Date: r.Date,
-      postLunch: pl // Pass nested map
-    }));
-    
-    return `
-      <tr>
-        <td><strong>${r.Name || '—'}</strong></td>                    <!-- Employee -->
-        <td class="mono">${r.EMPID || '—'}</td>                       <!-- EMPID -->
-        <td>${r.SiteID || r.Site || '—'}</td>                         <!-- Site -->
-        <td class="mono" style="color:var(--green);">${r.InTime || '—'}</td>  <!-- In -->
-        <td class="mono" style="color:var(--red);">${r.OutTime || '—'}</td>   <!-- Out -->
-        <td class="mono">${calcHours(r.InTime, r.OutTime)}</td>       <!-- Hours -->
-        <td><span class="badge ${statusClass}">${status}</span></td>  <!-- Status -->
-        <td><span class="badge ${locClass}">${location}</span></td>   <!-- Location -->
-        <td>${r.HalfDay || 'NO'}</td>                                 <!-- Half Day -->
-        <td><span class="badge ${plClass}">${plStatus}</span></td>    <!-- Post-Lunch -->
-        <td>
-          <button class="btn btn-outline btn-sm" 
-                  onclick="openRectifyModal('${modalData}')">✏️ Edit</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-function updateRectSummary(list) {
-  document.getElementById('rectTotal').textContent = list.length;
-  document.getElementById('rectPresent').textContent = list.filter(x => x.Status === 'PRESENT').length;
-  document.getElementById('rectAbsent').textContent = list.filter(x => x.Status === 'ABSENT').length;
-  document.getElementById('rectLeave').textContent = list.filter(x => x.Status === 'ON_LEAVE').length;
-}
-
-// Modal for Editing
-
-//════════════════════════════════════════════════════
-// RECTIFICATIONS - Modal with postLunch Display
-//════════════════════════════════════════════════════
-function openRectifyModal(encodedData) {
-  console.log('🔓 Opening modal with data');
-  
-  let r;
-  try {
-    r = JSON.parse(decodeURIComponent(encodedData));
-    console.log('✅ Parsed modal data:', r);
-  } catch (e) {
-    console.error('❌ Modal parse error:', e);
-    toast('Error loading record', 'error');
-    return;
-  }
-  
-  // Populate standard fields
-  document.getElementById('rectDocId').value = r.id || '';
-  document.getElementById('rectEmpName').value = r.Name || r.EMPID || '—';
-  
-  // Date display
-  let displayDate = '—';
-  if (r.Date) {
-    try {
-      const dt = r.Date.toDate ? r.Date.toDate() : new Date(r.Date);
-      if (!isNaN(dt)) {
-        displayDate = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
-      }
-    } catch(e) {}
-  }
-  document.getElementById('rectDateDisp').value = displayDate;
-  
-  // Other fields
-  document.getElementById('rectStatus').value = r.Status || 'PRESENT';
-  document.getElementById('rectLocation').value = r.LocationStatus || r.Location || 'MANUAL';
-  document.getElementById('rectIn').value = r.InTime || '';
-  document.getElementById('rectOut').value = r.OutTime || '';
-  document.getElementById('rectHalfDay').value = r.HalfDay || 'NO';
-  document.getElementById('rectRemarks').value = r.Remarks || '';
-  
-  // ✅ Display postLunch status (read-only in modal)
-  const pl = r.postLunch || {};
-  const plStatusEl = document.getElementById('rectPostLunchStatus');
-  if (plStatusEl) {
-    if (pl.time) {
-      plStatusEl.textContent = `${pl.inside ? '✅ Inside' : '❌ Outside'} at ${pl.time}`;
-      plStatusEl.style.color = pl.inside ? 'var(--green)' : 'var(--red)';
-    } else {
-      plStatusEl.textContent = '⏳ Not marked';
-      plStatusEl.style.color = 'var(--muted)';
-    }
-  }
-  
-  showFieldErr('rectErr', '');
-  openModal('attRectModal');
-}
-
-//════════════════════════════════════════════════════
-// RECTIFICATIONS - Save with postLunch Support
-//════════════════════════════════════════════════════
-async function saveRectification() {
-  const docId = document.getElementById('rectDocId').value;
-  if (!docId) { toast('Error: No record ID', 'error'); return; }
-
-  try {
-    // Normalize times
-    let inTime  = document.getElementById('rectIn').value;
-    let outTime = document.getElementById('rectOut').value;
-    if (inTime && inTime.length === 5) inTime += ':00';
-    if (outTime && outTime.length === 5) outTime += ':00';
-
-    // ✅ PAYLOAD: Core fields + preserve existing postLunch
-    const payload = {
-      Status:         document.getElementById('rectStatus').value,
-      LocationStatus: document.getElementById('rectLocation').value,
-      InTime:         inTime || null,
-      OutTime:        outTime || null,
-      HalfDay:        document.getElementById('rectHalfDay').value,
-      // ✅ Do NOT overwrite postLunch - let Android app manage it
-      // If admin needs to clear postLunch, add: 'postLunch': null
-    };
-
-    // Use .update() to touch only specified fields
-    await S.clientDb.collection('attendance').doc(docId).update(payload);
-
-    toast('✅ Record updated successfully!');
-    closeModal('attRectModal');
-    loadRectifications();
-    
-  } catch (e) {
-    console.error('Rectification error:', e);
-    showFieldErr('rectErr', 'Failed: ' + e.message);
-  }
-}
-

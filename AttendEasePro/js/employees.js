@@ -399,15 +399,21 @@ async function deleteEmployee(empId) {
 }
 
 /* ══════════════════════════════════════════════════════
-   POPULATE SITE/EMPLOYEE DROPDOWNS
+POPULATE SITE/EMPLOYEE DROPDOWNS - UPDATED
 ══════════════════════════════════════════════════════ */
 function populateSiteSelects() {
-  // Site dropdowns
-  ['eSite','empSiteFilter','attSite','rptSite','mSite','leaveSite','correctSite','revokeSite'].forEach(id => {
+  // ✅ Added 'rectSite' and 'lunchSite' to the list
+  const siteSelectIds = ['eSite', 'empSiteFilter', 'attSite', 'rptSite', 'mSite', 'leaveSite', 'correctSite', 'revokeSite', 'rectSite', 'lunchSite'];
+  
+  siteSelectIds.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
+    
     const first = sel.querySelector('option[value=""]');
-    while (sel.options.length > (first ? 1 : 0)) sel.remove(first ? 1 : 0);
+    while (sel.options.length > (first ? 1 : 0)) { 
+      sel.remove(first ? 1 : 0); 
+    }
+    
     S.sites.forEach(s => {
       const opt = document.createElement('option');
       opt.value = s.SiteID || s.SiteName;
@@ -416,11 +422,15 @@ function populateSiteSelects() {
     });
   });
   
-  // Employee dropdowns
-  ['rptEmp','mEmpId','leaveEmpId'].forEach(id => {
+  // 2. Populate Employee Dropdowns (for Reports, Manual Entry, Leave)
+  const empSelectIds = ['rptEmp', 'mEmpId', 'leaveEmpId'];
+  
+  empSelectIds.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
+    
     while (sel.options.length > 1) sel.remove(1);
+    
     S.employees.forEach(e => {
       const opt = document.createElement('option');
       opt.value = e.EMPID;
