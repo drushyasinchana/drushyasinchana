@@ -22,8 +22,6 @@
 <script src="js/firebase-config.js"></script>
 
 <!-- 3. Your Modules (THIRD - can now use window.db) -->
-<script src="js/manage.js"></script>
-<script src="js/attendance.js"></script>
 <script src="js/manual.js"></script>
 <script src="js/payroll.js"></script>
 
@@ -676,63 +674,66 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
   <div class="card" style="height: calc(100vh - 120px); display: flex; flex-direction: column;">
     
     <!-- Header (fixed) -->
-    <!-- Add this inside the attendance card header, near the Live Mode button -->
-<div style="display:flex;align-items:center;gap:12px;">
-<!-- Replace onclick with direct toggle logic -->
-<button class="live-mode-btn" id="liveModeBtn" onclick="
-  const btn=this;
-  if(btn.classList.contains('active')){stopLiveUpdates();}else{startLiveUpdates();}
-">
-  <span class="btn-icon">🔄</span>
-  <span class="btn-text">Live Mode</span>
-</button>
-  <span id="liveIndicator" style="font-size:0.8rem;color:var(--muted);font-weight:500;"></span>
-</div>
+    <div style="display:flex; align-items:center; gap:12px; padding: 12px 20px; border-bottom: 1px solid var(--border);">
+      <button class="live-mode-btn" id="liveModeBtn" onclick="
+        const btn=this;
+        if(btn.classList.contains('active')){stopLiveUpdates();}else{startLiveUpdates();}
+      ">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-text">Live Mode</span>
+      </button>
+      <span id="liveIndicator" style="font-size:0.8rem; color:var(--muted); font-weight:500;"></span>
+    </div>
     
     <!-- Filters (fixed) -->
     <div class="filter-bar" style="flex-shrink: 0; padding: 12px 20px; border-bottom: 1px solid var(--border); background: #f8f9fa; position: relative; z-index: 20;">
-      <input type="date" id="attDate" onchange="loadAttendance()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;"/>
-      <select id="attSite" onchange="loadAttendance()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-left:8px;min-width:150px;"><option value="">All Sites</option></select>
-      <select id="attStatus" onchange="filterAttTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-left:8px;">
-        <option value="">All Status</option><option value="PRESENT">Present</option><option value="ABSENT">Absent</option>
+      <input type="date" id="attDate" onchange="loadAttendance()" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px;"/>
+      <select id="attSite" onchange="loadAttendance()" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px; margin-left:8px; min-width:150px;">
+        <option value="">All Sites</option>
+      </select>
+      <select id="attStatus" onchange="filterAttTable()" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px; margin-left:8px;">
+        <option value="">All Status</option>
+        <option value="PRESENT">Present</option>
+        <option value="ABSENT">Absent</option>
       </select>
       <button class="btn btn-outline btn-sm" onclick="loadAttendance()" style="margin-left:8px;">↻ Refresh</button>
-<!-- Place this next to your Refresh button -->
-<span id="attAutoStatus" style="font-size:0.8rem;color:#00838F;font-weight:500;margin-left:12px;"></span>
+      <span id="attAutoStatus" style="font-size:0.8rem; color:#00838F; font-weight:500; margin-left:12px;"></span>
     </div>
     
     <!-- Live Stats Bar (fixed) -->
     <div id="attLiveStats" style="flex-shrink: 0; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--teal-s); display: flex; gap: 20px; align-items: center; font-size: 0.9rem;">
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="color:var(--ink);font-weight:500;">Total:</span>
-        <span id="liveTotal" style="font-weight:600;color:var(--ink);">0</span>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--ink); font-weight:500;">Total:</span>
+        <span id="liveTotal" style="font-weight:600; color:var(--ink);">0</span>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="color:var(--green);font-weight:500;">Present:</span>
-        <span id="livePresent" style="font-weight:600;color:var(--green);">0</span>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--green); font-weight:500;">Present:</span>
+        <span id="livePresent" style="font-weight:600; color:var(--green);">0</span>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="color:var(--red);font-weight:500;">Absent:</span>
-        <span id="liveAbsent" style="font-weight:600;color:var(--red);">0</span>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--red); font-weight:500;">Absent:</span>
+        <span id="liveAbsent" style="font-weight:600; color:var(--red);">0</span>
       </div>
       <!-- Mini Bar Chart -->
       <div style="flex:1; display:flex; gap:2px; height:20px; align-items:center;">
         <div id="barPresent" style="background:var(--green); border-radius:3px; height:100%; transition:width 0.3s;"></div>
         <div id="barAbsent" style="background:var(--red); border-radius:3px; height:100%; transition:width 0.3s;"></div>
       </div>
-      <span id="liveTimestamp" style="font-size:0.8rem;color:var(--muted);margin-left:10px;"></span>
+      <span id="liveTimestamp" style="font-size:0.8rem; color:var(--muted); margin-left:10px;"></span>
     </div>
     
     <!-- Scrollable Table Area -->
     <div style="flex: 1; overflow-y: auto; overflow-x: auto;">
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1100px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1400px;">
         <thead style="position: sticky; top: 0; background: var(--bg); z-index: 10;">
           <tr>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: center; width: 60px;">Photo</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left;">Employee</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 100px;">EMPID</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 120px;">Site</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">IN</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">OUT</th>
+            <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 110px;">Post-Lunch</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 80px;">Hours</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 90px;">Status</th>
             <th style="padding: 10px; border-bottom: 2px solid var(--border); text-align: left; width: 120px;">Location</th>
@@ -741,13 +742,15 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
           </tr>
         </thead>
         <tbody id="attTableBody">
-          <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Select a date to load records</td></tr>
+          <!-- ✅ Updated colspan to 12 to match header columns -->
+          <tr><td colspan="12" style="text-align:center; padding:20px; color:var(--muted);">Select a date to load records</td></tr>
         </tbody>
       </table>
     </div>
     
   </div>
 </div>
+
 
 <!-- POST LUNCH TRACKING -->
 <div class="page" id="pgPostlunch">  <!-- ✅ Must match nav() -->  <div class="card">
@@ -1645,15 +1648,17 @@ tbody td{padding:9px 13px;color:var(--ink2);vertical-align:middle;}
             <option value="HALF_DAY">HALF_DAY</option>
           </select>
         </div>
-        <div class="fgg">
-          <label>Location Source</label>
-          <select id="rectLocation">
-            <option value="INSIDE">INSIDE (GPS)</option>
-            <option value="OUTSIDE">OUTSIDE (GPS)</option>
-            <option value="MANUAL">MANUAL ENTRY</option>
-            <option value="LEAVE">LEAVE MARKED</option>
-          </select>
-        </div>
+  <!-- Location Source Dropdown - Updated -->
+<div class="fgg">
+  <label>Location Source</label>
+  <select id="rectLocation">
+    <option value="INSIDE">INSIDE (GPS)</option>
+    <option value="OUTSIDE">OUTSIDE (GPS)</option>
+    <option value="VERIFIED">VERIFIED</option>
+    <option value="MANUAL">MANUAL ENTRY</option>
+    <option value="LEAVE">LEAVE MARKED</option>
+  </select>
+</div>
         <div class="fgg"><label>In Time</label><input type="time" id="rectIn"/></div>
         <div class="fgg"><label>Out Time</label><input type="time" id="rectOut"/></div>
         <div class="fgg">
