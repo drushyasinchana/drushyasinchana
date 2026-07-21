@@ -227,7 +227,7 @@ async function fetchSites() {
 }
 
 /* ══════════════════════════════════════════════════════
-FETCH ATTENDANCE - FIXED: Supports Site Filtering
+FETCH ATTENDANCE - FIXED: Preserves Document ID
 ══════════════════════════════════════════════════════ */
 async function fetchAttendance(filterDateStr, filterSiteId = null) {
   if (!S.clientDb) return [];
@@ -246,6 +246,9 @@ async function fetchAttendance(filterDateStr, filterSiteId = null) {
     const filtered = [];
     for (const doc of snap.docs) {
       const r = doc.data();
+      
+      // ✅ CRITICAL: Preserve the Firestore document ID
+      r.id = doc.id;
       
       let recDate = null;
       if (r.Date && typeof r.Date === 'string' && r.Date.includes('-')) {
@@ -267,7 +270,6 @@ async function fetchAttendance(filterDateStr, filterSiteId = null) {
           recDate.getMonth() === targetDate.getMonth() &&
           recDate.getDate() === targetDate.getDate()) {
         
-        // ✅ FIXED: Filter by Site if filterSiteId is provided
         if (filterSiteId && r.SiteID !== filterSiteId) continue;
         
         filtered.push(r);
@@ -280,7 +282,6 @@ async function fetchAttendance(filterDateStr, filterSiteId = null) {
     return [];
   }
 }
-
 
 // ══════════════════════════════════════════════════════
 // DASHBOARD
