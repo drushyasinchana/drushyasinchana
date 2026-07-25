@@ -130,6 +130,7 @@ async function injectCompanySelector() {
           window.loadCustomers();
         } else if (pageId === 'particulars' && typeof window.loadParticulars === 'function') {
           window.loadParticulars();
+
         } else if (pageId === 'reports' && typeof window.loadReports === 'function') {
           window.loadReports();
         }
@@ -205,6 +206,10 @@ window.nav = function(page, btn) {
       if (typeof window.loadParticulars === 'function') window.loadParticulars();
       else console.error('❌ loadParticulars not found');
     }
+else if (page === 'notes') {
+  if (typeof window.loadNotes === 'function') window.loadNotes();
+  else console.error('❌ loadNotes not found');
+}
     else if (page === 'reports') {
       if (typeof window.loadReports === 'function') window.loadReports();
       else console.error('❌ loadReports not found');

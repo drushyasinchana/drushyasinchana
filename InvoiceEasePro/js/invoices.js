@@ -220,6 +220,9 @@ window.deleteInvoice = async function(id) {
   }
 };
 
+
+
+
 window.showInvoiceModal = async function(editId = null, editData = null) {
   const oldModal = document.getElementById('invoiceModal');
   if (oldModal) oldModal.remove();
@@ -317,8 +320,21 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
           </div>
           
           <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:20px;">
-            <!-- ✅ Changed "Remarks" to "Note:" -->
-            <div class="fg"><label>Note:</label><textarea id="invRemarks" rows="3" style="padding:12px;font-size:1rem;" placeholder="Add any additional notes here...">${editData ? editData.remarks || '' : ''}</textarea></div>
+<!-- Note Section with Small Dropdown & Textarea -->
+<div class="fg" style="margin-bottom:16px;">
+  <label style="font-size:0.9rem;font-weight:600;color:var(--ink2);">Note / Remarks (Optional) </label>
+  <div style="display:flex; gap:12px; align-items:flex-start;">
+    <!-- Small Dropdown (Fixed Width) -->
+    <select id="noteTemplateSelect" onchange="fillNoteFromTemplate(this)" 
+      style="width:160px; padding:10px; font-size:0.9rem; border:1.5px solid var(--border); border-radius:8px; background:#fff; flex-shrink:0;">
+      <option value="">-- Select Note --</option>
+    </select>
+    <!-- Flexible Textarea (By the Side) -->
+    <textarea id="invRemarks" rows="3" 
+      style="padding:10px; font-size:0.95rem; width:100%; border:1.5px solid var(--border); border-radius:8px; resize:vertical;" 
+      placeholder="Type note here or select from list...">${editData ? editData.remarks || '' : ''}</textarea>
+  </div>
+</div>
             <div style="background:var(--teal-s);padding:20px;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;">
               <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Subtotal:</span><strong id="calcSubtotal" style="font-size:1.1rem;">₹${editData ? editData.subtotal.toFixed(2) : '0.00'}</strong></div>
               <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span id="taxLabel1">CGST:</span><strong id="calcCgst" style="font-size:1.1rem;">₹${editData ? editData.totalCgst.toFixed(2) : '0.00'}</strong></div>
@@ -357,7 +373,8 @@ window.showInvoiceModal = async function(editId = null, editData = null) {
   
   document.body.appendChild(modal);
   modal.style.display = 'flex';
-  
+  // Load notes into dropdown
+loadNotesDropdown();
   getPreviewInvoiceNumber().then(num => {
     const previewInput = document.getElementById('invBillNoPreview');
     if (previewInput) previewInput.value = num;
@@ -459,34 +476,46 @@ window.addInvoiceItem = async function(presetItem = null) {
   }
 };
 
-// ✅ FIXED: On Item Change - Handle editable particulars with datalist
+// ✅ FIXED: Robust selection handler for Particulars dropdown
 window.onItemChange = function(input, idx) {
+  // 1. Identify the specific row being edited
   const row = input.closest('.invoice-item-row');
   if (!row) return;
-  
-  // ✅ Find matching option in datalist to auto-fill SAC/rate/GST
-  const datalist = document.getElementById(input.list);
+
+  // 2. Identify the datalist source
+  const listId = input.getAttribute('list');
+  const datalist = document.getElementById(listId);
   if (!datalist) return;
-  
+
+  // 3. Find the matching option (Case-insensitive, trimmed)
+  const selectedValue = input.value.trim().toLowerCase();
   const options = datalist.querySelectorAll('option');
-  let matched = false;
-  
-  options.forEach(opt => {
-    if (opt.value.toLowerCase() === input.value.toLowerCase()) {
-      // ✅ Auto-fill SAC, rate, GST from selected particular
+
+  for (let opt of options) {
+    if (opt.value.trim().toLowerCase() === selectedValue) {
+      // ✅ Auto-fill SAC (Convert to uppercase)
       const sacInput = row.querySelector('.item-sac');
+      if (sacInput && opt.dataset.sac) {
+        sacInput.value = opt.dataset.sac.toUpperCase();
+      }
+
+      // ✅ Auto-fill Rate
       const rateInput = row.querySelector('.item-rate');
-      
-      if (sacInput && opt.dataset.sac) sacInput.value = opt.dataset.sac.toUpperCase();
-      if (rateInput && opt.dataset.rate) rateInput.value = opt.dataset.rate;
-      
-      matched = true;
+      if (rateInput && opt.dataset.rate) {
+        rateInput.value = opt.dataset.rate;
+      }
+
+      // Found a match, stop searching
+      break;
     }
-  });
-  
-  // ✅ Recalculate amount
-  calcItem(idx);
+  }
+
+  // 4. Recalculate Amount based on new Rate
+  if (typeof window.calcItem === 'function') {
+    window.calcItem(idx);
+  }
 };
+
 
 window.calcItem = function(idx) {
   const rows = document.querySelectorAll('#invoiceItems > div');
@@ -1099,3 +1128,56 @@ window.showInvoicePreview = async function(id) {
     alert('Error generating preview: ' + e.message);
   }
 };
+
+
+
+
+// ✅ Load Notes into Dropdown
+async function loadNotesDropdown() {
+  console.log("🔍 Loading notes...");
+  const select = document.getElementById("noteTemplateSelect");
+  if (!select) {
+    console.error("❌ Dropdown not found!");
+    return;
+  }
+  
+  const profileId = window.selectedProfileId || sessionStorage.getItem('activeProfileId') || 'COMP001';
+  
+  try {
+    const snap = await window.InvoiceApp.clientDb.collection('invoiceNotes')
+      .where('profileId', '==', profileId)
+      .get();
+    
+    console.log("✅ Found notes:", snap.size);
+    
+    let html = '<option value="">-- Select Note --</option>';
+    snap.forEach(doc => {
+      const data = doc.data();
+      const name = data.noteName || "Untitled";
+      const desc = (data.description || "").replace(/"/g, '&quot;');
+      html += `<option value="${desc}" data-desc="${desc}">${name}</option>`;
+    });
+    
+    select.innerHTML = html;
+  } catch (e) {
+    console.error("❌ Error:", e);
+  }
+}
+
+// ✅ Fill textarea when note selected - FIXED to clear on empty
+window.fillNoteFromTemplate = function(select) {
+  const textarea = document.getElementById('invRemarks');
+  if (!textarea) return;
+  
+  const selectedOption = select.options[select.selectedIndex];
+  
+  // ✅ Always update - even if empty
+  if (selectedOption && selectedOption.dataset.desc !== undefined) {
+    textarea.value = selectedOption.dataset.desc; // This will be "" for empty notes
+  } else {
+    textarea.value = '';
+  }
+  
+  console.log('📝 Note selected:', selectedOption ? selectedOption.text : 'None');
+  console.log(' Description:', textarea.value ? textarea.value.substring(0, 50) + '...' : '(empty)');
+}
