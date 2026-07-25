@@ -1,10 +1,10 @@
 /* ══════════════════════════════════════════════════════
 INVOICEEASE PRO - REPORTS & ANALYTICS (Updated)
-Features: FY + Period Dropdown (Month/Q1-Q4), Dynamic Date Ranges, PDF/CSV Export
+Features: FY + Period Dropdown (Yearly/Month/Q1-Q4), Dynamic Date Ranges
 Profile-Aware: Filters by selected company profile
 ══════════════════════════════════════════════════════ */
 
-// ✅ Helper: Get active profile ID
+// ✅ Helper: Get active profile ID from dropdown or session
 function getActiveProfileId() {
   return window.selectedProfileId || window.currentCompanyId || sessionStorage.getItem('activeProfileId') || 'COMP001';
 }
@@ -13,6 +13,9 @@ function getActiveProfileId() {
 window.toggleReportPeriod = function() {
   const periodType = document.getElementById('repPeriodType').value;
   const monthContainer = document.getElementById('repMonthContainer');
+  
+  // Only show Month dropdown if Period is 'month'. 
+  // 'yearly' and 'q1'-'q4' will hide it.
   if (periodType === 'month') {
     monthContainer.style.display = 'block';
   } else {
@@ -28,7 +31,7 @@ window.loadReports = async function() {
   try {
     const profileId = getActiveProfileId();
     
-    // Fetch Customers
+    // 1. Fetch Customers for the dropdown (filtered by profileId)
     const custSnap = await window.InvoiceApp.clientDb.collection('customers')
       .where('profileId', '==', profileId)
       .where('isActive', '==', true)
@@ -39,16 +42,17 @@ window.loadReports = async function() {
       customerOptions += `<option value="${d.id}">${d.data().customerName}</option>`;
     });
     
+    // 2. Get current date defaults
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
     
-    // Build HTML with new Period Dropdown
+    // 3. Build HTML
     c.innerHTML = `
       <div class="card">
         <h3 style="margin-bottom:20px;">📊 Sales Report Generator</h3>
         
-        <!-- Filters Grid: FY | Period | Month | Customer | Generate -->
+        <!-- Filters -->
         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap:12px; align-items:end; margin-bottom:24px;">
           
           <!-- Financial Year -->
@@ -61,10 +65,11 @@ window.loadReports = async function() {
             </select>
           </div>
           
-          <!-- Period Type -->
+          <!-- Period Type (New: Yearly added) -->
           <div class="fg" style="margin-bottom:0;">
             <label style="font-size:0.85rem;">Period</label>
             <select id="repPeriodType" onchange="window.toggleReportPeriod()" style="padding:10px;border:1px solid var(--border);border-radius:6px;width:100%;">
+              <option value="yearly">Yearly (Full FY)</option>
               <option value="month">Month</option>
               <option value="q1">Q1 (Apr-Jun)</option>
               <option value="q2">Q2 (Jul-Sep)</option>
@@ -92,7 +97,7 @@ window.loadReports = async function() {
             </select>
           </div>
           
-          <button class="btn btn-teal" onclick="generateReport()" style="padding:10px 20px;height:42px;"> Generate</button>
+          <button class="btn btn-teal" onclick="generateReport()" style="padding:10px 20px;height:42px;">🔍 Generate</button>
         </div>
         
         <!-- Results Area -->
@@ -117,40 +122,53 @@ window.generateReport = async function() {
   const monthStr = document.getElementById('repMonth').value;
   const customerId = document.getElementById('repCustomer').value;
   
-  const selectedYear = parseInt(yearStr);
+  // Parse inputs
+  const selectedYear = parseInt(yearStr); // The start year of the FY (e.g., 2025 for 2025-26)
   const selectedMonth = parseInt(monthStr);
   
   c.innerHTML = '<div style="text-align:center;padding:20px;">Generating report...</div>';
   
   try {
-    // ✅ Calculate Start & End Dates based on FY & Period
-    let startDate, endDate;
-    const fyStart = selectedYear; // e.g., 2025 for FY 2025-26
+    // ✅ Calculate Start & End Dates based on Period Type
+    let startDate, endDate, periodLabel;
     
-    if (periodType === 'month') {
+    if (periodType === 'yearly') {
+      // ✅ Yearly: April 1st of selectedYear to March 31st of next year
+      const fyStart = selectedYear;
+      const fyEnd = selectedYear + 1;
+      startDate = new Date(fyStart, 3, 1, 0, 0, 0);       // April 1, 00:00:00
+      endDate = new Date(fyEnd, 2, 31, 23, 59, 59);       // March 31, 23:59:59
+      periodLabel = `FY ${fyStart}-${(fyEnd).toString().slice(-2)} (Yearly)`;
+    } 
+    else if (periodType === 'month') {
       const monthIndex = selectedMonth - 1; // JS months are 0-indexed
-      const actualYear = selectedMonth < 4 ? fyStart + 1 : fyStart; // Jan-Mar belong to next calendar year
+      // Determine actual calendar year for the month
+      const actualYear = selectedMonth < 4 ? selectedYear + 1 : selectedYear; 
       startDate = new Date(actualYear, monthIndex, 1, 0, 0, 0);
       endDate = new Date(actualYear, monthIndex + 1, 0, 23, 59, 59);
-    } else {
+      periodLabel = `${new Date(0, selectedMonth-1).toLocaleString('default', {month:'long'})} ${actualYear}`;
+    } 
+    else {
+      // ✅ Quarters (Q1, Q2, Q3, Q4)
       const q = parseInt(periodType.slice(1));
       const qConfig = {
         1: { startM: 3, endM: 5, endD: 30, endYOffset: 0 }, // Apr-Jun
         2: { startM: 6, endM: 8, endD: 30, endYOffset: 0 }, // Jul-Sep
         3: { startM: 9, endM: 11, endD: 31, endYOffset: 0 }, // Oct-Dec
-        4: { startM: 0, endM: 2, endD: 31, endYOffset: 1 }  // Jan-Mar (next year)
+        4: { startM: 0, endM: 2, endD: 31, endYOffset: 1 }  // Jan-Mar (next calendar year)
       };
       const cfg = qConfig[q];
-      const startYear = fyStart + (cfg.startM < 3 ? 1 : 0);
-      const endYear = fyStart + cfg.endYOffset;
+      const startYear = selectedYear + (cfg.startM < 3 ? 1 : 0); // Jan-Mar belong to next calendar year
+      const endYear = selectedYear + cfg.endYOffset;
       
       startDate = new Date(startYear, cfg.startM, 1, 0, 0, 0);
       endDate = new Date(endYear, cfg.endM, cfg.endD, 23, 59, 59);
+      periodLabel = `Q${q} ${endDate.getFullYear()}`;
     }
     
     console.log('📅 Report Range:', startDate.toLocaleDateString(), 'to', endDate.toLocaleDateString());
     
-    // ✅ Fetch & Filter Invoices
+    // ✅ Fetch Invoices for this profile
     const profileId = getActiveProfileId();
     const snap = await window.InvoiceApp.clientDb.collection('invoices')
       .where('profileId', '==', profileId)
@@ -160,11 +178,11 @@ window.generateReport = async function() {
     let totalRevenue = 0;
     let totalTax = 0;
     
+    // Filter in JavaScript
     snap.forEach(doc => {
       const inv = doc.data();
       const invDate = inv.invoiceDate?.toDate ? inv.invoiceDate.toDate() : new Date(inv.invoiceDate);
       
-      // Filter by date range & customer
       if (invDate >= startDate && invDate <= endDate && (!customerId || inv.customerId === customerId)) {
         filteredInvoices.push({ id: doc.id, ...inv });
         totalRevenue += parseFloat(inv.grandTotal || 0);
@@ -180,10 +198,6 @@ window.generateReport = async function() {
       </div>`;
       return;
     }
-    
-    const periodLabel = periodType === 'month' 
-      ? `${new Date(0, selectedMonth-1).toLocaleString('default', {month:'long'})} ${endDate.getFullYear()}`
-      : `Q${periodType.slice(1)} ${endDate.getFullYear()}`;
     
     let h = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -218,7 +232,7 @@ window.generateReport = async function() {
         <td style="padding:12px;font-weight:500;">${inv.invoiceNumber}</td>
         <td style="padding:12px;">${inv.customerName}</td>
         <td style="padding:12px;color:var(--muted);">${dateStr}</td>
-        <td style="padding:12px;text-align:right;">₹${taxable.toFixed(2)}</td>
+        <td style="padding:12px;text-align:right;">${taxable.toFixed(2)}</td>
         <td style="padding:12px;text-align:right;">₹${gst.toFixed(2)}</td>
         <td style="padding:12px;text-align:right;font-weight:600;">₹${inv.grandTotal.toFixed(2)}</td>
       </tr>`;
@@ -227,7 +241,7 @@ window.generateReport = async function() {
     h += `</tbody></table></div>`;
     c.innerHTML = h;
     
-    // Store data for export
+    // Store data for export functions
     window.currentReportData = filteredInvoices;
     window.reportMeta = { 
       periodLabel, 
@@ -257,7 +271,6 @@ window.exportReportCSV = function() {
   const safeLabel = window.reportMeta.periodLabel.replace(/[^a-zA-Z0-9]/g, '_');
   downloadFile(csv, `Report_${safeLabel}.csv`, 'text/csv');
 };
-
 // ✅ Export Report PDF
 window.exportReportPDF = function() {
   if (!window.currentReportData) return;
